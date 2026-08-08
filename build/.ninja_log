@@ -1,0 +1,11 @@
+# ninja log v7
+1	22	1786231429156052088	CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o	5bb2bb1faa256be8
+1	277	1786231429156645484	CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o	5c7994afbf745ff5
+1	1118	1786231429156264137	CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o	95b394a887c9e215
+0	1154	1786231429155545134	CMakeFiles/FloppyRogue.dir/engine/window.cpp.o	47e2f3c2fade249f
+2	1179	1786231429156648413	CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o	73923f378d6f64db
+1	1323	1786231429155648411	CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o	49169d806e0077f1
+1	1366	1786231429155873612	CMakeFiles/FloppyRogue.dir/engine/input.cpp.o	5e8feba9d86df8ed
+1	1384	1786231429156457370	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	5ca7d14aa62afa73
+0	1533	1786231429154648409	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	ce2aa5e2cd231573
+1533	1710	1786231430686651508	FloppyRogue	6b6ad4344a2f0562

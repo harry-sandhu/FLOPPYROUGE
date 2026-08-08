@@ -1,0 +1,3 @@
+/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/FloppyRogue.dir
+/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/edit_cache.dir
+/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/rebuild_cache.dir

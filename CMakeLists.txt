@@ -1,0 +1,29 @@
+cmake_minimum_required(VERSION 3.20)
+project(FloppyRogue CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(FloppyRogue WIN32
+    src/main.cpp
+    engine/window.cpp
+    engine/renderer.cpp
+    engine/input.cpp
+    engine/collision.cpp
+    game/player/player.cpp
+    game/player/projectile_system.cpp
+    game/enemies/enemy.cpp
+    game/ui/hud.cpp
+)
+
+target_compile_options(FloppyRogue PRIVATE
+    -fno-exceptions
+    -fno-rtti
+    -Os
+)
+
+target_link_options(FloppyRogue PRIVATE -static -s -flto)
+
+target_compile_options(FloppyRogue PRIVATE -flto)
+
+target_link_libraries(FloppyRogue PRIVATE gdi32 user32 kernel32)
