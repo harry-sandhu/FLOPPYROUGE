@@ -9,6 +9,7 @@ class Dungeon {
 public:
     bool Generate(uint32_t seed);
 
+    const std::vector<Room>& Rooms() const;
     Room& CurrentRoom();
     const Room& CurrentRoom() const;
     int CurrentRoomIndex() const;

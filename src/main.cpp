@@ -18,12 +18,6 @@
 
 enum class GameState { RUNNING, WON, LOST };
 
-Boss SpawnBoss() {
-    Boss boss;
-    boss.pos = { 146.0f, 20.0f };
-    return boss;
-}
-
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     if (!Window::Create(1280, 720, "FloppyRogue")) return 1;
     if (!Renderer::Init(Window::GetHandle())) return 1;
@@ -62,7 +56,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         boss = Boss{};
         boss.alive = false;
 
-        if (room.type == RoomType::NORMAL) {
+        if (room.type == RoomType::NORMAL && !room.cleared) {
             if (!room.enemySpawnList.empty()) {
                 for (int i = 0; i < (int)room.enemySpawnList.size(); ++i) {
                     Vec2 spawnPos = spawnPoints[i % (int)(sizeof(spawnPoints) / sizeof(spawnPoints[0]))];
@@ -72,7 +66,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
                 enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
             }
-        } else if (room.type == RoomType::BOSS) {
+        } else if (room.type == RoomType::BOSS && !room.cleared) {
             boss = SpawnBossVariant(room.bossVariant);
         } else if ((room.type == RoomType::TREASURE || room.type == RoomType::CURSE) && !room.lootGranted) {
             for (int itemId : room.itemSpawnList) {
@@ -119,7 +113,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             player.pos = room.ClampToRoom(player.pos, (float)player.size, (float)player.size);
             PlayerLogic::HandleShooting(player, dt, playerShots);
 
-            if (room.type == RoomType::NORMAL) {
+            if (room.type == RoomType::NORMAL && !room.cleared) {
                 bool anyAlive = false;
                 std::vector<Enemy> spawnedEnemies;
                 for (auto& enemy : enemies) {
@@ -205,6 +199,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         if (state == GameState::WON || (state == GameState::RUNNING && room.type == RoomType::NORMAL && room.cleared)) {
             HUD::DrawRoomClearedBanner();
         }
+        HUD::DrawFloorMap(dungeon);
 
         Renderer::Present();
     }

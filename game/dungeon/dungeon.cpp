@@ -290,6 +290,10 @@ const Room& Dungeon::CurrentRoom() const {
     return rooms[currentRoomIndex];
 }
 
+const std::vector<Room>& Dungeon::Rooms() const {
+    return rooms;
+}
+
 int Dungeon::CurrentRoomIndex() const {
     return currentRoomIndex;
 }
