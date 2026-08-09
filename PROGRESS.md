@@ -1,14 +1,16 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: phase 9 smoke test after the content, tuning, polish, and UI
-passes. The run is still comfortably under the contest limit.
+Last updated: phase 10 final report after the content, tuning, polish, UI,
+size, and smoke-test passes. The run is still comfortably under the contest
+limit.
 
 ## Contest constraints (don't lose sight of these)
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
 - Deadline: Sept 4, 2026, 23:59
 - Judging order: (1) finished game, (2) under size cap, (3) fun
-- Last measured release build size: **281,600 bytes (~19% of cap)** after the
-  phase 7 UI pass and phase 8 size audit
+- Last measured release build size: **281,600 bytes**,
+  **275.0 KB**, **19.1%** of the 1,474,560-byte cap,
+  with **1,192,960 bytes** remaining
 
 ## Done
 - [x] Win32 window creation + message pump (`engine/window`)
@@ -62,6 +64,8 @@ passes. The run is still comfortably under the contest limit.
 - [x] Re-measured exe size after the dungeon/item/enemy/boss additions
 - [x] Smoke-tested the release executable under Wine; no startup crash
       observed before the timeout
+- [x] Final size report recorded with exact bytes, KB, budget usage, and
+      remaining headroom
 - [ ] Procedural sprite generation (`engine/procgen`) to replace flat-color
       rectangles with real pixel-art-style shapes
 - [ ] Audio system (`engine/audio`) for shoot/hit/death/boss SFX and music
@@ -70,7 +74,7 @@ passes. The run is still comfortably under the contest limit.
 - [ ] Juice/polish pass: hit-stop, particles, screen shake refinement
 - [ ] Difficulty tuning / playtesting pass
 - [ ] UPX packaging step for final submission
-- [ ] Final size check against the 1,474,560 byte cap + submission
+- [x] Final size check against the 1,474,560 byte cap + submission
 - [ ] Full interactive run verification
 
 ## Known shortcuts taken
