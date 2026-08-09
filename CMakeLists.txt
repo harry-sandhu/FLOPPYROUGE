@@ -16,6 +16,7 @@ add_executable(FloppyRogue WIN32
     game/player/projectile_system.cpp
     game/enemies/enemy.cpp
     game/enemies/enemy_database.cpp
+    game/bosses/boss.cpp
     game/ui/hud.cpp
     game/rooms/room.cpp
 )

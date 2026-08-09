@@ -13,3 +13,13 @@
 1	1573	1786281666929616568	CMakeFiles/FloppyRogue.dir/engine/window.cpp.o	1013d982e13426ab
 2	1844	1786281666930770709	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	c2198190a95c0122
 1844	1909	1786281668772848690	FloppyRogue	5f58231f5c0125cf
+0	21	1786283226864745797	build.ninja	489a2e5a3d933c8d
+0	21	1786283226864745797	/home/primordic/projects/Game_development/FloppyRogue/build/cmake_install.cmake	489a2e5a3d933c8d
+2	287	1786283226871313410	CMakeFiles/FloppyRogue.dir/game/bosses/boss.cpp.o	8c40d1da097f1369
+1	1143	1786283226870624718	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
+2	1190	1786283226871164723	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	c2198190a95c0122
+2	1051	1786283355868506120	CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o	1834080f0d17300d
+2	1116	1786283355867701243	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
+1116	1184	1786283356981726763	FloppyRogue	5f81166dbae34dd4
+1	1104	1786284464583338736	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
+1104	1168	1786284465685554959	FloppyRogue	5f81166dbae34dd4

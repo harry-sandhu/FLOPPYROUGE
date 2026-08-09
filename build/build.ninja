@@ -55,8 +55,6 @@ build CMakeFiles/FloppyRogue.dir/src/main.cpp.o: CXX_COMPILER__FloppyRogue_unsca
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/engine/window.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/window.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -65,8 +63,6 @@ build CMakeFiles/FloppyRogue.dir/engine/window.cpp.o: CXX_COMPILER__FloppyRogue_
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/renderer.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -75,8 +71,6 @@ build CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o: CXX_COMPILER__FloppyRogu
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/engine/input.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/input.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -85,8 +79,6 @@ build CMakeFiles/FloppyRogue.dir/engine/input.cpp.o: CXX_COMPILER__FloppyRogue_u
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/collision.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -95,8 +87,6 @@ build CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o: CXX_COMPILER__FloppyRog
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/engine/text.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/text.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -105,8 +95,6 @@ build CMakeFiles/FloppyRogue.dir/engine/text.cpp.o: CXX_COMPILER__FloppyRogue_un
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/data_parser.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -115,8 +103,6 @@ build CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o: CXX_COMPILER__FloppyR
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/player/player.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -125,8 +111,6 @@ build CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o: CXX_COMPILER__FloppyR
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/player
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/player/projectile_system.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -135,8 +119,6 @@ build CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o: CXX_COMPIL
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/player
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/enemies/enemy.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -145,8 +127,6 @@ build CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o: CXX_COMPILER__FloppyR
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/enemies
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/enemies/enemy_database.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -155,8 +135,14 @@ build CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o: CXX_COMPILER
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/enemies
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
+
+build CMakeFiles/FloppyRogue.dir/game/bosses/boss.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/bosses/boss.cpp || cmake_object_order_depends_target_FloppyRogue
+  CONFIG = Release
+  DEP_FILE = CMakeFiles/FloppyRogue.dir/game/bosses/boss.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
+  OBJECT_DIR = CMakeFiles/FloppyRogue.dir
+  OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/bosses
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/ui/hud.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -165,8 +151,6 @@ build CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o: CXX_COMPILER__FloppyRogue_un
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/ui
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 build CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/rooms/room.cpp || cmake_object_order_depends_target_FloppyRogue
@@ -175,8 +159,6 @@ build CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o: CXX_COMPILER__FloppyRogu
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/rooms
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
-  TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 
@@ -187,7 +169,7 @@ build CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o: CXX_COMPILER__FloppyRogu
 #############################################
 # Link the executable FloppyRogue
 
-build FloppyRogue: CXX_EXECUTABLE_LINKER__FloppyRogue_Release CMakeFiles/FloppyRogue.dir/src/main.cpp.o CMakeFiles/FloppyRogue.dir/engine/window.cpp.o CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o CMakeFiles/FloppyRogue.dir/engine/input.cpp.o CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o CMakeFiles/FloppyRogue.dir/engine/text.cpp.o CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o
+build FloppyRogue: CXX_EXECUTABLE_LINKER__FloppyRogue_Release CMakeFiles/FloppyRogue.dir/src/main.cpp.o CMakeFiles/FloppyRogue.dir/engine/window.cpp.o CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o CMakeFiles/FloppyRogue.dir/engine/input.cpp.o CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o CMakeFiles/FloppyRogue.dir/engine/text.cpp.o CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o CMakeFiles/FloppyRogue.dir/game/bosses/boss.cpp.o CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o
   CONFIG = Release
   FLAGS = -O3 -DNDEBUG
   LINK_FLAGS = -s -static-libgcc -static-libstdc++ -static
@@ -195,9 +177,8 @@ build FloppyRogue: CXX_EXECUTABLE_LINKER__FloppyRogue_Release CMakeFiles/FloppyR
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
   TARGET_FILE = FloppyRogue
-  TARGET_PDB = FloppyRogue.pdb
+  TARGET_PDB = FloppyRogue.dbg
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
 
 
@@ -244,14 +225,14 @@ build all: phony FloppyRogue
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja /home/primordic/projects/Game_development/FloppyRogue/build/cmake_install.cmake: RERUN_CMAKE | /home/primordic/projects/Game_development/FloppyRogue/CMakeLists.txt /usr/share/cmake/Modules/CMakeCXXCompiler.cmake.in /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp /usr/share/cmake/Modules/CMakeCXXInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeCompilerIdDetection.cmake /usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake /usr/share/cmake/Modules/CMakeDetermineCompiler.cmake /usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake /usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake /usr/share/cmake/Modules/CMakeDetermineCompilerSupport.cmake /usr/share/cmake/Modules/CMakeDetermineSystem.cmake /usr/share/cmake/Modules/CMakeFindBinUtils.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakeNinjaFindMake.cmake /usr/share/cmake/Modules/CMakeParseImplicitIncludeInfo.cmake /usr/share/cmake/Modules/CMakeParseImplicitLinkInfo.cmake /usr/share/cmake/Modules/CMakeParseLibraryArchitecture.cmake /usr/share/cmake/Modules/CMakeSystem.cmake.in /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake /usr/share/cmake/Modules/CMakeTestCompilerCommon.cmake /usr/share/cmake/Modules/Compiler/ADSP-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/ARMCC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/ARMClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/AppleClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Borland-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/Clang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Clang-DetermineCompilerInternal.cmake /usr/share/cmake/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Cray-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/CrayClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Diab-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Embarcadero-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Fujitsu-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/GHS-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX-CXXImportStd.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/Compiler/HP-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/IAR-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake /usr/share/cmake/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Intel-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/MSVC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/NVHPC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/NVIDIA-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/OrangeC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/PGI-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/PathScale-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/PellesC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Renesas-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/SCO-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/TI-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/TIClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Tasking-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Watcom-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/XL-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake /usr/share/cmake/Modules/Internal/CMakeInspectCXXLinker.cmake /usr/share/cmake/Modules/Internal/FeatureTesting.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Determine-CXX.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake
+build build.ninja /home/primordic/projects/Game_development/FloppyRogue/build/cmake_install.cmake: RERUN_CMAKE | /home/primordic/projects/Game_development/FloppyRogue/CMakeLists.txt /usr/share/cmake/Modules/CMakeCXXInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build /home/primordic/projects/Game_development/FloppyRogue/CMakeLists.txt /usr/share/cmake/Modules/CMakeCXXCompiler.cmake.in /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp /usr/share/cmake/Modules/CMakeCXXInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeCompilerIdDetection.cmake /usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake /usr/share/cmake/Modules/CMakeDetermineCompiler.cmake /usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake /usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake /usr/share/cmake/Modules/CMakeDetermineCompilerSupport.cmake /usr/share/cmake/Modules/CMakeDetermineSystem.cmake /usr/share/cmake/Modules/CMakeFindBinUtils.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakeNinjaFindMake.cmake /usr/share/cmake/Modules/CMakeParseImplicitIncludeInfo.cmake /usr/share/cmake/Modules/CMakeParseImplicitLinkInfo.cmake /usr/share/cmake/Modules/CMakeParseLibraryArchitecture.cmake /usr/share/cmake/Modules/CMakeSystem.cmake.in /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake /usr/share/cmake/Modules/CMakeTestCompilerCommon.cmake /usr/share/cmake/Modules/Compiler/ADSP-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/ARMCC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/ARMClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/AppleClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Borland-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/Clang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Clang-DetermineCompilerInternal.cmake /usr/share/cmake/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Cray-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/CrayClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Diab-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Embarcadero-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Fujitsu-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/GHS-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX-CXXImportStd.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/Compiler/HP-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/IAR-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake /usr/share/cmake/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Intel-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/MSVC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/NVHPC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/NVIDIA-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/OrangeC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/PGI-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/PathScale-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/PellesC-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Renesas-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/SCO-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/TI-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/TIClang-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Tasking-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/Watcom-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/XL-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake /usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake /usr/share/cmake/Modules/Internal/CMakeInspectCXXLinker.cmake /usr/share/cmake/Modules/Internal/FeatureTesting.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Determine-CXX.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake: phony
+build /home/primordic/projects/Game_development/FloppyRogue/CMakeLists.txt /usr/share/cmake/Modules/CMakeCXXInformation.cmake /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake/Modules/CMakeGenericSystem.cmake /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake/Modules/CMakeLanguageInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake/Modules/Compiler/GNU.cmake /usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake /usr/share/cmake/Modules/Platform/Linker/GNU.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake/Modules/Platform/Linux-GNU.cmake /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake/Modules/Platform/Linux.cmake /usr/share/cmake/Modules/Platform/UnixPaths.cmake CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake: phony
 
 
 #############################################

@@ -9,11 +9,18 @@
 #include "../game/player/projectile_system.h"
 #include "../game/enemies/enemy.h"
 #include "../game/enemies/enemy_database.h"
+#include "../game/bosses/boss.h"
 #include "../game/rooms/room.h"
 #include "../game/ui/hud.h"
 #include "../engine/collision.h"
 
-enum class GameState { PLAYING, WON, LOST };
+enum class GameState { PLAYING, BOSS_FIGHT, WON, LOST };
+
+Boss SpawnBoss() {
+    Boss boss;
+    boss.pos = { 146.0f, 20.0f };
+    return boss;
+}
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     if (!Window::Create(1280, 720, "FloppyRogue")) return 1;
@@ -36,6 +43,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
     enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
 
+    Boss boss;
+
     std::vector<Projectile> playerShots;
     std::vector<Projectile> enemyShots;
     const float projectileSpeed = 140.0f;
@@ -47,6 +56,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         enemies.clear();
         enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
         enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
+        boss = Boss{};
+        boss.alive = false; // not spawned until PLAYING is cleared
         playerShots.clear();
         enemyShots.clear();
         state = GameState::PLAYING;
@@ -56,17 +67,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         float dt = timer.Tick();
         Input::Update();
 
-        if (state == GameState::PLAYING) {
+        if (state == GameState::PLAYING || state == GameState::BOSS_FIGHT) {
             PlayerLogic::HandleMovement(player, dt);
             PlayerLogic::UpdateTimers(player, dt);
             player.pos = room.ClampToRoom(player.pos, (float)player.size, (float)player.size);
 
-            if (Input::IsPressed(VK_SPACE)) {
-                ProjectileSystem::Spawn(playerShots,
-                    { player.pos.x + player.size / 2.0f, player.pos.y },
-                    { 0.0f, -projectileSpeed });
-            }
+            int shootKeysPressed = 0;
+Vec2 shootDir = { 0.0f, 0.0f };
 
+if (Input::IsPressed(VK_UP))    { shootKeysPressed++; shootDir = { 0.0f, -1.0f }; }
+if (Input::IsPressed(VK_DOWN))  { shootKeysPressed++; shootDir = { 0.0f,  1.0f }; }
+if (Input::IsPressed(VK_LEFT))  { shootKeysPressed++; shootDir = { -1.0f, 0.0f }; }
+if (Input::IsPressed(VK_RIGHT)) { shootKeysPressed++; shootDir = { 1.0f,  0.0f }; }
+
+if (shootKeysPressed == 1) {
+    Vec2 spawnPos = {
+        player.pos.x + player.size / 2.0f,
+        player.pos.y + player.size / 2.0f
+    };
+    ProjectileSystem::Spawn(playerShots, spawnPos,
+        { shootDir.x * projectileSpeed, shootDir.y * projectileSpeed });
+}
+        }
+
+        if (state == GameState::PLAYING) {
             bool anyAlive = false;
             for (auto& enemy : enemies) {
                 EnemyAI::Update(enemy, player.pos, dt, enemyShots);
@@ -77,7 +101,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
                     PlayerLogic::TakeDamage(player, contactDamage, invincibleDuration);
                 }
-
                 if (enemy.alive) anyAlive = true;
             }
 
@@ -87,12 +110,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             if (player.hp <= 0) {
                 state = GameState::LOST;
             } else if (!anyAlive) {
+                boss = SpawnBoss();
+                enemyShots.clear();
+                state = GameState::BOSS_FIGHT;
+            }
+        } else if (state == GameState::BOSS_FIGHT) {
+            BossAI::Update(boss, player.pos, dt, enemyShots);
+            ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
+            ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
+                                                        enemyShotDamage, invincibleDuration, dt);
+
+            if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
+                int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
+                PlayerLogic::TakeDamage(player, dmg, invincibleDuration);
+            }
+
+            if (player.hp <= 0) {
+                state = GameState::LOST;
+            } else if (!boss.alive) {
                 state = GameState::WON;
             }
         } else {
-            if (Input::IsPressed('R')) {
-                ResetGame();
-            }
+            if (Input::IsPressed('R')) ResetGame();
         }
 
         Renderer::Clear(0xFF1A1A1A);
@@ -100,10 +139,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         uint32_t playerColor = player.IsInvincible() ? 0xFFFF8888 : 0xFF00FF88;
         Renderer::DrawRect((int)player.pos.x, (int)player.pos.y, player.size, player.size, playerColor);
 
-        for (auto& enemy : enemies) {
-            if (!enemy.alive) continue;
-            uint32_t color = (enemy.aiType == AIType::SHOOTER) ? 0xFFFF9933 : 0xFFFF3333;
-            Renderer::DrawRect((int)enemy.pos.x, (int)enemy.pos.y, (int)enemy.w, (int)enemy.h, color);
+        if (state == GameState::PLAYING) {
+            for (auto& enemy : enemies) {
+                if (!enemy.alive) continue;
+                uint32_t color = (enemy.aiType == AIType::SHOOTER) ? 0xFFFF9933 : 0xFFFF3333;
+                Renderer::DrawRect((int)enemy.pos.x, (int)enemy.pos.y, (int)enemy.w, (int)enemy.h, color);
+            }
+        }
+
+        if (state == GameState::BOSS_FIGHT && boss.alive) {
+            uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : 0xFFAA33FF;
+            Renderer::DrawRect((int)boss.pos.x, (int)boss.pos.y, (int)boss.w, (int)boss.h, bossColor);
+            HUD::DrawBossHealthBar(boss);
         }
 
         ProjectileSystem::Draw(playerShots, (int)projectileSize, 0xFFFFFF00);

@@ -24,4 +24,12 @@ void DrawRoomClearedBanner() {
     Text::DrawString(msg, (320 - w) / 2, 85, 0xFF44FF88, 1);
 }
 
+void DrawBossHealthBar(const Boss& boss) {
+    int barWidth = 200;
+    int fillWidth = (int)(barWidth * (boss.hp / (float)boss.maxHp));
+    int barX = (320 - barWidth) / 2;
+    Renderer::DrawRect(barX, 8, barWidth, 5, 0xFF444444);
+    Renderer::DrawRect(barX, 8, fillWidth, 5, 0xFFAA33FF);
+}
+
 } // namespace HUD
