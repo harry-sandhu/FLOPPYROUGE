@@ -1,8 +1,9 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: phase 10 final report after the content, tuning, polish, UI,
-size, and smoke-test passes. The run is still comfortably under the contest
-limit.
+Last updated: post-phase-10 — dungeon generation rewritten to a proper
+dead-end algorithm with per-floor grid scaling, plus a new curse-room
+risk/reward system and placeable bombs. Still comfortably under the
+contest limit.
 
 ## Contest constraints (don't lose sight of these)
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
@@ -11,6 +12,7 @@ limit.
 - Last measured release build size: **281,600 bytes**,
   **275.0 KB**, **19.1%** of the 1,474,560-byte cap,
   with **1,192,960 bytes** remaining
+  *(pending re-measure after the dungeon/curse/bomb changes below)*
 
 ## Done
 - [x] Win32 window creation + message pump (`engine/window`)
@@ -59,6 +61,28 @@ limit.
       data_parser and enemy_database (fixed-size char buffers instead)
 - [x] Static-linked runtime (-static-libgcc -static-libstdc++ -static) —
       confirmed no libwinpthread-1.dll dependency at runtime under Wine
+- [x] Dungeon generation rewritten to the proper dead-end algorithm: START
+      placed at grid center, normal rooms grown outward from any existing
+      room (not one linear path), boss placed on the farthest degree-1 dead
+      end from start, treasure and curse placed on two other distinct
+      dead ends so every special room has exactly one door (`game/dungeon`)
+- [x] Grid size and normal-room count now scale per floor instead of being
+      fixed: 10x10/14 rooms on floor 1, 20x20/20 rooms on floor 2,
+      30x30/26 rooms on floor 3 (`game/dungeon`)
+- [x] Curse rooms split into two variants on generation: enemy-only (locked
+      like a normal combat room until cleared) or item-only (walk-in, as
+      before) — real risk/reward instead of guaranteed free loot
+      (`game/dungeon`, `game/rooms/room`)
+- [x] Curse damage now floor-aware and heart-accurate: half a heart on
+      entry and half a heart on exit for floors 1-2, a full heart each way
+      on the final floor, with a proper 0.5s invincibility window on both
+      hits so they can't double-trigger (`game/dungeon`)
+- [x] Heart and bomb pickups: clearing an enemy-curse room has a chance to
+      drop one or the other (`game/dungeon`, `game/rooms/room`)
+- [x] Placeable bombs: player can hold multiple, drop one with a 3-second
+      fuse, and it deals AoE damage to enemies/boss in radius on
+      detonation, with fuse-glow and explosion-flash rendering
+      (`src/main.cpp`)
 
 ## In progress / next up
 - [x] Re-measured exe size after the dungeon/item/enemy/boss additions
@@ -66,16 +90,21 @@ limit.
       observed before the timeout
 - [x] Final size report recorded with exact bytes, KB, budget usage, and
       remaining headroom
+- [ ] Re-measure exe size and re-run the Wine smoke test after the
+      dungeon-generation rewrite and the curse/bomb system additions
 - [ ] Procedural sprite generation (`engine/procgen`) to replace flat-color
       rectangles with real pixel-art-style shapes
 - [ ] Audio system (`engine/audio`) for shoot/hit/death/boss SFX and music
 - [ ] Camera system (`engine/camera`) for world -> screen offset tracking
 - [ ] Animation system (`engine/animation`) for frame-timer sprite indexing
 - [ ] Juice/polish pass: hit-stop, particles, screen shake refinement
-- [ ] Difficulty tuning / playtesting pass
+- [ ] Difficulty tuning / playtesting pass, including the new bigger floor
+      2/3 grids and higher room counts
 - [ ] UPX packaging step for final submission
 - [x] Final size check against the 1,474,560 byte cap + submission
 - [ ] Full interactive run verification
+- [ ] On-screen bomb count indicator in the HUD (currently no visible
+      counter for `player.bombCount`)
 
 ## Known shortcuts taken
 - Rooms are generated as a graph and shown in the mini-map, but the playfield
@@ -84,5 +113,10 @@ limit.
 - No audio yet, so hits, shots, deaths, and boss attacks are silent
 - No camera layer yet because the gameplay still fits inside one active room
 - Item rewards are functional, but there is no full inventory UI yet
-- The dungeon now spans three floors, but the floor layouts and enemy mix
-  still need tuning
+- The dungeon now spans three floors with per-floor grid/room-count scaling,
+  but the enemy mix and curse/heart/bomb drop rates still need playtesting
+  and tuning
+- Room struct still stores full int connection indices and float bounds
+  rather than the packed 2-byte room representation suggested for the size
+  budget — not yet needed since the build is well under the size cap, but
+  worth revisiting if headroom gets tight

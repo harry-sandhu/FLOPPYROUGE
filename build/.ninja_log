@@ -47,3 +47,7 @@
 3	1785	1786306230181084173	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	c2198190a95c0122
 2	1526	1786306375948097334	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
 1526	1594	1786306377472168957	FloppyRogue	30ea0159e7b259bc
+2	780	1786307106381708944	CMakeFiles/FloppyRogue.dir/game/dungeon/dungeon.cpp.o	3121902b599c7723
+2	1197	1786307106381905938	CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o	1834080f0d17300d
+2	1636	1786307106380560614	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
+1636	1702	1786307108014586899	FloppyRogue	30ea0159e7b259bc
