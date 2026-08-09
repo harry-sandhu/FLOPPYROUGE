@@ -11,11 +11,11 @@
 #include "../game/enemies/enemy.h"
 #include "../game/enemies/enemy_database.h"
 #include "../game/bosses/boss.h"
-#include "../game/rooms/room.h"
+#include "../game/dungeon/dungeon.h"
 #include "../game/ui/hud.h"
 #include "../engine/collision.h"
 
-enum class GameState { PLAYING, BOSS_FIGHT, WON, LOST };
+enum class GameState { RUNNING, WON, LOST };
 
 Boss SpawnBoss() {
     Boss boss;
@@ -31,99 +31,131 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ItemDatabase::Load("data/items.txt");
 
     Timer timer;
-    Room room;
+    Dungeon dungeon;
 
     Player player;
-    player.pos = { 150.0f, 130.0f };
-    const int contactDamage = 10;
-    const float invincibleDuration = 0.75f;
-
-    GameState state = GameState::PLAYING;
-
     std::vector<Enemy> enemies;
-    enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
-    enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
-
     Boss boss;
-
     std::vector<Projectile> playerShots;
     std::vector<Projectile> enemyShots;
+
+    const int contactDamage = 10;
+    const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
 
-    auto ResetGame = [&]() {
-        player = Player{};
-        player.pos = { 150.0f, 130.0f };
+    GameState state = GameState::RUNNING;
+
+    auto LoadRoomEncounter = [&]() {
+        const Room& room = dungeon.CurrentRoom();
+
         enemies.clear();
-        enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
-        enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
-        boss = Boss{};
-        boss.alive = false; // not spawned until PLAYING is cleared
-        playerShots.clear();
         enemyShots.clear();
-        state = GameState::PLAYING;
+        playerShots.clear();
+        boss = Boss{};
+        boss.alive = false;
+
+        if (room.type == RoomType::NORMAL) {
+            enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
+            enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
+        } else if (room.type == RoomType::BOSS) {
+            boss = SpawnBoss();
+        }
     };
+
+    auto ResetRun = [&]() {
+        player = Player{};
+        state = GameState::RUNNING;
+
+        uint32_t seedBase = (uint32_t)GetTickCount();
+        bool generated = false;
+        for (int attempt = 0; attempt < 8 && !generated; ++attempt) {
+            generated = dungeon.Generate(seedBase + (uint32_t)attempt * 17u);
+        }
+
+        if (!generated) {
+            state = GameState::LOST;
+            return;
+        }
+
+        dungeon.PlacePlayerAtCurrentRoomCenter(player);
+        LoadRoomEncounter();
+    };
+
+    ResetRun();
 
     while (Window::PollEvents()) {
         float dt = timer.Tick();
         Input::Update();
 
-        if (state == GameState::PLAYING || state == GameState::BOSS_FIGHT) {
+        if (state == GameState::RUNNING) {
             PlayerLogic::UpdateTimers(player, dt);
             PlayerLogic::HandleMovement(player, dt);
+
+            if (dungeon.TryTransition(player)) {
+                LoadRoomEncounter();
+            }
+
+            const Room& room = dungeon.CurrentRoom();
             player.pos = room.ClampToRoom(player.pos, (float)player.size, (float)player.size);
             PlayerLogic::HandleShooting(player, dt, playerShots);
-        }
 
-        if (state == GameState::PLAYING) {
-            bool anyAlive = false;
-            for (auto& enemy : enemies) {
-                EnemyAI::Update(enemy, player.pos, dt, enemyShots);
-                enemy.pos = room.ClampToRoom(enemy.pos, enemy.w, enemy.h);
+            if (room.type == RoomType::NORMAL) {
+                bool anyAlive = false;
+                for (auto& enemy : enemies) {
+                    EnemyAI::Update(enemy, player.pos, dt, enemyShots);
+                    enemy.pos = room.ClampToRoom(enemy.pos, enemy.w, enemy.h);
 
-                ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemy, projectileSize, dt);
+                    ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemy, projectileSize, dt);
 
-                if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
-                    PlayerLogic::TakeDamage(player, contactDamage, invincibleDuration);
+                    if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
+                        PlayerLogic::TakeDamage(player, contactDamage, invincibleDuration);
+                    }
+                    if (enemy.alive) anyAlive = true;
                 }
-                if (enemy.alive) anyAlive = true;
-            }
 
-            ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
-                                                        invincibleDuration, dt);
+                ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
+                                                            invincibleDuration, dt);
+
+                if (!anyAlive) {
+                    dungeon.MarkCurrentRoomCleared();
+                    enemies.clear();
+                    enemyShots.clear();
+                    playerShots.clear();
+                }
+            } else if (room.type == RoomType::BOSS) {
+                BossAI::Update(boss, player.pos, dt, enemyShots);
+                ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
+                ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
+                                                            invincibleDuration, dt);
+
+                if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
+                    int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
+                    PlayerLogic::TakeDamage(player, dmg, invincibleDuration);
+                }
+
+                if (!boss.alive) {
+                    dungeon.MarkCurrentRoomCleared();
+                    enemyShots.clear();
+                    playerShots.clear();
+                    state = GameState::WON;
+                }
+            }
 
             if (player.hp <= 0) {
                 state = GameState::LOST;
-            } else if (!anyAlive) {
-                boss = SpawnBoss();
-                enemyShots.clear();
-                state = GameState::BOSS_FIGHT;
-            }
-        } else if (state == GameState::BOSS_FIGHT) {
-            BossAI::Update(boss, player.pos, dt, enemyShots);
-            ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
-            ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
-                                                        invincibleDuration, dt);
-
-            if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
-                int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
-                PlayerLogic::TakeDamage(player, dmg, invincibleDuration);
-            }
-
-            if (player.hp <= 0) {
-                state = GameState::LOST;
-            } else if (!boss.alive) {
-                state = GameState::WON;
             }
         } else {
-            if (Input::IsPressed('R')) ResetGame();
+            if (Input::IsPressed('R')) ResetRun();
         }
+
+        const Room& room = dungeon.CurrentRoom();
 
         Renderer::Clear(0xFF1A1A1A);
 
         uint32_t playerColor = player.IsInvincible() ? 0xFFFF8888 : 0xFF00FF88;
         Renderer::DrawRect((int)player.pos.x, (int)player.pos.y, player.size, player.size, playerColor);
 
-        if (state == GameState::PLAYING) {
+        if (room.type == RoomType::NORMAL) {
             for (auto& enemy : enemies) {
                 if (!enemy.alive) continue;
                 uint32_t color = (enemy.aiType == AIType::SHOOTER) ? 0xFFFF9933 : 0xFFFF3333;
@@ -131,7 +163,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             }
         }
 
-        if (state == GameState::BOSS_FIGHT && boss.alive) {
+        if (room.type == RoomType::BOSS && boss.alive) {
             uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : 0xFFAA33FF;
             Renderer::DrawRect((int)boss.pos.x, (int)boss.pos.y, (int)boss.w, (int)boss.h, bossColor);
             HUD::DrawBossHealthBar(boss);
@@ -142,7 +174,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         HUD::DrawHealthBar(player);
         if (state == GameState::LOST) HUD::DrawGameOverBanner();
-        if (state == GameState::WON) HUD::DrawRoomClearedBanner();
+        if (state == GameState::WON || (state == GameState::RUNNING && room.type == RoomType::NORMAL && room.cleared)) {
+            HUD::DrawRoomClearedBanner();
+        }
 
         Renderer::Present();
     }

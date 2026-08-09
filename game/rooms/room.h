@@ -1,14 +1,34 @@
 #pragma once
+#include <vector>
 #include "../../engine/core/types.h"
 
-// Minimal room bounds for now — walls/doors/spawn points get added
-// once dungeon generation exists. This just defines the playable
-// rectangle so entities can't leave it.
+enum class RoomType {
+    START,
+    NORMAL,
+    BOSS,
+    TREASURE,
+    CURSE
+};
+
 struct Room {
+    RoomType type = RoomType::NORMAL;
     float x = 0.0f;
     float y = 0.0f;
     float width = 320.0f;
     float height = 180.0f;
+
+    Vec2 gridPos = { 0.0f, 0.0f };
+
+    bool cleared = false;
+    bool gateOpen = false;
+
+    int north = -1;
+    int south = -1;
+    int east = -1;
+    int west = -1;
+
+    std::vector<int> enemySpawnList;
+    std::vector<int> itemSpawnList;
 
     // Clamps a position (top-left of an entity's bounding box) so the
     // entity of the given size stays fully inside the room.
