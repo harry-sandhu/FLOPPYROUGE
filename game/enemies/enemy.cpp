@@ -4,12 +4,22 @@
 #include <cmath>
 
 namespace {
-    constexpr int ENEMY_PROJECTILE_DAMAGE = 7;
+    // Damage is in half-heart units (player has 6 hp = 3 hearts). Normal
+    // enemies poke for half a heart; special-variant enemies (Reinforcer/
+    // Creeper/Death Ring) hit for a full heart.
+    constexpr int ENEMY_PROJECTILE_DAMAGE_NORMAL = 1;
+    constexpr int ENEMY_PROJECTILE_DAMAGE_SPECIAL = 2;
     constexpr int SUMMONER_MAX_ADDITIONAL_ENEMIES = 5;
     constexpr float ENEMY_PROJECTILE_RANGE = 999999.0f;
-    constexpr int CREEP_PROJECTILE_DAMAGE = 4;
+    constexpr int CREEP_PROJECTILE_DAMAGE = 1;
     constexpr float CREEP_PROJECTILE_LIFE = 0.9f;
     constexpr float PI = 3.14159265f;
+
+    int EnemyProjectileDamage(const Enemy& enemy) {
+        return (enemy.specialType == EnemySpecialType::NONE)
+            ? ENEMY_PROJECTILE_DAMAGE_NORMAL
+            : ENEMY_PROJECTILE_DAMAGE_SPECIAL;
+    }
 
     Vec2 DirectionTo(Vec2 from, Vec2 to, float& outDist) {
         Vec2 d = { to.x - from.x, to.y - from.y };
@@ -34,7 +44,7 @@ namespace {
                     ProjectileSystem::Spawn(
                         out, enemy.pos,
                         { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
-                        ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                      EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
                     );
                 }
                 break;
@@ -46,7 +56,7 @@ namespace {
                     ProjectileSystem::Spawn(
                         out, enemy.pos,
                         { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
-                        ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                       EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
                     );
                 }
                 break;
@@ -58,7 +68,7 @@ namespace {
                     ProjectileSystem::Spawn(
                         out, enemy.pos,
                         { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
-                        ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                       EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
                     );
                 }
                 enemy.spiralOffset += 0.35f;
@@ -69,7 +79,7 @@ namespace {
                 ProjectileSystem::Spawn(
                     out, enemy.pos,
                     { dir.x * enemy.shotSpeed, dir.y * enemy.shotSpeed },
-                    ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                   EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
                 );
                 break;
         }

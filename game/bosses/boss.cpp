@@ -1,10 +1,11 @@
 #include "boss.h"
 #include "../player/projectile_system.h"
+#include "../enemies/enemy_database.h"
 #include <cmath>
 
 namespace {
     constexpr float PI = 3.14159265f;
-    constexpr int BOSS_PROJECTILE_DAMAGE = 8;
+    constexpr int BOSS_PROJECTILE_DAMAGE = 2; // 1 heart — boss shots are patterned/dodgeable
     constexpr float BOSS_PROJECTILE_RANGE = 999999.0f;
 
     Vec2 Normalize(Vec2 v) {
@@ -88,7 +89,6 @@ namespace {
         }
     }
 
-    // Dense ring, used by the tougher variants as a "screen-filler" attack.
     void FireDenseRing(Boss& boss, std::vector<Projectile>& out) {
         const int count = 14;
         const float speed = 60.0f;
@@ -99,6 +99,22 @@ namespace {
                 { std::cos(angle) * speed, std::sin(angle) * speed },
                 BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
             );
+        }
+    }
+
+    // Duke-of-Flies-style summon: spawns small adds around the boss, capped
+    // by boss.maxAdds so the room can't get flooded.
+    void SummonAdds(Boss& boss, const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
+        if ((int)roomAdds.size() + (int)spawnedAdds.size() >= boss.maxAdds) return;
+
+        const int count = 2;
+        for (int i = 0; i < count; ++i) {
+            float angle = (2.0f * PI) * ((float)i / count) + (float)boss.attackIndex * 0.6f;
+            Vec2 spawnPos = {
+                boss.pos.x + std::cos(angle) * 24.0f,
+                boss.pos.y + std::sin(angle) * 24.0f
+            };
+            spawnedAdds.push_back(EnemyDatabase::Spawn("Fly", spawnPos));
         }
     }
 
@@ -150,7 +166,6 @@ namespace {
         }
     }
 
-    // "Widow"-style: leans on spiral + cardinal pressure, charges less often.
     void UpdateVariant3(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
         boss.attackTimer -= dt;
         if (boss.attackTimer <= 0.0f) {
@@ -166,7 +181,6 @@ namespace {
         }
     }
 
-    // Finale boss: combines every pattern, shortest cooldowns, no filler.
     void UpdateVariant4(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
         boss.attackTimer -= dt;
         if (boss.attackTimer <= 0.0f) {
@@ -178,6 +192,24 @@ namespace {
                 case 2: StartCharge(boss, playerPos); break;
                 case 3: FireSpiralBurst(boss, bossProjectiles); break;
                 case 4: FireCardinalBurst(boss, bossProjectiles); break;
+            }
+            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
+        }
+    }
+
+    // Duke-of-Flies style: mostly passive/drifting, leans on adds instead of
+    // dense bullet patterns. Phase 2 adds a spread shot into the rotation.
+    void UpdateVariant5(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
+                        const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
+        boss.attackTimer -= dt;
+        if (boss.attackTimer <= 0.0f) {
+            int stepCount = (boss.phase == 1) ? 2 : 3;
+            int step = boss.attackIndex % stepCount;
+            boss.attackIndex++;
+            switch (step) {
+                case 0: SummonAdds(boss, roomAdds, spawnedAdds); break;
+                case 1: FireRadialBurst(boss, bossProjectiles); break;
+                case 2: FireSpreadShot(boss, playerPos, bossProjectiles); break;
             }
             boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
@@ -209,8 +241,8 @@ namespace {
                 boss.attackCooldownPhase1 = 1.8f;
                 boss.attackCooldownPhase2 = 1.0f;
                 boss.chargeSpeed = 240.0f;
-                boss.contactDamage = 17;
-                boss.chargeContactDamage = 28;
+                boss.contactDamage = 2;
+                boss.chargeContactDamage = 3;
                 break;
             case 4:
                 boss.hp = boss.maxHp = 460;
@@ -218,8 +250,18 @@ namespace {
                 boss.attackCooldownPhase1 = 1.5f;
                 boss.attackCooldownPhase2 = 0.85f;
                 boss.chargeSpeed = 260.0f;
-                boss.contactDamage = 20;
-                boss.chargeContactDamage = 32;
+                boss.contactDamage = 3;
+                boss.chargeContactDamage = 4;
+                break;
+            case 5:
+                boss.hp = boss.maxHp = 300;
+                boss.driftSpeed = 10.0f;
+                boss.attackCooldownPhase1 = 2.6f;
+                boss.attackCooldownPhase2 = 1.6f;
+                boss.chargeSpeed = 180.0f;
+                boss.contactDamage = 2;
+                boss.chargeContactDamage = 3;
+                boss.maxAdds = 5;
                 break;
             case 0:
             default:
@@ -238,7 +280,8 @@ namespace {
 
 namespace BossAI {
 
-void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
+void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
+            const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
     if (!boss.alive) return;
     if (boss.spawnDelayRemaining > 0.0f) {
         boss.spawnDelayRemaining -= dt;
@@ -286,6 +329,7 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
         case 2: UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
         case 3: UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
         case 4: UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
+        case 5: UpdateVariant5(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
         case 0:
         default:
             UpdateVariant0(boss, playerPos, dt, bossProjectiles);
@@ -300,13 +344,15 @@ Boss SpawnBoss2() { return MakeBoss(1); }
 Boss SpawnBoss3() { return MakeBoss(2); }
 Boss SpawnBoss4() { return MakeBoss(3); }
 Boss SpawnBoss5() { return MakeBoss(4); }
+Boss SpawnBoss6() { return MakeBoss(5); }
 
 Boss SpawnBossVariant(int variant) {
-    switch (variant % 5) {
+    switch (variant % 6) {
         case 1: return SpawnBoss2();
         case 2: return SpawnBoss3();
         case 3: return SpawnBoss4();
         case 4: return SpawnBoss5();
+        case 5: return SpawnBoss6();
         case 0:
         default:
             return SpawnBoss1();

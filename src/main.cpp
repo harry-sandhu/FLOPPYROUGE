@@ -40,9 +40,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     float screenShakeTimer = 0.0f;
     float screenShakeStrength = 0.0f;
 
-    const int contactDamage = 8;
     const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
+
+    // Contact damage in half-heart units: normal enemies poke for half a
+    // heart, special-variant enemies (Reinforcer/Creeper/Death Ring) hit
+    // for a full heart. Floor 3's existing DamagePlayer clamp bumps normal
+    // hits up to a full heart automatically once these are this small.
+    auto ContactDamageFor = [](const Enemy& enemy) -> int {
+        return (enemy.specialType == EnemySpecialType::NONE) ? 1 : 2;
+    };
 
     GameState state = GameState::TITLE;
 
@@ -355,7 +362,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                                                   spawnedEnemies, enemyShots, dt);
 
                         if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
-                            DamagePlayer(contactDamage);
+                            DamagePlayer(ContactDamageFor(enemy));
                         }
                         if (enemy.alive) anyAlive = true;
                     }
@@ -380,7 +387,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         playerShots.clear();
                     }
                 } else if (room->type == RoomType::BOSS) {
-                    BossAI::Update(boss, player.pos, dt, enemyShots);
+                    std::vector<Enemy> spawnedBossAdds;
+                    BossAI::Update(boss, player.pos, dt, enemyShots, enemies, spawnedBossAdds);
+                    if (!spawnedBossAdds.empty()) {
+                        for (auto& add : spawnedBossAdds) {
+                            ScaleEnemyForFloor(add);
+                        }
+                        enemies.insert(enemies.end(), spawnedBossAdds.begin(), spawnedBossAdds.end());
+                    }
+
+                    std::vector<Enemy> scratchSpawned; // boss-room adds never summon further adds
+                    for (auto& add : enemies) {
+                        EnemyAI::Update(add, player.pos, dt, enemies, scratchSpawned, enemyShots);
+                        add.pos = room->ClampToRoom(add.pos, add.w, add.h);
+
+                        ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, add, projectileSize,
+                                                                  scratchSpawned, enemyShots, dt);
+
+                        if (add.alive && Collision::CheckAABB(player.GetRect(), add.GetRect())) {
+                            DamagePlayer(ContactDamageFor(add));
+                        }
+                    }
+                    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+                                                 [](const Enemy& e) { return !e.alive; }),
+                                 enemies.end());
+
                     ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
                     if (ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
                                                                    invincibleDuration, dungeon.CurrentFloor(), dt)) {
@@ -394,6 +425,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                     if (!boss.alive) {
                         dungeon.MarkCurrentRoomCleared();
+                        enemies.clear();
                         enemyShots.clear();
                         playerShots.clear();
                         AddScreenShake(0.22f, 2.6f);
@@ -463,7 +495,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             }
         }
 
-        if (roomPtr && roomPtr->type == RoomType::NORMAL) {
+        if (roomPtr && (roomPtr->type == RoomType::NORMAL || roomPtr->type == RoomType::BOSS)) {
             for (auto& enemy : enemies) {
                 if (!enemy.alive) continue;
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "../../engine/core/types.h"
 #include "../player/projectile.h"
+#include "../enemies/enemy.h"
 #include <vector>
 
 enum class BossAttackType {
@@ -37,14 +38,20 @@ struct Boss {
     float stickyTimer = 0.0f;
     float stickySpeedMultiplier = 1.0f;
 
-    int contactDamage = 15;
-    int chargeContactDamage = 25;
+    // Damage in half-heart units (player has 6 hp = 3 hearts). Untelegraphed
+    // contact is 1 heart; a charge/slam (dodgeable) is 1.5 hearts.
+    int contactDamage = 2;
+    int chargeContactDamage = 3;
+    int maxAdds = 4;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
 };
 
 namespace BossAI {
-    void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles);
+    // roomAdds: currently-alive adds this boss has summoned (for the cap).
+    // spawnedAdds: newly-summoned adds this frame, appended by the caller.
+    void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
+                const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds);
 }
 
 Boss SpawnBoss1();
@@ -52,4 +59,5 @@ Boss SpawnBoss2();
 Boss SpawnBoss3();
 Boss SpawnBoss4();
 Boss SpawnBoss5();
+Boss SpawnBoss6();
 Boss SpawnBossVariant(int variant);

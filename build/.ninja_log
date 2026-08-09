@@ -30,3 +30,10 @@
 2	1607	1786299550633904017	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	c2198190a95c0122
 2	1875	1786299550632826020	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
 1875	1942	1786299552505864747	FloppyRogue	30ea0159e7b259bc
+2	385	1786300601734965303	CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o	26bb411a715f0b95
+3	436	1786300601735108717	CMakeFiles/FloppyRogue.dir/game/bosses/boss.cpp.o	8c40d1da097f1369
+3	1328	1786300601735278650	CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o	1834080f0d17300d
+2	1396	1786300601734640666	CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o	d1444e48667df36d
+2	1571	1786300601734794128	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	c2198190a95c0122
+2	1696	1786300601733833212	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
+1696	1762	1786300603427766486	FloppyRogue	30ea0159e7b259bc

@@ -197,7 +197,7 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
                 Enemy child = EnemyDatabase::Spawn(enemy.templateName, { enemy.pos.x + offset.x, enemy.pos.y + offset.y });
                 spawnedEnemies.push_back(child);
             }
-        } else if (enemy.specialType == EnemySpecialType::DEATH_RING) {
+      } else if (enemy.specialType == EnemySpecialType::DEATH_RING) {
             const int count = 12;
             const float speed = 95.0f;
             for (int i = 0; i < count; ++i) {
@@ -206,7 +206,7 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
                     enemyProjectiles,
                     enemy.pos,
                     { std::cos(angle) * speed, std::sin(angle) * speed },
-                    8,
+                    2,
                     999999.0f
                 );
             }
