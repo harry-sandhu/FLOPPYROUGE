@@ -27,6 +27,8 @@ struct Room {
     int east = -1;
     int west = -1;
 
+    int bossVariant = 0;
+
     std::vector<int> enemySpawnList;
     std::vector<int> itemSpawnList;
 

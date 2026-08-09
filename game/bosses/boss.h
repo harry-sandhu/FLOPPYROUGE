@@ -15,6 +15,7 @@ struct Boss {
     int hp = 300;
     int maxHp = 300;
     int phase = 1;
+    int variant = 0;
     bool alive = true;
 
     float driftSpeed = 15.0f;
@@ -39,3 +40,8 @@ struct Boss {
 namespace BossAI {
     void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles);
 }
+
+Boss SpawnBoss1();
+Boss SpawnBoss2();
+Boss SpawnBoss3();
+Boss SpawnBossVariant(int variant);

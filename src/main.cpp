@@ -47,6 +47,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     auto LoadRoomEncounter = [&]() {
         const Room& room = dungeon.CurrentRoom();
+        const Vec2 spawnPoints[] = {
+            { 60.0f, 30.0f },
+            { 220.0f, 30.0f },
+            { 60.0f, 110.0f },
+            { 220.0f, 110.0f },
+            { 140.0f, 60.0f }
+        };
 
         enemies.clear();
         enemyShots.clear();
@@ -55,10 +62,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         boss.alive = false;
 
         if (room.type == RoomType::NORMAL) {
-            enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
-            enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
+            if (!room.enemySpawnList.empty()) {
+                for (int i = 0; i < (int)room.enemySpawnList.size(); ++i) {
+                    Vec2 spawnPos = spawnPoints[i % (int)(sizeof(spawnPoints) / sizeof(spawnPoints[0]))];
+                    enemies.push_back(EnemyDatabase::Spawn(room.enemySpawnList[i], spawnPos));
+                }
+            } else {
+                enemies.push_back(EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f }));
+                enemies.push_back(EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f }));
+            }
         } else if (room.type == RoomType::BOSS) {
-            boss = SpawnBoss();
+            boss = SpawnBossVariant(room.bossVariant);
         }
     };
 
@@ -101,8 +115,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
             if (room.type == RoomType::NORMAL) {
                 bool anyAlive = false;
+                std::vector<Enemy> spawnedEnemies;
                 for (auto& enemy : enemies) {
-                    EnemyAI::Update(enemy, player.pos, dt, enemyShots);
+                    EnemyAI::Update(enemy, player.pos, dt, enemies, spawnedEnemies, enemyShots);
                     enemy.pos = room.ClampToRoom(enemy.pos, enemy.w, enemy.h);
 
                     ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemy, projectileSize, dt);
@@ -111,6 +126,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         PlayerLogic::TakeDamage(player, contactDamage, invincibleDuration);
                     }
                     if (enemy.alive) anyAlive = true;
+                }
+
+                if (!spawnedEnemies.empty()) {
+                    enemies.insert(enemies.end(), spawnedEnemies.begin(), spawnedEnemies.end());
                 }
 
                 ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
@@ -164,7 +183,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         if (room.type == RoomType::BOSS && boss.alive) {
-            uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : 0xFFAA33FF;
+            uint32_t baseColor = 0xFFAA33FF;
+            if (boss.variant == 1) baseColor = 0xFFFF9933;
+            if (boss.variant == 2) baseColor = 0xFF33FFCC;
+            uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : baseColor;
             Renderer::DrawRect((int)boss.pos.x, (int)boss.pos.y, (int)boss.w, (int)boss.h, bossColor);
             HUD::DrawBossHealthBar(boss);
         }

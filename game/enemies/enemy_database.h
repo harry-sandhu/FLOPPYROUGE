@@ -17,6 +17,8 @@ struct EnemyTemplate {
 
 namespace EnemyDatabase {
     bool Load(const char* path);
+    int Count();
     bool Exists(const char* name);
     Enemy Spawn(const char* name, Vec2 pos);
+    Enemy Spawn(int index, Vec2 pos);
 }

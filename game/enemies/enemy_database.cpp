@@ -20,6 +20,11 @@ namespace {
         }
         return nullptr;
     }
+
+    const EnemyTemplate* FindByIndex(int index) {
+        if (index < 0 || index >= g_templateCount) return nullptr;
+        return &g_templates[index];
+    }
 }
 
 namespace EnemyDatabase {
@@ -47,6 +52,10 @@ bool Load(const char* path) {
     return true;
 }
 
+int Count() {
+    return g_templateCount;
+}
+
 bool Exists(const char* name) {
     return Find(name) != nullptr;
 }
@@ -57,6 +66,26 @@ Enemy Spawn(const char* name, Vec2 pos) {
 
     const EnemyTemplate* t = Find(name);
     if (!t) return e; // unknown name -> default CHASER, hp 30
+
+    e.aiType = t->aiType;
+    e.hp = t->hp;
+    e.maxHp = t->hp;
+    e.speed = t->speed;
+    e.w = t->w;
+    e.h = t->h;
+    e.shootCooldown = t->shootCooldown;
+    e.shootRange = t->shootRange;
+    e.preferredDistance = t->preferredDistance;
+    e.shotSpeed = t->shotSpeed;
+    return e;
+}
+
+Enemy Spawn(int index, Vec2 pos) {
+    Enemy e;
+    e.pos = pos;
+
+    const EnemyTemplate* t = FindByIndex(index);
+    if (!t) return e;
 
     e.aiType = t->aiType;
     e.hp = t->hp;

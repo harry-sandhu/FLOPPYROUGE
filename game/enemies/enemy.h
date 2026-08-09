@@ -30,5 +30,6 @@ struct Enemy {
 };
 
 namespace EnemyAI {
-    void Update(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles);
+    void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& roomEnemies,
+                std::vector<Enemy>& spawnedEnemies, std::vector<Projectile>& enemyProjectiles);
 }

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <climits>
 #include <queue>
+#include "../enemies/enemy_database.h"
 
 namespace {
     constexpr int CURSE_DAMAGE = 10;
@@ -152,6 +153,7 @@ bool Dungeon::Generate(uint32_t seed) {
         int bossY = RNG::Range(0, gridHeight - 1);
         bossRoomIndex = AddRoomAtCell(bossX, bossY);
         rooms[bossRoomIndex].type = RoomType::BOSS;
+        rooms[bossRoomIndex].bossVariant = RNG::Range(0, 2);
 
         std::vector<int> pathRoomIndices;
         pathRoomIndices.push_back(bossRoomIndex);
@@ -247,6 +249,19 @@ bool Dungeon::Generate(uint32_t seed) {
 
         rooms[treasureIndex].type = RoomType::TREASURE;
         rooms[curseIndex].type = RoomType::CURSE;
+
+        const int enemyCount = EnemyDatabase::Count();
+        for (int i = 0; i < (int)rooms.size(); ++i) {
+            rooms[i].enemySpawnList.clear();
+            rooms[i].itemSpawnList.clear();
+
+            if (rooms[i].type == RoomType::NORMAL && enemyCount > 0) {
+                int spawnCount = 2 + (distFromBoss[i] > 2 ? 1 : 0);
+                for (int j = 0; j < spawnCount; ++j) {
+                    rooms[i].enemySpawnList.push_back(RNG::Range(0, enemyCount - 1));
+                }
+            }
+        }
 
         ApplyRoomDefaults();
         currentRoomIndex = startRoomIndex;
