@@ -36,7 +36,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     std::vector<Projectile> playerShots;
     std::vector<Projectile> enemyShots;
 
-    const int contactDamage = 10;
+    const int contactDamage = 8;
     const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
 
@@ -46,15 +46,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         int floor = dungeon.CurrentFloor();
         float floorOffset = (float)(floor - 1);
 
-        enemy.hp = (int)(enemy.hp * (1.0f + 0.30f * floorOffset));
+        enemy.hp = (int)(enemy.hp * (1.0f + 0.25f * floorOffset));
         if (enemy.hp < 1) enemy.hp = 1;
         enemy.maxHp = enemy.hp;
-        enemy.speed *= 1.0f + 0.10f * floorOffset;
-        enemy.shootCooldown *= 1.0f - 0.08f * floorOffset;
-        if (enemy.shootCooldown < 0.45f) enemy.shootCooldown = 0.45f;
-        enemy.shootRange *= 1.0f + 0.05f * floorOffset;
-        enemy.preferredDistance *= 1.0f + 0.03f * floorOffset;
-        enemy.shotSpeed *= 1.0f + 0.05f * floorOffset;
+        enemy.speed *= 1.0f + 0.08f * floorOffset;
+        enemy.shootCooldown *= 1.0f - 0.06f * floorOffset;
+        if (enemy.shootCooldown < 0.50f) enemy.shootCooldown = 0.50f;
+        enemy.shootRange *= 1.0f + 0.04f * floorOffset;
+        enemy.preferredDistance *= 1.0f + 0.02f * floorOffset;
+        enemy.shotSpeed *= 1.0f + 0.04f * floorOffset;
         enemy.spawnDelayRemaining = 0.5f;
     };
 
@@ -62,15 +62,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         int floor = dungeon.CurrentFloor();
         float floorOffset = (float)(floor - 1);
 
-        boss.hp = (int)(boss.hp * (1.0f + 0.45f * floorOffset));
+        boss.hp = (int)(boss.hp * (1.0f + 0.35f * floorOffset));
         if (boss.hp < 1) boss.hp = 1;
         boss.maxHp = boss.hp;
-        boss.driftSpeed *= 1.0f + 0.08f * floorOffset;
-        boss.attackCooldownPhase1 *= 1.0f - 0.06f * floorOffset;
-        boss.attackCooldownPhase2 *= 1.0f - 0.06f * floorOffset;
-        if (boss.attackCooldownPhase1 < 0.8f) boss.attackCooldownPhase1 = 0.8f;
-        if (boss.attackCooldownPhase2 < 0.55f) boss.attackCooldownPhase2 = 0.55f;
-        boss.chargeSpeed *= 1.0f + 0.08f * floorOffset;
+        boss.driftSpeed *= 1.0f + 0.06f * floorOffset;
+        boss.attackCooldownPhase1 *= 1.0f - 0.05f * floorOffset;
+        boss.attackCooldownPhase2 *= 1.0f - 0.05f * floorOffset;
+        if (boss.attackCooldownPhase1 < 0.85f) boss.attackCooldownPhase1 = 0.85f;
+        if (boss.attackCooldownPhase2 < 0.60f) boss.attackCooldownPhase2 = 0.60f;
+        boss.chargeSpeed *= 1.0f + 0.06f * floorOffset;
         boss.spawnDelayRemaining = 0.5f;
         boss.attackTimer = boss.attackCooldownPhase1;
     };
@@ -83,22 +83,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         switch (enemy.specialType) {
             case EnemySpecialType::REINFORCER:
-                enemy.hp = (int)(enemy.hp * 1.55f) + 8;
-                enemy.speed *= 1.08f;
-                enemy.shootCooldown *= 0.88f;
+                enemy.hp = (int)(enemy.hp * 1.45f) + 6;
+                enemy.speed *= 1.06f;
+                enemy.shootCooldown *= 0.92f;
                 enemy.shootRange *= 1.05f;
                 break;
             case EnemySpecialType::CREEPER:
-                enemy.hp = (int)(enemy.hp * 1.30f) + 4;
-                enemy.speed *= 1.15f;
-                enemy.shootCooldown *= 0.92f;
-                enemy.shootRange *= 1.10f;
+                enemy.hp = (int)(enemy.hp * 1.20f) + 3;
+                enemy.speed *= 1.10f;
+                enemy.shootCooldown *= 0.94f;
+                enemy.shootRange *= 1.08f;
                 break;
             case EnemySpecialType::DEATH_RING:
-                enemy.hp = (int)(enemy.hp * 1.40f) + 6;
-                enemy.speed *= 1.05f;
+                enemy.hp = (int)(enemy.hp * 1.30f) + 5;
+                enemy.speed *= 1.04f;
                 enemy.shootCooldown *= 0.90f;
-                enemy.shotSpeed *= 1.10f;
+                enemy.shotSpeed *= 1.05f;
                 break;
             case EnemySpecialType::NONE:
             default:

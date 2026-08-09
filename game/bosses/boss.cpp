@@ -16,9 +16,9 @@ namespace {
     void FireSpreadShot(Boss& boss, Vec2 playerPos, std::vector<Projectile>& out) {
         Vec2 dir = Normalize({ playerPos.x - boss.pos.x, playerPos.y - boss.pos.y });
         float baseAngle = std::atan2(dir.y, dir.x);
-        const int count = 5;
-        const float spread = 0.5f;
-        const float speed = 90.0f;
+        const int count = 3;
+        const float spread = 0.4f;
+        const float speed = 86.0f;
 
         for (int i = 0; i < count; ++i) {
             float t = (count == 1) ? 0.0f : (float)i / (count - 1) - 0.5f;
@@ -34,8 +34,8 @@ namespace {
     }
 
     void FireRadialBurst(Boss& boss, std::vector<Projectile>& out) {
-        const int count = 12;
-        const float speed = 70.0f;
+        const int count = 8;
+        const float speed = 66.0f;
         for (int i = 0; i < count; ++i) {
             float angle = (2.0f * PI) * ((float)i / count);
             ProjectileSystem::Spawn(
@@ -69,9 +69,9 @@ namespace {
     }
 
     void FireSpiralBurst(Boss& boss, std::vector<Projectile>& out) {
-        const int count = 10;
-        const float speed = 85.0f;
-        float offset = boss.attackIndex * 0.35f;
+        const int count = 8;
+        const float speed = 80.0f;
+        float offset = boss.attackIndex * 0.32f;
         for (int i = 0; i < count; ++i) {
             float angle = (2.0f * PI) * ((float)i / count) + offset;
             ProjectileSystem::Spawn(
@@ -87,8 +87,8 @@ namespace {
     void FireTripleSpread(Boss& boss, Vec2 playerPos, std::vector<Projectile>& out) {
         Vec2 dir = Normalize({ playerPos.x - boss.pos.x, playerPos.y - boss.pos.y });
         float baseAngle = std::atan2(dir.y, dir.x);
-        const float speed = 110.0f;
-        const float spread = 0.22f;
+        const float speed = 104.0f;
+        const float spread = 0.18f;
 
         for (int i = -1; i <= 1; ++i) {
             float angle = baseAngle + spread * (float)i;
@@ -163,26 +163,26 @@ namespace {
 
         switch (variant) {
             case 1:
-                boss.hp = boss.maxHp = 260;
-                boss.driftSpeed = 18.0f;
-                boss.attackCooldownPhase1 = 2.0f;
-                boss.attackCooldownPhase2 = 1.2f;
-                boss.chargeSpeed = 240.0f;
+                boss.hp = boss.maxHp = 250;
+                boss.driftSpeed = 17.0f;
+                boss.attackCooldownPhase1 = 2.1f;
+                boss.attackCooldownPhase2 = 1.25f;
+                boss.chargeSpeed = 230.0f;
                 break;
             case 2:
-                boss.hp = boss.maxHp = 360;
+                boss.hp = boss.maxHp = 340;
                 boss.driftSpeed = 12.0f;
-                boss.attackCooldownPhase1 = 1.8f;
-                boss.attackCooldownPhase2 = 1.0f;
-                boss.chargeSpeed = 260.0f;
+                boss.attackCooldownPhase1 = 1.9f;
+                boss.attackCooldownPhase2 = 1.05f;
+                boss.chargeSpeed = 250.0f;
                 break;
             case 0:
             default:
-                boss.hp = boss.maxHp = 300;
+                boss.hp = boss.maxHp = 290;
                 boss.driftSpeed = 15.0f;
                 boss.attackCooldownPhase1 = 2.5f;
-                boss.attackCooldownPhase2 = 1.5f;
-                boss.chargeSpeed = 220.0f;
+                boss.attackCooldownPhase2 = 1.55f;
+                boss.chargeSpeed = 215.0f;
                 break;
         }
 

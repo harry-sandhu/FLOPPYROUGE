@@ -4,10 +4,10 @@
 #include <cmath>
 
 namespace {
-    constexpr int ENEMY_PROJECTILE_DAMAGE = 8;
-    constexpr int SUMMONER_MAX_ADDITIONAL_ENEMIES = 6;
+    constexpr int ENEMY_PROJECTILE_DAMAGE = 7;
+    constexpr int SUMMONER_MAX_ADDITIONAL_ENEMIES = 5;
     constexpr float ENEMY_PROJECTILE_RANGE = 999999.0f;
-    constexpr int CREEP_PROJECTILE_DAMAGE = 5;
+    constexpr int CREEP_PROJECTILE_DAMAGE = 4;
     constexpr float CREEP_PROJECTILE_LIFE = 0.9f;
     constexpr float PI = 3.14159265f;
 
@@ -103,8 +103,8 @@ namespace {
 
         enemy.shootTimer -= dt;
         if (enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
-            const int count = 8;
-            const float speed = 95.0f;
+            const int count = 6;
+            const float speed = 88.0f;
             for (int i = 0; i < count; ++i) {
                 float angle = (2.0f * PI) * ((float)i / count);
                 ProjectileSystem::Spawn(
