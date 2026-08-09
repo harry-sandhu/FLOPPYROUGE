@@ -149,7 +149,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
     RNG::Seed(seed);
     currentFloor = std::max(1, std::min(floorNumber, totalFloors));
 
-    const bool hasBossRoom = currentFloor < totalFloors;
+    const bool hasBossRoom = true; // Every floor ends with a boss room.
     const int mainPathRooms = 5 + currentFloor;
     const int extraNormalRooms = 1 + currentFloor;
 
@@ -324,7 +324,7 @@ int Dungeon::MaxFloors() const {
 }
 
 bool Dungeon::HasBossRoom() const {
-    return currentFloor < totalFloors;
+    return true;
 }
 
 bool Dungeon::IsFinalFloor() const {
