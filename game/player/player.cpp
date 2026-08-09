@@ -16,7 +16,7 @@ namespace {
         return v;
     }
 
-    bool BuildShootDirection(Vec2& outDir) {
+    bool BuildShootDirection(const Player& player, Vec2& outDir) {
         int dx = 0;
         int dy = 0;
         int pressedCount = 0;
@@ -31,7 +31,7 @@ namespace {
             return true;
         }
 
-        if (pressedCount == 2 && dx != 0 && dy != 0) {
+        if (pressedCount == 2 && dx != 0 && dy != 0 && player.hasDiagonalFire) {
             outDir = Normalize({ (float)dx, (float)dy });
             return true;
         }
@@ -83,7 +83,7 @@ void HandleMovement(Player& player, float dt) {
 
 void HandleShooting(Player& player, float /*dt*/, std::vector<Projectile>& playerProjectiles) {
     Vec2 shootDir;
-    if (!BuildShootDirection(shootDir)) return;
+    if (!BuildShootDirection(player, shootDir)) return;
 
     if (player.fireCooldownRemaining > 0.0f) return;
 
