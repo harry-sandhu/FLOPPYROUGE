@@ -32,16 +32,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     Dungeon dungeon;
     dungeon.LoadSettings("data/rooms.txt");
 
+    struct Bomb {
+        Vec2 pos = { 0.0f, 0.0f };
+        float fuseTimer = 3.0f;
+        float flashTimer = 0.0f;
+        bool exploded = false;
+    };
+
     Player player;
     std::vector<Enemy> enemies;
     Boss boss;
     std::vector<Projectile> playerShots;
     std::vector<Projectile> enemyShots;
+    std::vector<Bomb> bombs;
     float screenShakeTimer = 0.0f;
     float screenShakeStrength = 0.0f;
 
     const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
+    const float bombFuseDuration = 3.0f;
+    const float bombExplosionRadius = 34.0f;
+    const int bombDamage = 40;
 
     // Contact damage in half-heart units: normal enemies poke for half a
     // heart, special-variant enemies (Reinforcer/Creeper/Death Ring) hit
@@ -147,6 +158,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         enemies.clear();
         enemyShots.clear();
         playerShots.clear();
+        bombs.clear();
         boss = Boss{};
         boss.alive = false;
     };
@@ -203,6 +215,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 enemy.shootCooldown *= 0.94f;
                 enemy.shootRange *= 1.08f;
                 break;
+
+            
+                
             case EnemySpecialType::DEATH_RING:
                 enemy.hp = (int)(enemy.hp * 1.30f) + 5;
                 enemy.speed *= 1.04f;
@@ -235,7 +250,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         boss = Boss{};
         boss.alive = false;
 
-        if (room.type == RoomType::NORMAL && !room.cleared) {
+        if ((room.type == RoomType::NORMAL || room.IsEnemyCurseRoom()) && !room.cleared) {
             if (!room.enemySpawnList.empty()) {
                 for (int i = 0; i < (int)room.enemySpawnList.size(); ++i) {
                     Vec2 spawnPos = spawnPoints[i % (int)(sizeof(spawnPoints) / sizeof(spawnPoints[0]))];
@@ -257,7 +272,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         } else if (room.type == RoomType::BOSS && !room.cleared) {
             boss = SpawnBossVariant(room.bossVariant);
             ScaleBossForFloor(boss);
-        } else if ((room.type == RoomType::TREASURE || room.type == RoomType::CURSE) && !room.lootGranted) {
+       } else if ((room.type == RoomType::TREASURE || 
+            (room.type == RoomType::CURSE && !room.IsEnemyCurseRoom())) 
+           && !room.lootGranted) {
             SpawnItemPickups(dungeon.CurrentRoom());
             dungeon.CurrentRoom().lootGranted = true;
         }
@@ -281,6 +298,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     }
                     pickup.collected = true;
                     break;
+
+                case RoomPickupType::HEART:
+                player.hp = std::min(player.hp + 2, player.maxHp); // full heart
+                pickup.collected = true;
+                player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+                AddScreenShake(0.06f, 0.8f);
+                break;
+            case RoomPickupType::BOMB:
+                player.bombCount++;
+                pickup.collected = true;
+                player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+                AddScreenShake(0.06f, 0.8f);
+                break;    
 
                 case RoomPickupType::EXIT:
                     if (room.type == RoomType::BOSS && room.cleared) {
@@ -348,10 +378,95 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             room = activeRoom;
             player.pos = room->ClampToRoom(player.pos, (float)player.size, (float)player.size);
             PlayerLogic::HandleShooting(player, dt, playerShots);
+
+            if (Input::IsPressed('B') && player.bombCount > 0) {
+                player.bombCount--;
+            
+                Bomb bomb;
+                bomb.pos = {
+                    player.pos.x + player.size * 0.5f - 3.0f,
+                    player.pos.y + player.size * 0.5f - 3.0f
+                };
+                bomb.fuseTimer = bombFuseDuration;
+            
+                bombs.push_back(bomb);
+            }
+            
+            for (auto& bomb : bombs) {
+                if (bomb.exploded) {
+                    bomb.flashTimer -= dt;
+                    continue;
+                }
+            
+                bomb.fuseTimer -= dt;
+            
+                if (bomb.fuseTimer <= 0.0f) {
+                    bomb.exploded = true;
+                    bomb.flashTimer = 0.18f;
+            
+                    AddScreenShake(0.20f, 2.4f);
+            
+                    Vec2 bombCenter = {
+                        bomb.pos.x + 3.0f,
+                        bomb.pos.y + 3.0f
+                    };
+            
+                    for (auto& enemy : enemies) {
+                        if (!enemy.alive) continue;
+            
+                        Vec2 enemyCenter = {
+                            enemy.pos.x + enemy.w * 0.5f,
+                            enemy.pos.y + enemy.h * 0.5f
+                        };
+            
+                        float dx = enemyCenter.x - bombCenter.x;
+                        float dy = enemyCenter.y - bombCenter.y;
+            
+                        if (dx * dx + dy * dy <=
+                            bombExplosionRadius * bombExplosionRadius) {
+            
+                            enemy.hp -= bombDamage;
+            
+                            if (enemy.hp <= 0)
+                                enemy.alive = false;
+                        }
+                    }
+            
+                    if (room->type == RoomType::BOSS && boss.alive) {
+                        Vec2 bossCenter = {
+                            boss.pos.x + boss.w * 0.5f,
+                            boss.pos.y + boss.h * 0.5f
+                        };
+            
+                        float dx = bossCenter.x - bombCenter.x;
+                        float dy = bossCenter.y - bombCenter.y;
+            
+                        if (dx * dx + dy * dy <=
+                            bombExplosionRadius * bombExplosionRadius) {
+            
+                            boss.hp -= bombDamage;
+            
+                            if (boss.hp <= 0)
+                                boss.alive = false;
+                        }
+                    }
+                }
+            }
+            
+            bombs.erase(
+                std::remove_if(
+                    bombs.begin(),
+                    bombs.end(),
+                    [](const Bomb& b) {
+                        return b.exploded && b.flashTimer <= 0.0f;
+                    }),
+                bombs.end()
+            );
+            
             bool roomTransitioned = TryCollectCurrentRoomPickups();
 
             if (!roomTransitioned) {
-                if (room->type == RoomType::NORMAL && !room->cleared) {
+                if ((room->type == RoomType::NORMAL || room->IsEnemyCurseRoom()) && !room->cleared) {
                     bool anyAlive = false;
                     std::vector<Enemy> spawnedEnemies;
                     for (auto& enemy : enemies) {
@@ -381,7 +496,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     }
 
                     if (!anyAlive) {
-                        dungeon.MarkCurrentRoomCleared();
+                        dungeon.MarkCurrentRoomCleared(true);
                         enemies.clear();
                         enemyShots.clear();
                         playerShots.clear();
@@ -478,12 +593,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                 uint32_t color = 0xFFFFC84D;
                 int size = 8;
+                
                 if (pickup.type == RoomPickupType::EXIT) {
                     color = 0xFF776655;
                     size = 10;
                 } else if (pickup.type == RoomPickupType::TROPHY) {
                     color = 0xFFFFFF99;
                     size = 12;
+                } else if (pickup.type == RoomPickupType::HEART) {
+                    color = 0xFFFF4D77;
+                    size = 8;
+                } else if (pickup.type == RoomPickupType::BOMB) {
+                    color = 0xFF333333;
+                    size = 9;
                 }
 
                 Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x), (int)(pickup.pos.y + shakeOffset.y),
@@ -495,7 +617,50 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             }
         }
 
-        if (roomPtr && (roomPtr->type == RoomType::NORMAL || roomPtr->type == RoomType::BOSS)) {
+                for (const auto& bomb : bombs) {
+            if (bomb.exploded) {
+                if (bomb.flashTimer > 0.0f) {
+                    int flashSize =
+                        (int)(bombExplosionRadius * 2.0f *
+                              (bomb.flashTimer / 0.18f));
+
+                    Renderer::DrawRect(
+                        (int)(bomb.pos.x + shakeOffset.x) -
+                            flashSize / 2 + 3,
+                        (int)(bomb.pos.y + shakeOffset.y) -
+                            flashSize / 2 + 3,
+                        flashSize,
+                        flashSize,
+                        0xFFFFCC66
+                    );
+                }
+
+                continue;
+            }
+
+            float fusePct =
+                1.0f - (bomb.fuseTimer / bombFuseDuration);
+
+            uint32_t glow =
+                fusePct > 0.66f
+                    ? 0xFFFF3333
+                    : (fusePct > 0.33f
+                        ? 0xFFFFAA33
+                        : 0xFF666666);
+
+            Renderer::DrawRect(
+                (int)(bomb.pos.x + shakeOffset.x),
+                (int)(bomb.pos.y + shakeOffset.y),
+                6,
+                6,
+                glow
+            );
+        }
+
+       if (roomPtr &&
+    (roomPtr->type == RoomType::NORMAL ||
+     roomPtr->type == RoomType::BOSS ||
+     roomPtr->IsEnemyCurseRoom())) {
             for (auto& enemy : enemies) {
                 if (!enemy.alive) continue;
 
@@ -546,7 +711,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             HUD::DrawRunStatus(dungeon, player, *roomPtr, (roomPtr->type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
         }
         if (state == GameState::GAME_OVER) HUD::DrawGameOverBanner();
-        if (roomPtr && roomPtr->type == RoomType::NORMAL && roomPtr->cleared) {
+        if (roomPtr &&
+            (roomPtr->type == RoomType::NORMAL ||
+             roomPtr->IsEnemyCurseRoom()) &&
+            roomPtr->cleared) {
             HUD::DrawRoomClearedBanner();
         }
         HUD::DrawFloorMap(dungeon);

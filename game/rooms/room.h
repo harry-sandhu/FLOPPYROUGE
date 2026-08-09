@@ -13,7 +13,9 @@ enum class RoomType {
 enum class RoomPickupType {
     ITEM,
     EXIT,
-    TROPHY
+    TROPHY,
+    HEART,
+    BOMB
 };
 
 struct RoomPickup {
@@ -47,8 +49,10 @@ struct Room {
     std::vector<int> itemSpawnList;
     std::vector<RoomPickup> pickups;
 
-    // Clamps a position (top-left of an entity's bounding box) so the
-    // entity of the given size stays fully inside the room.
+    bool IsEnemyCurseRoom() const {
+        return type == RoomType::CURSE && !enemySpawnList.empty();
+    }
+
     Vec2 ClampToRoom(Vec2 pos, float entityWidth, float entityHeight) const {
         float minX = x;
         float minY = y;

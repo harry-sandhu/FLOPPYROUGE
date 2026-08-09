@@ -6,8 +6,8 @@
 #include "../player/player.h"
 
 struct DungeonSettings {
-    int gridWidth = 5;
-    int gridHeight = 5;
+    int gridSizePerFloor = 10;
+    int gridSizeMax = 30;
     int totalFloors = 3;
     int mainPathBase = 5;
     int mainPathPerFloor = 1;
@@ -18,8 +18,10 @@ struct DungeonSettings {
     int deepRoomBonus = 1;
     int treasureMinItems = 1;
     int treasureMaxItems = 2;
-    int curseDamage = 10;
     float specialEnemyChance = 0.05f;
+    float curseEnemyChance = 0.5f;   // odds a curse room is the enemy variant vs. item variant
+    float bombDropChance = 0.15f;    // on clearing an enemy-curse room
+    float heartDropChance = 0.20f;   // on clearing an enemy-curse room
 };
 
 class Dungeon {
@@ -39,17 +41,18 @@ public:
     bool IsFinalFloor() const;
     bool AllCombatRoomsCleared() const;
     float SpecialEnemyChance() const;
+    int CurseDamage() const;             // 1 HP (half heart) on floors 1-2, 2 HP (full heart) on the final floor
 
     void PlacePlayerAtCurrentRoomCenter(Player& player) const;
     bool TryTransition(Player& player);
-    void MarkCurrentRoomCleared();
+    void MarkCurrentRoomCleared(bool rollCurseReward = false);
 
 private:
     DungeonSettings settings;
     std::vector<Room> rooms;
     std::vector<int> cellToRoomIndex;
-    int gridWidth = 5;
-    int gridHeight = 5;
+    int gridWidth = 10;
+    int gridHeight = 10;
     int currentRoomIndex = -1;
     int startRoomIndex = -1;
     int bossRoomIndex = -1;

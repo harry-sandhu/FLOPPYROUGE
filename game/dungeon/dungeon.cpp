@@ -57,8 +57,8 @@ bool Dungeon::LoadSettings(const char* path) {
     for (const DataBlock& block : blocks) {
         if (std::strcmp(block.name, "Dungeon") != 0) continue;
 
-        settings.gridWidth = std::max(1, block.GetInt("grid_width", settings.gridWidth));
-        settings.gridHeight = std::max(1, block.GetInt("grid_height", settings.gridHeight));
+        settings.gridSizePerFloor = std::max(1, block.GetInt("grid_size_per_floor", settings.gridSizePerFloor));
+        settings.gridSizeMax = std::max(1, block.GetInt("grid_size_max", settings.gridSizeMax));
         settings.totalFloors = std::max(1, block.GetInt("total_floors", settings.totalFloors));
         settings.mainPathBase = std::max(1, block.GetInt("main_path_base", settings.mainPathBase));
         settings.mainPathPerFloor = std::max(0, block.GetInt("main_path_per_floor", settings.mainPathPerFloor));
@@ -69,15 +69,15 @@ bool Dungeon::LoadSettings(const char* path) {
         settings.deepRoomBonus = std::max(0, block.GetInt("deep_room_bonus", settings.deepRoomBonus));
         settings.treasureMinItems = std::max(0, block.GetInt("treasure_min_items", settings.treasureMinItems));
         settings.treasureMaxItems = std::max(settings.treasureMinItems, block.GetInt("treasure_max_items", settings.treasureMaxItems));
-        settings.curseDamage = std::max(0, block.GetInt("curse_damage", settings.curseDamage));
         settings.specialEnemyChance = std::clamp(block.GetFloat("special_enemy_chance", settings.specialEnemyChance), 0.0f, 1.0f);
+        settings.curseEnemyChance = std::clamp(block.GetFloat("curse_enemy_chance", settings.curseEnemyChance), 0.0f, 1.0f);
+        settings.bombDropChance = std::clamp(block.GetFloat("bomb_drop_chance", settings.bombDropChance), 0.0f, 1.0f);
+        settings.heartDropChance = std::clamp(block.GetFloat("heart_drop_chance", settings.heartDropChance), 0.0f, 1.0f);
         loaded = true;
         break;
     }
 
     if (loaded) {
-        gridWidth = settings.gridWidth;
-        gridHeight = settings.gridHeight;
         totalFloors = settings.totalFloors;
     }
 
@@ -135,9 +135,18 @@ void Dungeon::ApplyRoomDefaults() {
         switch (room.type) {
             case RoomType::START:
             case RoomType::TREASURE:
-            case RoomType::CURSE:
                 room.cleared = true;
                 room.gateOpen = true;
+                room.lootGranted = false;
+                break;
+            case RoomType::CURSE:
+                if (room.IsEnemyCurseRoom()) {
+                    room.cleared = false;
+                    room.gateOpen = false;
+                } else {
+                    room.cleared = true;
+                    room.gateOpen = true;
+                }
                 room.lootGranted = false;
                 break;
             case RoomType::NORMAL:
@@ -183,11 +192,16 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
     RNG::Seed(seed);
     currentFloor = std::max(1, std::min(floorNumber, totalFloors));
 
+    int gridSize = std::min(currentFloor * settings.gridSizePerFloor, settings.gridSizeMax);
+    gridWidth = gridSize;
+    gridHeight = gridSize;
+
     const bool hasBossRoom = true; // Every floor ends with a boss room.
     const int mainPathRooms = settings.mainPathBase + settings.mainPathPerFloor * currentFloor;
     const int extraNormalRooms = settings.extraNormalBase + settings.extraNormalPerFloor * currentFloor;
 
     for (int attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; ++attempt) {
+        // ...unchanged...
         rooms.clear();
         rooms.reserve(gridWidth * gridHeight);
         cellToRoomIndex.assign(gridWidth * gridHeight, -1);
@@ -307,7 +321,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         rooms[treasureIndex].type = RoomType::TREASURE;
         rooms[curseIndex].type = RoomType::CURSE;
 
-        const int enemyCount = EnemyDatabase::Count();
+       const int enemyCount = EnemyDatabase::Count();
         const int itemCount = ItemDatabase::Count();
         for (int i = 0; i < (int)rooms.size(); ++i) {
             rooms[i].enemySpawnList.clear();
@@ -332,8 +346,22 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                 }
             } else if (rooms[i].type == RoomType::BOSS && itemCount > 0 && currentFloor < totalFloors) {
                 rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
-            } else if (rooms[i].type == RoomType::CURSE && itemCount > 0) {
-                rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
+            } else if (rooms[i].type == RoomType::CURSE) {
+                bool enemyVariant = enemyCount > 0 && RNG::Chance(settings.curseEnemyChance);
+                if (enemyVariant) {
+                    int distBonus = distFromRoot[i];
+                    int spawnCount = settings.normalEnemyBase
+                        + settings.normalEnemyPerFloor * currentFloor
+                        + (distBonus > 2 ? settings.deepRoomBonus : 0);
+                    for (int j = 0; j < spawnCount; ++j) {
+                        rooms[i].enemySpawnList.push_back(RNG::Range(0, enemyCount - 1));
+                    }
+                } else if (itemCount > 0) {
+                    int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);
+                    for (int j = 0; j < itemDrops; ++j) {
+                        rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
+                    }
+                }
             }
         }
 
@@ -373,11 +401,14 @@ float Dungeon::SpecialEnemyChance() const {
     return settings.specialEnemyChance;
 }
 
+int Dungeon::CurseDamage() const {
+    return (currentFloor >= totalFloors) ? 2 : 1; // full heart on the final floor, half heart otherwise
+}
+
 bool Dungeon::AllCombatRoomsCleared() const {
     for (const Room& room : rooms) {
-        if (room.type == RoomType::NORMAL || room.type == RoomType::BOSS) {
-            if (!room.cleared) return false;
-        }
+        bool isCombatRoom = room.type == RoomType::NORMAL || room.type == RoomType::BOSS || room.IsEnemyCurseRoom();
+        if (isCombatRoom && !room.cleared) return false;
     }
     return true;
 }
@@ -434,21 +465,37 @@ bool Dungeon::TryTransition(Player& player) {
     if (toIndex < 0 || toIndex >= (int)rooms.size()) return false;
 
     if (rooms[fromIndex].type == RoomType::CURSE) {
-        PlayerLogic::TakeDamage(player, settings.curseDamage, 0.0f);
+        PlayerLogic::TakeDamage(player, CurseDamage(), 0.5f);
     }
 
     currentRoomIndex = toIndex;
     MovePlayerIntoRoom(player, fromIndex, toIndex);
 
     if (rooms[currentRoomIndex].type == RoomType::CURSE) {
-        PlayerLogic::TakeDamage(player, settings.curseDamage, 0.0f);
+        PlayerLogic::TakeDamage(player, CurseDamage(), 0.5f);
     }
 
     return true;
 }
 
-void Dungeon::MarkCurrentRoomCleared() {
+void Dungeon::MarkCurrentRoomCleared(bool rollCurseReward) {
     if (currentRoomIndex < 0 || currentRoomIndex >= (int)rooms.size()) return;
-    rooms[currentRoomIndex].cleared = true;
-    rooms[currentRoomIndex].gateOpen = true;
+    Room& room = rooms[currentRoomIndex];
+    room.cleared = true;
+    room.gateOpen = true;
+
+    if (rollCurseReward && room.IsEnemyCurseRoom()) {
+        float roll = RNG::Range(0.0f, 1.0f);
+        if (roll < settings.heartDropChance) {
+            RoomPickup pickup;
+            pickup.type = RoomPickupType::HEART;
+            pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
+            room.pickups.push_back(pickup);
+        } else if (roll < settings.heartDropChance + settings.bombDropChance) {
+            RoomPickup pickup;
+            pickup.type = RoomPickupType::BOMB;
+            pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
+            room.pickups.push_back(pickup);
+        }
+    }
 }
