@@ -28,6 +28,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     Timer timer;
     Dungeon dungeon;
+    dungeon.LoadSettings("data/rooms.txt");
 
     Player player;
     std::vector<Enemy> enemies;
@@ -75,7 +76,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     };
 
     auto MakeSpecialEnemy = [&](Enemy& enemy) {
-        if (!RNG::Chance(0.05f)) return;
+        if (!RNG::Chance(dungeon.SpecialEnemyChance())) return;
 
         enemy.specialType = (EnemySpecialType)RNG::Range(1, 3);
         enemy.creepDropTimer = 0.0f;
