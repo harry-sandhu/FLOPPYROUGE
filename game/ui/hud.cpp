@@ -8,6 +8,21 @@
 namespace HUD {
 
 namespace {
+    void DrawHeart(int x, int y, int filledState) {
+        const uint32_t dark = 0xFF331122;
+        const uint32_t bright = 0xFFFF4D77;
+        const uint32_t mid = 0xFFBB3355;
+
+        uint32_t color = dark;
+        if (filledState >= 2) color = bright;
+        else if (filledState == 1) color = mid;
+
+        Renderer::DrawRect(x + 1, y, 2, 2, color);
+        Renderer::DrawRect(x + 4, y, 2, 2, color);
+        Renderer::DrawRect(x, y + 2, 7, 3, color);
+        Renderer::DrawRect(x + 1, y + 1, 1, 1, 0xFFFFFFFF);
+    }
+
     uint32_t RoomColor(const Room& room, bool isCurrent) {
         uint32_t color = 0xFF444444;
         switch (room.type) {
@@ -49,11 +64,16 @@ namespace {
 }
 
 void DrawHealthBar(const Player& player) {
-    int barWidth = 60;
-    int fillWidth = (int)(barWidth * (player.hp / (float)player.maxHp));
-    Renderer::DrawRect(5, 5, barWidth, 6, 0xFF444444);
-    Renderer::DrawRect(5, 5, fillWidth, 6, 0xFF33FF33);
-    Text::DrawString("HP", 5, 14, 0xFFCCCCCC, 1);
+    Text::DrawString("HP", 5, 5, 0xFFCCCCCC, 1);
+    int hearts = std::max(1, player.maxHp / 2);
+    for (int i = 0; i < hearts; ++i) {
+        int x = 18 + i * 9;
+        int hpLeft = player.hp - i * 2;
+        int state = 0;
+        if (hpLeft >= 2) state = 2;
+        else if (hpLeft == 1) state = 1;
+        DrawHeart(x, 4, state);
+    }
 }
 
 void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& room, const Boss* boss) {
@@ -63,7 +83,7 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
                   player.damage, player.fireRate, (int)player.moveSpeed, player.range);
     Text::DrawString(line, 5, 24, 0xFFEAEAEA, 1);
 
-    std::snprintf(line, sizeof(line), "FLOOR %d/%d", dungeon.CurrentFloor(), dungeon.MaxFloors());
+    std::snprintf(line, sizeof(line), "LCK %d FLOOR %d/%d", player.luck, dungeon.CurrentFloor(), dungeon.MaxFloors());
     Text::DrawString(line, 5, 33, 0xFFEAEAEA, 1);
 
     std::snprintf(line, sizeof(line), "ROOM %s", RoomTypeName(room.type));
@@ -85,9 +105,21 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
     std::snprintf(line, sizeof(line), "ITEMS %d", player.ownedItemCount);
     Text::DrawString(line, 5, 60, 0xFFEAEAEA, 1);
 
+    if (player.hasHomingShots || player.poisonChance > 0.0f || player.stickyChance > 0.0f ||
+        player.piercingChance > 0.0f || player.explosiveChance > 0.0f) {
+        char fx[48] = {};
+        std::snprintf(fx, sizeof(fx), "FX%s%s%s%s%s",
+                      player.hasHomingShots ? " HOM" : "",
+                      player.poisonChance > 0.0f ? " P" : "",
+                      player.stickyChance > 0.0f ? " S" : "",
+                      player.piercingChance > 0.0f ? " PI" : "",
+                      player.explosiveChance > 0.0f ? " EX" : "");
+        Text::DrawString(fx, 5, 69, 0xFFBBBBFF, 1);
+    }
+
     if (player.pickupMessageTimer > 0.0f && player.pickupName[0] != '\0') {
         std::snprintf(line, sizeof(line), "PICKUP %s", player.pickupName);
-        Text::DrawString(line, 5, 69, 0xFFFFFF88, 1);
+        Text::DrawString(line, 5, 78, 0xFFFFFF88, 1);
     }
 
     if (boss && boss->alive) {
@@ -95,6 +127,26 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
         int w = Text::MeasureWidth(line, 1);
         Text::DrawString(line, (320 - w) / 2, 16, 0xFFFFFFFF, 1);
     }
+}
+
+void DrawTitleScreen() {
+    Renderer::DrawRect(0, 0, 320, 180, 0xFF0F0D12);
+    Renderer::DrawRect(0, 0, 320, 18, 0xFF221933);
+    Renderer::DrawRect(0, 162, 320, 18, 0xFF221933);
+
+    const char* title = "FloppyRogue";
+    int titleW = Text::MeasureWidth(title, 3);
+    Text::DrawString(title, (320 - titleW) / 2, 34, 0xFFFFD16A, 3);
+
+    const char* subtitle = "Top-down roguelite";
+    int subtitleW = Text::MeasureWidth(subtitle, 1);
+    Text::DrawString(subtitle, (320 - subtitleW) / 2, 56, 0xFFFFFFFF, 1);
+
+    Text::DrawString("ENTER  START RUN", 92, 82, 0xFFEAEAEA, 1);
+    Text::DrawString("WASD   MOVE", 92, 94, 0xFFEAEAEA, 1);
+    Text::DrawString("ARROWS SHOOT", 92, 106, 0xFFEAEAEA, 1);
+    Text::DrawString("SPACE  DASH", 92, 118, 0xFFEAEAEA, 1);
+    Text::DrawString("PICK UP ITEMS IN ROOMS", 62, 136, 0xFFFFC84D, 1);
 }
 
 void DrawGameOverBanner() {

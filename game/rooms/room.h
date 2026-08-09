@@ -10,6 +10,19 @@ enum class RoomType {
     CURSE
 };
 
+enum class RoomPickupType {
+    ITEM,
+    EXIT,
+    TROPHY
+};
+
+struct RoomPickup {
+    RoomPickupType type = RoomPickupType::ITEM;
+    int itemId = -1;
+    Vec2 pos = { 0.0f, 0.0f };
+    bool collected = false;
+};
+
 struct Room {
     RoomType type = RoomType::NORMAL;
     float x = 0.0f;
@@ -32,6 +45,7 @@ struct Room {
 
     std::vector<int> enemySpawnList;
     std::vector<int> itemSpawnList;
+    std::vector<RoomPickup> pickups;
 
     // Clamps a position (top-left of an entity's bounding box) so the
     // entity of the given size stays fully inside the room.

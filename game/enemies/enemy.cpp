@@ -21,11 +21,66 @@ namespace {
         return d;
     }
 
+    // Fires enemy.attackPattern toward `dir` (aimed patterns) or around the
+    // enemy (radial/spiral patterns). Shared by SHOOTER and EXPLODER so any
+    // enemy in data can be given any pattern with no new C++.
+    void FireByPattern(Enemy& enemy, Vec2 dir, std::vector<Projectile>& out) {
+        switch (enemy.attackPattern) {
+            case AttackPattern::TRIPLE: {
+                float baseAngle = std::atan2(dir.y, dir.x);
+                const float spread = 0.35f;
+                for (int i = -1; i <= 1; ++i) {
+                    float angle = baseAngle + spread * (float)i;
+                    ProjectileSystem::Spawn(
+                        out, enemy.pos,
+                        { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
+                        ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                    );
+                }
+                break;
+            }
+            case AttackPattern::RADIAL: {
+                const int count = 8;
+                for (int i = 0; i < count; ++i) {
+                    float angle = (2.0f * PI) * ((float)i / count);
+                    ProjectileSystem::Spawn(
+                        out, enemy.pos,
+                        { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
+                        ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                    );
+                }
+                break;
+            }
+            case AttackPattern::SPIRAL: {
+                const int count = 6;
+                for (int i = 0; i < count; ++i) {
+                    float angle = (2.0f * PI) * ((float)i / count) + enemy.spiralOffset;
+                    ProjectileSystem::Spawn(
+                        out, enemy.pos,
+                        { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
+                        ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                    );
+                }
+                enemy.spiralOffset += 0.35f;
+                break;
+            }
+            case AttackPattern::SINGLE:
+            default:
+                ProjectileSystem::Spawn(
+                    out, enemy.pos,
+                    { dir.x * enemy.shotSpeed, dir.y * enemy.shotSpeed },
+                    ENEMY_PROJECTILE_DAMAGE, ENEMY_PROJECTILE_RANGE
+                );
+                break;
+        }
+    }
+
     void UpdateChaser(Enemy& enemy, Vec2 playerPos, float dt) {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
-        enemy.pos.x += dir.x * enemy.speed * dt;
-        enemy.pos.y += dir.y * enemy.speed * dt;
+        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+        enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
+        enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
     }
 
     void UpdateShooter(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles) {
@@ -33,23 +88,18 @@ namespace {
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
         const float buffer = 15.0f;
+        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
         if (dist < enemy.preferredDistance - buffer) {
-            enemy.pos.x -= dir.x * enemy.speed * dt;
-            enemy.pos.y -= dir.y * enemy.speed * dt;
+            enemy.pos.x -= dir.x * enemy.speed * slowScale * dt;
+            enemy.pos.y -= dir.y * enemy.speed * slowScale * dt;
         } else if (dist > enemy.preferredDistance + buffer) {
-            enemy.pos.x += dir.x * enemy.speed * dt;
-            enemy.pos.y += dir.y * enemy.speed * dt;
+            enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
+            enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
         }
 
         enemy.shootTimer -= dt;
         if (enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
-            ProjectileSystem::Spawn(
-                enemyProjectiles,
-                enemy.pos,
-                { dir.x * enemy.shotSpeed, dir.y * enemy.shotSpeed },
-                ENEMY_PROJECTILE_DAMAGE,
-                ENEMY_PROJECTILE_RANGE
-            );
+            FireByPattern(enemy, dir, enemyProjectiles);
             enemy.shootTimer = enemy.shootCooldown;
         }
     }
@@ -75,12 +125,13 @@ namespace {
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
         const float buffer = 20.0f;
+        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
         if (dist < enemy.preferredDistance - buffer) {
-            enemy.pos.x -= dir.x * enemy.speed * dt;
-            enemy.pos.y -= dir.y * enemy.speed * dt;
+            enemy.pos.x -= dir.x * enemy.speed * slowScale * dt;
+            enemy.pos.y -= dir.y * enemy.speed * slowScale * dt;
         } else if (dist > enemy.preferredDistance + buffer) {
-            enemy.pos.x += dir.x * enemy.speed * dt;
-            enemy.pos.y += dir.y * enemy.speed * dt;
+            enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
+            enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
         }
 
         enemy.shootTimer -= dt;
@@ -98,23 +149,13 @@ namespace {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
-        enemy.pos.x += dir.x * enemy.speed * dt;
-        enemy.pos.y += dir.y * enemy.speed * dt;
+        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+        enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
+        enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
 
         enemy.shootTimer -= dt;
         if (enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
-            const int count = 6;
-            const float speed = 88.0f;
-            for (int i = 0; i < count; ++i) {
-                float angle = (2.0f * PI) * ((float)i / count);
-                ProjectileSystem::Spawn(
-                    enemyProjectiles,
-                    enemy.pos,
-                    { std::cos(angle) * speed, std::sin(angle) * speed },
-                    ENEMY_PROJECTILE_DAMAGE,
-                    ENEMY_PROJECTILE_RANGE
-                );
-            }
+            FireByPattern(enemy, dir, enemyProjectiles);
             enemy.alive = false;
         }
     }
@@ -150,6 +191,24 @@ void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& ro
     if (enemy.spawnDelayRemaining > 0.0f) {
         enemy.spawnDelayRemaining -= dt;
         if (enemy.spawnDelayRemaining > 0.0f) return;
+    }
+
+    if (enemy.poisonTimer > 0.0f) {
+        enemy.poisonTimer -= dt;
+        enemy.poisonTickTimer -= dt;
+        if (enemy.poisonTickTimer <= 0.0f) {
+            enemy.poisonTickTimer = 0.45f;
+            enemy.hp -= std::max(1, enemy.poisonDamage);
+            if (enemy.hp <= 0) enemy.alive = false;
+        }
+    }
+
+    if (enemy.stickyTimer > 0.0f) {
+        enemy.stickyTimer -= dt;
+        if (enemy.stickyTimer <= 0.0f) {
+            enemy.stickyTimer = 0.0f;
+            enemy.stickySpeedMultiplier = 1.0f;
+        }
     }
 
     Vec2 beforePos = enemy.pos;

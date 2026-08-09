@@ -24,11 +24,9 @@ namespace {
             float t = (count == 1) ? 0.0f : (float)i / (count - 1) - 0.5f;
             float angle = baseAngle + t * spread;
             ProjectileSystem::Spawn(
-                out,
-                boss.pos,
+                out, boss.pos,
                 { std::cos(angle) * speed, std::sin(angle) * speed },
-                BOSS_PROJECTILE_DAMAGE,
-                BOSS_PROJECTILE_RANGE
+                BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
             );
         }
     }
@@ -39,11 +37,9 @@ namespace {
         for (int i = 0; i < count; ++i) {
             float angle = (2.0f * PI) * ((float)i / count);
             ProjectileSystem::Spawn(
-                out,
-                boss.pos,
+                out, boss.pos,
                 { std::cos(angle) * speed, std::sin(angle) * speed },
-                BOSS_PROJECTILE_DAMAGE,
-                BOSS_PROJECTILE_RANGE
+                BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
             );
         }
     }
@@ -51,19 +47,13 @@ namespace {
     void FireCardinalBurst(Boss& boss, std::vector<Projectile>& out) {
         const float speed = 100.0f;
         const Vec2 dirs[] = {
-            { 1.0f, 0.0f },
-            { -1.0f, 0.0f },
-            { 0.0f, 1.0f },
-            { 0.0f, -1.0f }
+            { 1.0f, 0.0f }, { -1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f }
         };
-
         for (const Vec2& dir : dirs) {
             ProjectileSystem::Spawn(
-                out,
-                boss.pos,
+                out, boss.pos,
                 { dir.x * speed, dir.y * speed },
-                BOSS_PROJECTILE_DAMAGE,
-                BOSS_PROJECTILE_RANGE
+                BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
             );
         }
     }
@@ -75,11 +65,9 @@ namespace {
         for (int i = 0; i < count; ++i) {
             float angle = (2.0f * PI) * ((float)i / count) + offset;
             ProjectileSystem::Spawn(
-                out,
-                boss.pos,
+                out, boss.pos,
                 { std::cos(angle) * speed, std::sin(angle) * speed },
-                BOSS_PROJECTILE_DAMAGE,
-                BOSS_PROJECTILE_RANGE
+                BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
             );
         }
     }
@@ -93,11 +81,23 @@ namespace {
         for (int i = -1; i <= 1; ++i) {
             float angle = baseAngle + spread * (float)i;
             ProjectileSystem::Spawn(
-                out,
-                boss.pos,
+                out, boss.pos,
                 { std::cos(angle) * speed, std::sin(angle) * speed },
-                BOSS_PROJECTILE_DAMAGE,
-                BOSS_PROJECTILE_RANGE
+                BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
+            );
+        }
+    }
+
+    // Dense ring, used by the tougher variants as a "screen-filler" attack.
+    void FireDenseRing(Boss& boss, std::vector<Projectile>& out) {
+        const int count = 14;
+        const float speed = 60.0f;
+        for (int i = 0; i < count; ++i) {
+            float angle = (2.0f * PI) * ((float)i / count);
+            ProjectileSystem::Spawn(
+                out, boss.pos,
+                { std::cos(angle) * speed, std::sin(angle) * speed },
+                BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
             );
         }
     }
@@ -113,13 +113,11 @@ namespace {
         if (boss.attackTimer <= 0.0f) {
             BossAttackType attack = (BossAttackType)(boss.attackIndex % 3);
             boss.attackIndex++;
-
             switch (attack) {
                 case BossAttackType::SPREAD_SHOT:  FireSpreadShot(boss, playerPos, bossProjectiles); break;
                 case BossAttackType::RADIAL_BURST: FireRadialBurst(boss, bossProjectiles); break;
                 case BossAttackType::CHARGE:       StartCharge(boss, playerPos); break;
             }
-
             boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
     }
@@ -129,13 +127,11 @@ namespace {
         if (boss.attackTimer <= 0.0f) {
             int step = boss.attackIndex % 3;
             boss.attackIndex++;
-
             switch (step) {
                 case 0: FireCardinalBurst(boss, bossProjectiles); break;
                 case 1: FireTripleSpread(boss, playerPos, bossProjectiles); break;
                 case 2: StartCharge(boss, playerPos); break;
             }
-
             boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
     }
@@ -145,13 +141,44 @@ namespace {
         if (boss.attackTimer <= 0.0f) {
             int step = boss.attackIndex % 3;
             boss.attackIndex++;
-
             switch (step) {
                 case 0: FireSpiralBurst(boss, bossProjectiles); break;
                 case 1: FireRadialBurst(boss, bossProjectiles); break;
                 case 2: FireTripleSpread(boss, playerPos, bossProjectiles); break;
             }
+            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
+        }
+    }
 
+    // "Widow"-style: leans on spiral + cardinal pressure, charges less often.
+    void UpdateVariant3(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
+        boss.attackTimer -= dt;
+        if (boss.attackTimer <= 0.0f) {
+            int step = boss.attackIndex % 4;
+            boss.attackIndex++;
+            switch (step) {
+                case 0: FireSpiralBurst(boss, bossProjectiles); break;
+                case 1: FireCardinalBurst(boss, bossProjectiles); break;
+                case 2: FireSpiralBurst(boss, bossProjectiles); break;
+                case 3: StartCharge(boss, playerPos); break;
+            }
+            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
+        }
+    }
+
+    // Finale boss: combines every pattern, shortest cooldowns, no filler.
+    void UpdateVariant4(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
+        boss.attackTimer -= dt;
+        if (boss.attackTimer <= 0.0f) {
+            int step = boss.attackIndex % 5;
+            boss.attackIndex++;
+            switch (step) {
+                case 0: FireTripleSpread(boss, playerPos, bossProjectiles); break;
+                case 1: FireDenseRing(boss, bossProjectiles); break;
+                case 2: StartCharge(boss, playerPos); break;
+                case 3: FireSpiralBurst(boss, bossProjectiles); break;
+                case 4: FireCardinalBurst(boss, bossProjectiles); break;
+            }
             boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
     }
@@ -175,6 +202,24 @@ namespace {
                 boss.attackCooldownPhase1 = 1.9f;
                 boss.attackCooldownPhase2 = 1.05f;
                 boss.chargeSpeed = 250.0f;
+                break;
+            case 3:
+                boss.hp = boss.maxHp = 380;
+                boss.driftSpeed = 14.0f;
+                boss.attackCooldownPhase1 = 1.8f;
+                boss.attackCooldownPhase2 = 1.0f;
+                boss.chargeSpeed = 240.0f;
+                boss.contactDamage = 17;
+                boss.chargeContactDamage = 28;
+                break;
+            case 4:
+                boss.hp = boss.maxHp = 460;
+                boss.driftSpeed = 16.0f;
+                boss.attackCooldownPhase1 = 1.5f;
+                boss.attackCooldownPhase2 = 0.85f;
+                boss.chargeSpeed = 260.0f;
+                boss.contactDamage = 20;
+                boss.chargeContactDamage = 32;
                 break;
             case 0:
             default:
@@ -200,25 +245,47 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
         if (boss.spawnDelayRemaining > 0.0f) return;
     }
 
+    if (boss.poisonTimer > 0.0f) {
+        boss.poisonTimer -= dt;
+        boss.poisonTickTimer -= dt;
+        if (boss.poisonTickTimer <= 0.0f) {
+            boss.poisonTickTimer = 0.45f;
+            boss.hp -= std::max(1, boss.poisonDamage);
+            if (boss.hp <= 0) boss.alive = false;
+        }
+    }
+
+    if (boss.stickyTimer > 0.0f) {
+        boss.stickyTimer -= dt;
+        if (boss.stickyTimer <= 0.0f) {
+            boss.stickyTimer = 0.0f;
+            boss.stickySpeedMultiplier = 1.0f;
+        }
+    }
+
     if (boss.phase == 1 && boss.hp <= boss.maxHp / 2) {
         boss.phase = 2;
     }
 
     if (boss.isCharging) {
-        boss.pos.x += boss.chargeDir.x * boss.chargeSpeed * dt;
-        boss.pos.y += boss.chargeDir.y * boss.chargeSpeed * dt;
+        float slowScale = (boss.stickyTimer > 0.0f) ? boss.stickySpeedMultiplier : 1.0f;
+        boss.pos.x += boss.chargeDir.x * boss.chargeSpeed * slowScale * dt;
+        boss.pos.y += boss.chargeDir.y * boss.chargeSpeed * slowScale * dt;
         boss.chargeTimeRemaining -= dt;
         if (boss.chargeTimeRemaining <= 0.0f) boss.isCharging = false;
         return;
     }
 
     Vec2 dir = Normalize({ playerPos.x - boss.pos.x, playerPos.y - boss.pos.y });
-    boss.pos.x += dir.x * boss.driftSpeed * dt;
-    boss.pos.y += dir.y * boss.driftSpeed * dt;
+    float slowScale = (boss.stickyTimer > 0.0f) ? boss.stickySpeedMultiplier : 1.0f;
+    boss.pos.x += dir.x * boss.driftSpeed * slowScale * dt;
+    boss.pos.y += dir.y * boss.driftSpeed * slowScale * dt;
 
     switch (boss.variant) {
         case 1: UpdateVariant1(boss, playerPos, dt, bossProjectiles); break;
         case 2: UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
+        case 3: UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
+        case 4: UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
         case 0:
         default:
             UpdateVariant0(boss, playerPos, dt, bossProjectiles);
@@ -228,22 +295,18 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
 
 } // namespace BossAI
 
-Boss SpawnBoss1() {
-    return MakeBoss(0);
-}
-
-Boss SpawnBoss2() {
-    return MakeBoss(1);
-}
-
-Boss SpawnBoss3() {
-    return MakeBoss(2);
-}
+Boss SpawnBoss1() { return MakeBoss(0); }
+Boss SpawnBoss2() { return MakeBoss(1); }
+Boss SpawnBoss3() { return MakeBoss(2); }
+Boss SpawnBoss4() { return MakeBoss(3); }
+Boss SpawnBoss5() { return MakeBoss(4); }
 
 Boss SpawnBossVariant(int variant) {
-    switch (variant % 3) {
+    switch (variant % 5) {
         case 1: return SpawnBoss2();
         case 2: return SpawnBoss3();
+        case 3: return SpawnBoss4();
+        case 4: return SpawnBoss5();
         case 0:
         default:
             return SpawnBoss1();

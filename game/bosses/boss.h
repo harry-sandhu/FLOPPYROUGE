@@ -31,6 +31,11 @@ struct Boss {
     float chargeDuration = 0.5f;
     float chargeSpeed = 220.0f;
     float spawnDelayRemaining = 0.0f;
+    float poisonTimer = 0.0f;
+    float poisonTickTimer = 0.0f;
+    int poisonDamage = 0;
+    float stickyTimer = 0.0f;
+    float stickySpeedMultiplier = 1.0f;
 
     int contactDamage = 15;
     int chargeContactDamage = 25;
@@ -45,4 +50,6 @@ namespace BossAI {
 Boss SpawnBoss1();
 Boss SpawnBoss2();
 Boss SpawnBoss3();
+Boss SpawnBoss4();
+Boss SpawnBoss5();
 Boss SpawnBossVariant(int variant);

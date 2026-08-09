@@ -6,6 +6,8 @@ constexpr int MAX_ENEMY_TEMPLATES = 32;
 struct EnemyTemplate {
     char name[32] = {};
     AIType aiType = AIType::CHASER;
+    AttackPattern attackPattern = AttackPattern::SINGLE;
+    bool shielded = false;
     int hp = 30;
     float speed = 40.0f;
     float w = 12.0f, h = 12.0f;

@@ -11,6 +11,13 @@ enum class AIType {
     EXPLODER
 };
 
+enum class AttackPattern {
+    SINGLE,
+    TRIPLE,
+    RADIAL,
+    SPIRAL
+};
+
 enum class EnemySpecialType {
     NONE,
     REINFORCER,
@@ -25,6 +32,7 @@ struct Enemy {
     int hp = 30;
     int maxHp = 30;
     AIType aiType = AIType::CHASER;
+    AttackPattern attackPattern = AttackPattern::SINGLE;
     bool alive = true;
     char templateName[32] = {};
 
@@ -36,6 +44,14 @@ struct Enemy {
     float spawnDelayRemaining = 0.0f;
     float creepDropTimer = 0.0f;
     float creepDropInterval = 0.30f;
+    float poisonTimer = 0.0f;
+    float poisonTickTimer = 0.0f;
+    int poisonDamage = 0;
+    float stickyTimer = 0.0f;
+    float stickySpeedMultiplier = 1.0f;
+    float spiralOffset = 0.0f;
+
+    bool shielded = false;
 
     EnemySpecialType specialType = EnemySpecialType::NONE;
 

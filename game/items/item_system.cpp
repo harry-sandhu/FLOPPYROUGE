@@ -9,30 +9,47 @@ namespace {
         player.ownedItemIds[player.ownedItemCount++] = itemId;
     }
 
-    void ApplyStatMod(Player& player, const ItemTemplate& item) {
-        auto applyFloat = [&](float& stat) {
-            if (item.mode == ItemMode::ADD) stat += item.value;
-            else stat *= item.value;
+    void ApplyStatModValues(Player& player, ItemStat stat, ItemMode mode, float value) {
+        auto applyFloat = [&](float& s) {
+            if (mode == ItemMode::ADD) s += value;
+            else s *= value;
         };
 
-        auto applyInt = [&](int& stat) {
-            float value = (item.mode == ItemMode::ADD) ? (stat + item.value) : (stat * item.value);
-            stat = std::max(1, (int)std::lround(value));
+        auto applyInt = [&](int& s) {
+            float v = (mode == ItemMode::ADD) ? (s + value) : (s * value);
+            s = std::max(1, (int)std::lround(v));
         };
 
-        switch (item.stat) {
+        auto applyHeal = [&](int amount) {
+            player.hp = std::min(player.maxHp, player.hp + std::max(1, amount));
+        };
+
+        switch (stat) {
             case ItemStat::DAMAGE: applyInt(player.damage); break;
             case ItemStat::SHOT_SPEED: applyFloat(player.shotSpeed); break;
             case ItemStat::RANGE: applyFloat(player.range); break;
             case ItemStat::FIRE_RATE: applyFloat(player.fireRate); break;
             case ItemStat::PROJECTILE_COUNT: applyInt(player.projectileCount); break;
             case ItemStat::MOVE_SPEED: applyFloat(player.moveSpeed); break;
+            case ItemStat::LUCK: {
+                float v = (mode == ItemMode::ADD) ? (player.luck + value) : (player.luck * value);
+                player.luck = (int)std::lround(v);
+                break;
+            }
             case ItemStat::MAX_HP: {
+                int before = player.maxHp;
                 applyInt(player.maxHp);
-                if (player.maxHp < 1) player.maxHp = 1;
+                if (player.maxHp < 2) player.maxHp = 2;
+                player.hp += (player.maxHp - before);
                 if (player.hp > player.maxHp) player.hp = player.maxHp;
                 break;
             }
+            case ItemStat::HEAL: applyHeal((int)std::lround(value)); break;
+            case ItemStat::HOMING_CHANCE: applyFloat(player.homingChance); break;
+            case ItemStat::POISON_CHANCE: applyFloat(player.poisonChance); break;
+            case ItemStat::STICKY_CHANCE: applyFloat(player.stickyChance); break;
+            case ItemStat::PIERCING_CHANCE: applyFloat(player.piercingChance); break;
+            case ItemStat::EXPLOSIVE_CHANCE: applyFloat(player.explosiveChance); break;
             case ItemStat::DASH_SPEED: applyFloat(player.dashSpeed); break;
             case ItemStat::DASH_DURATION: applyFloat(player.dashDuration); break;
             case ItemStat::DASH_COOLDOWN: applyFloat(player.dashCooldown); break;
@@ -42,13 +59,24 @@ namespace {
         }
     }
 
+    void ApplyStatMod(Player& player, const ItemTemplate& item) {
+        ApplyStatModValues(player, item.stat, item.mode, item.value);
+        if (item.stat2 != ItemStat::UNKNOWN) {
+            ApplyStatModValues(player, item.stat2, item.mode2, item.value2);
+        }
+    }
+
     void ApplyUnlock(Player& player, const ItemTemplate& item) {
         switch (item.flag) {
             case ItemFlag::DIAGONAL_FIRE: player.hasDiagonalFire = true; break;
             case ItemFlag::DASH: player.hasDash = true; break;
+            case ItemFlag::HOMING: player.hasHomingShots = true; break;
             case ItemFlag::UNKNOWN:
             default:
                 break;
+        }
+        if (item.stat2 != ItemStat::UNKNOWN) {
+            ApplyStatModValues(player, item.stat2, item.mode2, item.value2);
         }
     }
 }

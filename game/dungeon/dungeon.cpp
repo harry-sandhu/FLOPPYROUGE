@@ -330,6 +330,8 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                 for (int j = 0; j < itemDrops; ++j) {
                     rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
                 }
+            } else if (rooms[i].type == RoomType::BOSS && itemCount > 0 && currentFloor < totalFloors) {
+                rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
             } else if (rooms[i].type == RoomType::CURSE && itemCount > 0) {
                 rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
             }

@@ -15,12 +15,19 @@ struct Player {
     float fireRate = 3.0f;
     int projectileCount = 1;
     float moveSpeed = 60.0f;
-    int hp = 100;
-    int maxHp = 100;
+    int luck = 0;
+    int hp = 6;
+    int maxHp = 6;
 
     float dashSpeed = 180.0f;
     float dashDuration = 0.12f;
     float dashCooldown = 0.8f;
+
+    float homingChance = 0.0f;
+    float poisonChance = 0.0f;
+    float stickyChance = 0.0f;
+    float piercingChance = 0.0f;
+    float explosiveChance = 0.0f;
 
     float invincibleTimer = 0.0f;
     float fireCooldownRemaining = 0.0f;
@@ -32,6 +39,7 @@ struct Player {
 
     bool hasDiagonalFire = false;
     bool hasDash = false;
+    bool hasHomingShots = false;
     bool isDashing = false;
 
     int ownedItemIds[MAX_OWNED_ITEMS] = {};

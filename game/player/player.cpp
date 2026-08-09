@@ -1,6 +1,7 @@
 #include "player.h"
 #include "projectile_system.h"
 #include "../../engine/input.h"
+#include "../../engine/core/rng.h"
 #include <algorithm>
 #include <cmath>
 #include <windows.h>
@@ -37,6 +38,13 @@ namespace {
         }
 
         return false;
+    }
+
+    float LuckAdjustedChance(float baseChance, int luck) {
+        float chance = baseChance + (float)luck * 0.05f;
+        if (chance < 0.0f) chance = 0.0f;
+        if (chance > 1.0f) chance = 1.0f;
+        return chance;
     }
 
     void BeginDash(Player& player, Vec2 dashDir) {
@@ -94,13 +102,25 @@ void HandleShooting(Player& player, float /*dt*/, std::vector<Projectile>& playe
         player.pos.y + player.size / 2.0f
     };
 
+    bool homing = player.hasHomingShots;
+    bool poison = RNG::Chance(LuckAdjustedChance(player.poisonChance, player.luck));
+    bool sticky = RNG::Chance(LuckAdjustedChance(player.stickyChance, player.luck));
+    bool piercing = RNG::Chance(LuckAdjustedChance(player.piercingChance, player.luck));
+    bool explosive = RNG::Chance(LuckAdjustedChance(player.explosiveChance, player.luck));
+
     for (int i = 0; i < projectileCount; ++i) {
         ProjectileSystem::Spawn(
             playerProjectiles,
             spawnPos,
             { shootDir.x * player.shotSpeed, shootDir.y * player.shotSpeed },
             player.damage,
-            player.range
+            player.range,
+            0.0f,
+            homing,
+            poison,
+            sticky,
+            piercing,
+            explosive
         );
     }
 

@@ -19,7 +19,14 @@ namespace {
         if (std::strcmp(s, "fireRate") == 0) return ItemStat::FIRE_RATE;
         if (std::strcmp(s, "projectileCount") == 0) return ItemStat::PROJECTILE_COUNT;
         if (std::strcmp(s, "moveSpeed") == 0) return ItemStat::MOVE_SPEED;
+        if (std::strcmp(s, "luck") == 0) return ItemStat::LUCK;
         if (std::strcmp(s, "maxHp") == 0) return ItemStat::MAX_HP;
+        if (std::strcmp(s, "heal") == 0) return ItemStat::HEAL;
+        if (std::strcmp(s, "homingChance") == 0) return ItemStat::HOMING_CHANCE;
+        if (std::strcmp(s, "poisonChance") == 0) return ItemStat::POISON_CHANCE;
+        if (std::strcmp(s, "stickyChance") == 0) return ItemStat::STICKY_CHANCE;
+        if (std::strcmp(s, "piercingChance") == 0) return ItemStat::PIERCING_CHANCE;
+        if (std::strcmp(s, "explosiveChance") == 0) return ItemStat::EXPLOSIVE_CHANCE;
         if (std::strcmp(s, "dashSpeed") == 0) return ItemStat::DASH_SPEED;
         if (std::strcmp(s, "dashDuration") == 0) return ItemStat::DASH_DURATION;
         if (std::strcmp(s, "dashCooldown") == 0) return ItemStat::DASH_COOLDOWN;
@@ -34,6 +41,7 @@ namespace {
     ItemFlag ParseFlag(const char* s) {
         if (std::strcmp(s, "diagonal_fire") == 0) return ItemFlag::DIAGONAL_FIRE;
         if (std::strcmp(s, "dash") == 0) return ItemFlag::DASH;
+        if (std::strcmp(s, "homing") == 0) return ItemFlag::HOMING;
         return ItemFlag::UNKNOWN;
     }
 
@@ -62,6 +70,11 @@ bool Load(const char* path) {
         item.mode = ParseMode(block.GetString("mode", "add"));
         item.flag = ParseFlag(block.GetString("flag", ""));
         item.value = block.GetFloat("value", 0.0f);
+
+        // Optional second effect for trade-off items.
+        item.stat2 = ParseStat(block.GetString("stat2", "unknown"));
+        item.mode2 = ParseMode(block.GetString("mode2", "add"));
+        item.value2 = block.GetFloat("value2", 0.0f);
     }
 
     return true;
