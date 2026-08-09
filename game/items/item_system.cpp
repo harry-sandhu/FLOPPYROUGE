@@ -1,6 +1,7 @@
 #include "item_system.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace {
     void AddOwnedItem(Player& player, int itemId) {
@@ -68,6 +69,9 @@ void GrantItem(Player& player, int itemId) {
 
     ApplyItem(player, *item);
     AddOwnedItem(player, itemId);
+    std::strncpy(player.pickupName, item->name, sizeof(player.pickupName) - 1);
+    player.pickupName[sizeof(player.pickupName) - 1] = '\0';
+    player.pickupMessageTimer = 1.5f;
 }
 
 } // namespace ItemSystem

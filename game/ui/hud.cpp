@@ -2,6 +2,7 @@
 #include "../../engine/renderer.h"
 #include "../../engine/text.h"
 #include "../dungeon/dungeon.h"
+#include <cstdio>
 #include <climits>
 
 namespace HUD {
@@ -34,6 +35,17 @@ namespace {
         Renderer::DrawRect(x, y, 1, h, color);
         Renderer::DrawRect(x + w - 1, y, 1, h, color);
     }
+
+    const char* RoomTypeName(RoomType type) {
+        switch (type) {
+            case RoomType::START:    return "START";
+            case RoomType::NORMAL:   return "NORMAL";
+            case RoomType::BOSS:     return "BOSS";
+            case RoomType::TREASURE: return "TREASURE";
+            case RoomType::CURSE:    return "CURSE";
+        }
+        return "?";
+    }
 }
 
 void DrawHealthBar(const Player& player) {
@@ -42,6 +54,47 @@ void DrawHealthBar(const Player& player) {
     Renderer::DrawRect(5, 5, barWidth, 6, 0xFF444444);
     Renderer::DrawRect(5, 5, fillWidth, 6, 0xFF33FF33);
     Text::DrawString("HP", 5, 14, 0xFFCCCCCC, 1);
+}
+
+void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& room, const Boss* boss) {
+    char line[64];
+
+    std::snprintf(line, sizeof(line), "DMG %d FIRE %.1f SPD %d RNG %.0f",
+                  player.damage, player.fireRate, (int)player.moveSpeed, player.range);
+    Text::DrawString(line, 5, 24, 0xFFEAEAEA, 1);
+
+    std::snprintf(line, sizeof(line), "FLOOR %d/%d", dungeon.CurrentFloor(), dungeon.MaxFloors());
+    Text::DrawString(line, 5, 33, 0xFFEAEAEA, 1);
+
+    std::snprintf(line, sizeof(line), "ROOM %s", RoomTypeName(room.type));
+    Text::DrawString(line, 5, 42, 0xFFEAEAEA, 1);
+
+    if (player.hasDash) {
+        if (player.isDashing) {
+            std::snprintf(line, sizeof(line), "DASH ACTIVE");
+        } else if (player.dashCooldownRemaining > 0.0f) {
+            std::snprintf(line, sizeof(line), "DASH CD %.1f", player.dashCooldownRemaining);
+        } else {
+            std::snprintf(line, sizeof(line), "DASH READY");
+        }
+    } else {
+        std::snprintf(line, sizeof(line), "DASH LOCKED");
+    }
+    Text::DrawString(line, 5, 51, 0xFFEAEAEA, 1);
+
+    std::snprintf(line, sizeof(line), "ITEMS %d", player.ownedItemCount);
+    Text::DrawString(line, 5, 60, 0xFFEAEAEA, 1);
+
+    if (player.pickupMessageTimer > 0.0f && player.pickupName[0] != '\0') {
+        std::snprintf(line, sizeof(line), "PICKUP %s", player.pickupName);
+        Text::DrawString(line, 5, 69, 0xFFFFFF88, 1);
+    }
+
+    if (boss && boss->alive) {
+        std::snprintf(line, sizeof(line), "BOSS PHASE %d%s", boss->phase, boss->isCharging ? " CHARGE" : "");
+        int w = Text::MeasureWidth(line, 1);
+        Text::DrawString(line, (320 - w) / 2, 16, 0xFFFFFFFF, 1);
+    }
 }
 
 void DrawGameOverBanner() {

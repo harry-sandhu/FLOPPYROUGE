@@ -27,6 +27,8 @@ struct Player {
     float dashCooldownRemaining = 0.0f;
     float dashTimeRemaining = 0.0f;
     float actionFlashTimer = 0.0f;
+    float pickupMessageTimer = 0.0f;
+    char pickupName[32] = {};
 
     bool hasDiagonalFire = false;
     bool hasDash = false;

@@ -138,6 +138,11 @@ void UpdateTimers(Player& player, float dt) {
         if (player.actionFlashTimer < 0.0f) player.actionFlashTimer = 0.0f;
     }
 
+    if (player.pickupMessageTimer > 0.0f) {
+        player.pickupMessageTimer -= dt;
+        if (player.pickupMessageTimer < 0.0f) player.pickupMessageTimer = 0.0f;
+    }
+
     if (player.isDashing && player.dashTimeRemaining > 0.0f) {
         player.dashTimeRemaining -= dt;
         if (player.dashTimeRemaining <= 0.0f) {

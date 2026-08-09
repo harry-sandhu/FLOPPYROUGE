@@ -336,6 +336,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         ProjectileSystem::Draw(enemyShots, (int)projectileSize, 0xFFFF66FF, shakeOffset);
 
         HUD::DrawHealthBar(player);
+        HUD::DrawRunStatus(dungeon, player, room, (room.type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
         if (state == GameState::LOST) HUD::DrawGameOverBanner();
         if (state == GameState::WON || (state == GameState::RUNNING && room.type == RoomType::NORMAL && room.cleared)) {
             HUD::DrawRoomClearedBanner();
