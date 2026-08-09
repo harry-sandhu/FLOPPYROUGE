@@ -7,6 +7,7 @@
 #include "../engine/text.h"
 #include "../game/player/player.h"
 #include "../game/player/projectile_system.h"
+#include "../game/items/item_database.h"
 #include "../game/enemies/enemy.h"
 #include "../game/enemies/enemy_database.h"
 #include "../game/bosses/boss.h"
@@ -27,6 +28,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     if (!Renderer::Init(Window::GetHandle())) return 1;
 
     EnemyDatabase::Load("data/enemies.txt");
+    ItemDatabase::Load("data/items.txt");
 
     Timer timer;
     Room room;

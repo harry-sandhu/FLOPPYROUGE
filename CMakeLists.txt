@@ -14,6 +14,8 @@ add_executable(FloppyRogue WIN32
     engine/data_parser.cpp
     game/player/player.cpp
     game/player/projectile_system.cpp
+    game/items/item_database.cpp
+    game/items/item_system.cpp
     game/enemies/enemy.cpp
     game/enemies/enemy_database.cpp
     game/bosses/boss.cpp

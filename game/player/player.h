@@ -4,6 +4,8 @@
 #include "projectile.h"
 
 struct Player {
+    static constexpr int MAX_OWNED_ITEMS = 32;
+
     Vec2 pos;
     int size = 10;
 
@@ -28,6 +30,9 @@ struct Player {
     bool hasDiagonalFire = false;
     bool hasDash = false;
     bool isDashing = false;
+
+    int ownedItemIds[MAX_OWNED_ITEMS] = {};
+    int ownedItemCount = 0;
 
     Vec2 facingDir = { 0.0f, -1.0f };
     Vec2 dashDir = { 0.0f, 0.0f };
