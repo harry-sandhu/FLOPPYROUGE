@@ -9,19 +9,17 @@ struct DungeonSettings {
     int gridSizePerFloor = 10;
     int gridSizeMax = 30;
     int totalFloors = 3;
-    int mainPathBase = 5;
-    int mainPathPerFloor = 1;
-    int extraNormalBase = 1;
-    int extraNormalPerFloor = 1;
+    int normalRoomBase = 8;
+    int normalRoomPerFloor = 6;
     int normalEnemyBase = 2;
     int normalEnemyPerFloor = 1;
     int deepRoomBonus = 1;
     int treasureMinItems = 1;
     int treasureMaxItems = 2;
     float specialEnemyChance = 0.05f;
-    float curseEnemyChance = 0.5f;   // odds a curse room is the enemy variant vs. item variant
-    float bombDropChance = 0.15f;    // on clearing an enemy-curse room
-    float heartDropChance = 0.20f;   // on clearing an enemy-curse room
+    float curseEnemyChance = 0.5f;
+    float bombDropChance = 0.15f;
+    float heartDropChance = 0.20f;
 };
 
 class Dungeon {

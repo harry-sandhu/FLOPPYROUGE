@@ -60,10 +60,8 @@ bool Dungeon::LoadSettings(const char* path) {
         settings.gridSizePerFloor = std::max(1, block.GetInt("grid_size_per_floor", settings.gridSizePerFloor));
         settings.gridSizeMax = std::max(1, block.GetInt("grid_size_max", settings.gridSizeMax));
         settings.totalFloors = std::max(1, block.GetInt("total_floors", settings.totalFloors));
-        settings.mainPathBase = std::max(1, block.GetInt("main_path_base", settings.mainPathBase));
-        settings.mainPathPerFloor = std::max(0, block.GetInt("main_path_per_floor", settings.mainPathPerFloor));
-        settings.extraNormalBase = std::max(0, block.GetInt("extra_normal_base", settings.extraNormalBase));
-        settings.extraNormalPerFloor = std::max(0, block.GetInt("extra_normal_per_floor", settings.extraNormalPerFloor));
+        settings.normalRoomBase = std::max(3, block.GetInt("normal_room_base", settings.normalRoomBase));
+        settings.normalRoomPerFloor = std::max(0, block.GetInt("normal_room_per_floor", settings.normalRoomPerFloor));
         settings.normalEnemyBase = std::max(0, block.GetInt("normal_enemy_base", settings.normalEnemyBase));
         settings.normalEnemyPerFloor = std::max(0, block.GetInt("normal_enemy_per_floor", settings.normalEnemyPerFloor));
         settings.deepRoomBonus = std::max(0, block.GetInt("deep_room_bonus", settings.deepRoomBonus));
@@ -196,12 +194,9 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
     gridWidth = gridSize;
     gridHeight = gridSize;
 
-    const bool hasBossRoom = true; // Every floor ends with a boss room.
-    const int mainPathRooms = settings.mainPathBase + settings.mainPathPerFloor * currentFloor;
-    const int extraNormalRooms = settings.extraNormalBase + settings.extraNormalPerFloor * currentFloor;
+    const int normalRoomTarget = settings.normalRoomBase + settings.normalRoomPerFloor * currentFloor;
 
     for (int attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; ++attempt) {
-        // ...unchanged...
         rooms.clear();
         rooms.reserve(gridWidth * gridHeight);
         cellToRoomIndex.assign(gridWidth * gridHeight, -1);
@@ -209,58 +204,28 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         startRoomIndex = -1;
         bossRoomIndex = -1;
 
-        std::vector<int> pathRoomIndices;
-        int currentX = RNG::Range(0, gridWidth - 1);
-        int currentY = RNG::Range(0, gridHeight - 1);
-        bool failed = false;
+        int centerX = gridWidth / 2;
+        int centerY = gridHeight / 2;
+        startRoomIndex = AddRoomAtCell(centerX, centerY);
+        rooms[startRoomIndex].type = RoomType::START;
 
-        int rootIndex = -1;
-        if (hasBossRoom) {
-            bossRoomIndex = AddRoomAtCell(currentX, currentY);
-            rooms[bossRoomIndex].type = RoomType::BOSS;
-            rooms[bossRoomIndex].bossVariant = RNG::Range(0, 2);
-            rootIndex = bossRoomIndex;
-            pathRoomIndices.push_back(bossRoomIndex);
-        } else {
-            startRoomIndex = AddRoomAtCell(currentX, currentY);
-            rooms[startRoomIndex].type = RoomType::START;
-            rootIndex = startRoomIndex;
-            pathRoomIndices.push_back(startRoomIndex);
-        }
-
-        for (int i = 1; i < mainPathRooms; ++i) {
-            std::vector<Vec2> candidates;
-            if (InBounds(currentX + 1, currentY) && RoomIndexAtCell(currentX + 1, currentY) < 0) candidates.push_back({ (float)(currentX + 1), (float)currentY });
-            if (InBounds(currentX - 1, currentY) && RoomIndexAtCell(currentX - 1, currentY) < 0) candidates.push_back({ (float)(currentX - 1), (float)currentY });
-            if (InBounds(currentX, currentY + 1) && RoomIndexAtCell(currentX, currentY + 1) < 0) candidates.push_back({ (float)currentX, (float)(currentY + 1) });
-            if (InBounds(currentX, currentY - 1) && RoomIndexAtCell(currentX, currentY - 1) < 0) candidates.push_back({ (float)currentX, (float)(currentY - 1) });
-
-            if (candidates.empty()) {
-                failed = true;
-                break;
-            }
-
-            const Vec2& nextCell = candidates[RNG::Range(0, (int)candidates.size() - 1)];
-            currentX = (int)nextCell.x;
-            currentY = (int)nextCell.y;
-
-            int roomIndex = AddRoomAtCell(currentX, currentY);
-            rooms[roomIndex].type = RoomType::NORMAL;
-            pathRoomIndices.push_back(roomIndex);
-        }
-
-        if (failed) continue;
-
+        std::vector<int> normalRoomIndices;
         int addedNormals = 0;
-        int branchAttempts = 0;
-        while (addedNormals < extraNormalRooms && branchAttempts < 24) {
-            branchAttempts++;
-            int parentIndex = pathRoomIndices[RNG::Range(0, (int)pathRoomIndices.size() - 1)];
-            const Room& parent = rooms[parentIndex];
+        int growthAttempts = 0;
+        const int maxGrowthAttempts = normalRoomTarget * 20;
 
-            std::vector<Vec2> candidates;
+        while (addedNormals < normalRoomTarget && growthAttempts < maxGrowthAttempts) {
+            growthAttempts++;
+
+            int poolSize = 1 + (int)normalRoomIndices.size();
+            int pick = RNG::Range(0, poolSize - 1);
+            int parentIndex = (pick == 0) ? startRoomIndex : normalRoomIndices[pick - 1];
+
+            const Room& parent = rooms[parentIndex];
             int px = (int)parent.gridPos.x;
             int py = (int)parent.gridPos.y;
+
+            std::vector<Vec2> candidates;
             if (InBounds(px + 1, py) && RoomIndexAtCell(px + 1, py) < 0) candidates.push_back({ (float)(px + 1), (float)py });
             if (InBounds(px - 1, py) && RoomIndexAtCell(px - 1, py) < 0) candidates.push_back({ (float)(px - 1), (float)py });
             if (InBounds(px, py + 1) && RoomIndexAtCell(px, py + 1) < 0) candidates.push_back({ (float)px, (float)(py + 1) });
@@ -268,60 +233,64 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
 
             if (candidates.empty()) continue;
 
-            const Vec2& nextCell = candidates[RNG::Range(0, (int)candidates.size() - 1)];
-            int roomIndex = AddRoomAtCell((int)nextCell.x, (int)nextCell.y);
+            const Vec2& cell = candidates[RNG::Range(0, (int)candidates.size() - 1)];
+            int roomIndex = AddRoomAtCell((int)cell.x, (int)cell.y);
             rooms[roomIndex].type = RoomType::NORMAL;
+            normalRoomIndices.push_back(roomIndex);
             addedNormals++;
         }
 
+        if (addedNormals < normalRoomTarget) continue;
+
         BuildConnections();
 
-        std::vector<int> distFromRoot = ComputeDistances(rooms, rootIndex);
-
-        if (hasBossRoom) {
-            int bestStart = rootIndex;
-            int bestStartDist = -1;
-            for (int i = 0; i < (int)rooms.size(); ++i) {
-                if (distFromRoot[i] > bestStartDist) {
-                    bestStartDist = distFromRoot[i];
-                    bestStart = i;
-                }
-            }
-            startRoomIndex = bestStart;
-            rooms[startRoomIndex].type = RoomType::START;
+        std::vector<int> degree(rooms.size(), 0);
+        for (int i = 0; i < (int)rooms.size(); ++i) {
+            const Room& r = rooms[i];
+            if (r.north >= 0) degree[i]++;
+            if (r.south >= 0) degree[i]++;
+            if (r.east >= 0) degree[i]++;
+            if (r.west >= 0) degree[i]++;
         }
 
         std::vector<int> distFromStart = ComputeDistances(rooms, startRoomIndex);
 
-        int treasureIndex = -1;
-        int treasureScore = INT_MAX;
+        std::vector<int> deadEnds;
         for (int i = 0; i < (int)rooms.size(); ++i) {
-            if (i == bossRoomIndex || i == startRoomIndex) continue;
-            if (hasBossRoom && distFromRoot[i] <= 1) continue;
+            if (i == startRoomIndex) continue;
+            if (degree[i] == 1) deadEnds.push_back(i);
+        }
 
-            int distToStart = distFromStart[i];
-            int distToBoss = hasBossRoom ? distFromRoot[i] : 0;
-            int score = distToStart * 10 - distToBoss;
-            if (score < treasureScore) {
-                treasureScore = score;
-                treasureIndex = i;
+        if ((int)deadEnds.size() < 3) continue;
+
+        bossRoomIndex = deadEnds[0];
+        int bestDist = distFromStart[bossRoomIndex];
+        for (int idx : deadEnds) {
+            if (distFromStart[idx] > bestDist) {
+                bestDist = distFromStart[idx];
+                bossRoomIndex = idx;
             }
         }
+        rooms[bossRoomIndex].type = RoomType::BOSS;
+        rooms[bossRoomIndex].bossVariant = RNG::Range(0, 2);
 
-        int curseIndex = -1;
-        for (int i = 0; i < (int)rooms.size(); ++i) {
-            if (i == bossRoomIndex || i == startRoomIndex || i == treasureIndex) continue;
-            if (hasBossRoom && distFromRoot[i] <= 1) continue;
-            curseIndex = i;
-            break;
+        std::vector<int> remaining;
+        for (int idx : deadEnds) {
+            if (idx != bossRoomIndex) remaining.push_back(idx);
         }
 
-        if (treasureIndex < 0 || curseIndex < 0) continue;
+        int treasureIndex = remaining[RNG::Range(0, (int)remaining.size() - 1)];
+        int curseIndex = -1;
+        for (int tries = 0; tries < 16 && curseIndex < 0; ++tries) {
+            int candidate = remaining[RNG::Range(0, (int)remaining.size() - 1)];
+            if (candidate != treasureIndex) curseIndex = candidate;
+        }
+        if (curseIndex < 0) continue;
 
         rooms[treasureIndex].type = RoomType::TREASURE;
         rooms[curseIndex].type = RoomType::CURSE;
 
-       const int enemyCount = EnemyDatabase::Count();
+        const int enemyCount = EnemyDatabase::Count();
         const int itemCount = ItemDatabase::Count();
         for (int i = 0; i < (int)rooms.size(); ++i) {
             rooms[i].enemySpawnList.clear();
@@ -332,7 +301,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                     continue;
                 }
 
-                int distBonus = distFromRoot[i];
+                int distBonus = distFromStart[i];
                 int spawnCount = settings.normalEnemyBase
                     + settings.normalEnemyPerFloor * currentFloor
                     + (distBonus > 2 ? settings.deepRoomBonus : 0);
@@ -349,7 +318,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             } else if (rooms[i].type == RoomType::CURSE) {
                 bool enemyVariant = enemyCount > 0 && RNG::Chance(settings.curseEnemyChance);
                 if (enemyVariant) {
-                    int distBonus = distFromRoot[i];
+                    int distBonus = distFromStart[i];
                     int spawnCount = settings.normalEnemyBase
                         + settings.normalEnemyPerFloor * currentFloor
                         + (distBonus > 2 ? settings.deepRoomBonus : 0);
@@ -366,9 +335,6 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         }
 
         ApplyRoomDefaults();
-        if (!hasBossRoom) {
-            startRoomIndex = rootIndex;
-        }
         currentRoomIndex = startRoomIndex;
         return true;
     }

@@ -2,10 +2,8 @@
 grid_size_per_floor=10
 grid_size_max=30
 total_floors=3
-main_path_base=5
-main_path_per_floor=1
-extra_normal_base=1
-extra_normal_per_floor=1
+normal_room_base=8
+normal_room_per_floor=6
 normal_enemy_base=1
 normal_enemy_per_floor=1
 deep_room_bonus=1
