@@ -127,6 +127,30 @@ void DrawFloorMap(const Dungeon& dungeon) {
             DrawOutline(x - 1, y - 1, cellSize + 2, cellSize + 2, 0xFFFFFFFF);
         }
     }
+
+    const int legendX = mapX - 1;
+    const int legendY = mapY + mapH + 6;
+    Text::DrawString("FLOOR MAP", legendX, legendY, 0xFFFFFFFF, 1);
+
+    struct LegendEntry {
+        const char* label;
+        uint32_t color;
+    };
+
+    const LegendEntry entries[] = {
+        { "S Start", 0xFF33CC66 },
+        { "N Normal", 0xFF77CC77 },
+        { "B Boss", 0xFFBB55FF },
+        { "T Treasure", 0xFFFFC84D },
+        { "C Curse", 0xFFFF5555 }
+    };
+
+    int lineY = legendY + 9;
+    for (const LegendEntry& entry : entries) {
+        Renderer::DrawRect(legendX, lineY + 1, 4, 4, entry.color);
+        Text::DrawString(entry.label, legendX + 7, lineY, 0xFFEAEAEA, 1);
+        lineY += 8;
+    }
 }
 
 } // namespace HUD

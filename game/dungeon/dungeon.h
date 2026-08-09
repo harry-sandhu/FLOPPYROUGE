@@ -8,11 +8,18 @@
 class Dungeon {
 public:
     bool Generate(uint32_t seed);
+    bool Generate(uint32_t seed, int floorNumber);
+    bool AdvanceFloor(uint32_t seed);
 
     const std::vector<Room>& Rooms() const;
     Room& CurrentRoom();
     const Room& CurrentRoom() const;
     int CurrentRoomIndex() const;
+    int CurrentFloor() const;
+    int MaxFloors() const;
+    bool HasBossRoom() const;
+    bool IsFinalFloor() const;
+    bool AllCombatRoomsCleared() const;
 
     void PlacePlayerAtCurrentRoomCenter(Player& player) const;
     bool TryTransition(Player& player);
@@ -26,6 +33,8 @@ private:
     int currentRoomIndex = -1;
     int startRoomIndex = -1;
     int bossRoomIndex = -1;
+    int currentFloor = 1;
+    int totalFloors = 3;
 
     int CellIndex(int x, int y) const;
     bool InBounds(int x, int y) const;

@@ -11,6 +11,13 @@ enum class AIType {
     EXPLODER
 };
 
+enum class EnemySpecialType {
+    NONE,
+    REINFORCER,
+    CREEPER,
+    DEATH_RING
+};
+
 struct Enemy {
     Vec2 pos;
     float w = 12.0f, h = 12.0f;
@@ -19,12 +26,18 @@ struct Enemy {
     int maxHp = 30;
     AIType aiType = AIType::CHASER;
     bool alive = true;
+    char templateName[32] = {};
 
     float shootTimer = 0.0f;
     float shootCooldown = 1.5f;
     float shootRange = 110.0f;
     float preferredDistance = 70.0f;
     float shotSpeed = 80.0f;
+    float spawnDelayRemaining = 0.0f;
+    float creepDropTimer = 0.0f;
+    float creepDropInterval = 0.30f;
+
+    EnemySpecialType specialType = EnemySpecialType::NONE;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
 };

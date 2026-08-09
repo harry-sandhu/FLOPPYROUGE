@@ -7,6 +7,8 @@ namespace {
     constexpr int ENEMY_PROJECTILE_DAMAGE = 8;
     constexpr int SUMMONER_MAX_ADDITIONAL_ENEMIES = 6;
     constexpr float ENEMY_PROJECTILE_RANGE = 999999.0f;
+    constexpr int CREEP_PROJECTILE_DAMAGE = 5;
+    constexpr float CREEP_PROJECTILE_LIFE = 0.9f;
     constexpr float PI = 3.14159265f;
 
     Vec2 DirectionTo(Vec2 from, Vec2 to, float& outDist) {
@@ -116,6 +118,28 @@ namespace {
             enemy.alive = false;
         }
     }
+
+    void MaybeDropCreep(Enemy& enemy, Vec2 beforePos, float dt, std::vector<Projectile>& enemyProjectiles) {
+        if (enemy.specialType != EnemySpecialType::CREEPER) return;
+
+        float dx = enemy.pos.x - beforePos.x;
+        float dy = enemy.pos.y - beforePos.y;
+        float movedSq = dx * dx + dy * dy;
+        if (movedSq < 0.01f) return;
+
+        enemy.creepDropTimer -= dt;
+        if (enemy.creepDropTimer > 0.0f) return;
+
+        ProjectileSystem::Spawn(
+            enemyProjectiles,
+            { enemy.pos.x + enemy.w * 0.25f, enemy.pos.y + enemy.h * 0.25f },
+            { 0.0f, 0.0f },
+            CREEP_PROJECTILE_DAMAGE,
+            ENEMY_PROJECTILE_RANGE,
+            CREEP_PROJECTILE_LIFE
+        );
+        enemy.creepDropTimer = enemy.creepDropInterval;
+    }
 }
 
 namespace EnemyAI {
@@ -123,6 +147,12 @@ namespace EnemyAI {
 void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& roomEnemies,
             std::vector<Enemy>& spawnedEnemies, std::vector<Projectile>& enemyProjectiles) {
     if (!enemy.alive) return;
+    if (enemy.spawnDelayRemaining > 0.0f) {
+        enemy.spawnDelayRemaining -= dt;
+        if (enemy.spawnDelayRemaining > 0.0f) return;
+    }
+
+    Vec2 beforePos = enemy.pos;
 
     switch (enemy.aiType) {
         case AIType::CHASER:
@@ -141,6 +171,8 @@ void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& ro
             UpdateExploder(enemy, playerPos, dt, enemyProjectiles);
             break;
     }
+
+    MaybeDropCreep(enemy, beforePos, dt, enemyProjectiles);
 }
 
 } // namespace EnemyAI

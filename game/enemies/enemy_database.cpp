@@ -63,6 +63,7 @@ bool Exists(const char* name) {
 Enemy Spawn(const char* name, Vec2 pos) {
     Enemy e;
     e.pos = pos;
+    std::strncpy(e.templateName, name, sizeof(e.templateName) - 1);
 
     const EnemyTemplate* t = Find(name);
     if (!t) return e; // unknown name -> default CHASER, hp 30
@@ -86,6 +87,8 @@ Enemy Spawn(int index, Vec2 pos) {
 
     const EnemyTemplate* t = FindByIndex(index);
     if (!t) return e;
+
+    std::strncpy(e.templateName, t->name, sizeof(e.templateName) - 1);
 
     e.aiType = t->aiType;
     e.hp = t->hp;

@@ -142,7 +142,16 @@ void Dungeon::MovePlayerIntoRoom(Player& player, int fromRoomIndex, int toRoomIn
 }
 
 bool Dungeon::Generate(uint32_t seed) {
+    return Generate(seed, 1);
+}
+
+bool Dungeon::Generate(uint32_t seed, int floorNumber) {
     RNG::Seed(seed);
+    currentFloor = std::max(1, std::min(floorNumber, totalFloors));
+
+    const bool hasBossRoom = currentFloor < totalFloors;
+    const int mainPathRooms = 5 + currentFloor;
+    const int extraNormalRooms = 1 + currentFloor;
 
     for (int attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; ++attempt) {
         rooms.clear();
@@ -152,20 +161,26 @@ bool Dungeon::Generate(uint32_t seed) {
         startRoomIndex = -1;
         bossRoomIndex = -1;
 
-        int bossX = RNG::Range(0, gridWidth - 1);
-        int bossY = RNG::Range(0, gridHeight - 1);
-        bossRoomIndex = AddRoomAtCell(bossX, bossY);
-        rooms[bossRoomIndex].type = RoomType::BOSS;
-        rooms[bossRoomIndex].bossVariant = RNG::Range(0, 2);
-
         std::vector<int> pathRoomIndices;
-        pathRoomIndices.push_back(bossRoomIndex);
-
-        int currentX = bossX;
-        int currentY = bossY;
+        int currentX = RNG::Range(0, gridWidth - 1);
+        int currentY = RNG::Range(0, gridHeight - 1);
         bool failed = false;
 
-        for (int i = 1; i < MAIN_PATH_ROOMS; ++i) {
+        int rootIndex = -1;
+        if (hasBossRoom) {
+            bossRoomIndex = AddRoomAtCell(currentX, currentY);
+            rooms[bossRoomIndex].type = RoomType::BOSS;
+            rooms[bossRoomIndex].bossVariant = RNG::Range(0, 2);
+            rootIndex = bossRoomIndex;
+            pathRoomIndices.push_back(bossRoomIndex);
+        } else {
+            startRoomIndex = AddRoomAtCell(currentX, currentY);
+            rooms[startRoomIndex].type = RoomType::START;
+            rootIndex = startRoomIndex;
+            pathRoomIndices.push_back(startRoomIndex);
+        }
+
+        for (int i = 1; i < mainPathRooms; ++i) {
             std::vector<Vec2> candidates;
             if (InBounds(currentX + 1, currentY) && RoomIndexAtCell(currentX + 1, currentY) < 0) candidates.push_back({ (float)(currentX + 1), (float)currentY });
             if (InBounds(currentX - 1, currentY) && RoomIndexAtCell(currentX - 1, currentY) < 0) candidates.push_back({ (float)(currentX - 1), (float)currentY });
@@ -190,7 +205,7 @@ bool Dungeon::Generate(uint32_t seed) {
 
         int addedNormals = 0;
         int branchAttempts = 0;
-        while (addedNormals < EXTRA_NORMAL_ROOMS && branchAttempts < 24) {
+        while (addedNormals < extraNormalRooms && branchAttempts < 24) {
             branchAttempts++;
             int parentIndex = pathRoomIndices[RNG::Range(0, (int)pathRoomIndices.size() - 1)];
             const Room& parent = rooms[parentIndex];
@@ -213,17 +228,20 @@ bool Dungeon::Generate(uint32_t seed) {
 
         BuildConnections();
 
-        std::vector<int> distFromBoss = ComputeDistances(rooms, bossRoomIndex);
-        int bestStart = bossRoomIndex;
-        int bestStartDist = -1;
-        for (int i = 0; i < (int)rooms.size(); ++i) {
-            if (distFromBoss[i] > bestStartDist) {
-                bestStartDist = distFromBoss[i];
-                bestStart = i;
+        std::vector<int> distFromRoot = ComputeDistances(rooms, rootIndex);
+
+        if (hasBossRoom) {
+            int bestStart = rootIndex;
+            int bestStartDist = -1;
+            for (int i = 0; i < (int)rooms.size(); ++i) {
+                if (distFromRoot[i] > bestStartDist) {
+                    bestStartDist = distFromRoot[i];
+                    bestStart = i;
+                }
             }
+            startRoomIndex = bestStart;
+            rooms[startRoomIndex].type = RoomType::START;
         }
-        startRoomIndex = bestStart;
-        rooms[startRoomIndex].type = RoomType::START;
 
         std::vector<int> distFromStart = ComputeDistances(rooms, startRoomIndex);
 
@@ -231,9 +249,11 @@ bool Dungeon::Generate(uint32_t seed) {
         int treasureScore = INT_MAX;
         for (int i = 0; i < (int)rooms.size(); ++i) {
             if (i == bossRoomIndex || i == startRoomIndex) continue;
-            if (distFromBoss[i] <= 1) continue;
+            if (hasBossRoom && distFromRoot[i] <= 1) continue;
 
-            int score = distFromStart[i] * 10 - distFromBoss[i];
+            int distToStart = distFromStart[i];
+            int distToBoss = hasBossRoom ? distFromRoot[i] : 0;
+            int score = distToStart * 10 - distToBoss;
             if (score < treasureScore) {
                 treasureScore = score;
                 treasureIndex = i;
@@ -243,7 +263,7 @@ bool Dungeon::Generate(uint32_t seed) {
         int curseIndex = -1;
         for (int i = 0; i < (int)rooms.size(); ++i) {
             if (i == bossRoomIndex || i == startRoomIndex || i == treasureIndex) continue;
-            if (distFromBoss[i] <= 1) continue;
+            if (hasBossRoom && distFromRoot[i] <= 1) continue;
             curseIndex = i;
             break;
         }
@@ -260,7 +280,12 @@ bool Dungeon::Generate(uint32_t seed) {
             rooms[i].itemSpawnList.clear();
 
             if (rooms[i].type == RoomType::NORMAL && enemyCount > 0) {
-                int spawnCount = 2 + (distFromBoss[i] > 2 ? 1 : 0);
+                if (RNG::Chance(0.10f)) {
+                    continue;
+                }
+
+                int distBonus = hasBossRoom ? distFromRoot[i] : distFromRoot[i];
+                int spawnCount = 2 + currentFloor + (distBonus > 2 ? 1 : 0);
                 for (int j = 0; j < spawnCount; ++j) {
                     rooms[i].enemySpawnList.push_back(RNG::Range(0, enemyCount - 1));
                 }
@@ -275,11 +300,44 @@ bool Dungeon::Generate(uint32_t seed) {
         }
 
         ApplyRoomDefaults();
+        if (!hasBossRoom) {
+            startRoomIndex = rootIndex;
+        }
         currentRoomIndex = startRoomIndex;
         return true;
     }
 
     return false;
+}
+
+bool Dungeon::AdvanceFloor(uint32_t seed) {
+    if (currentFloor >= totalFloors) return false;
+    return Generate(seed, currentFloor + 1);
+}
+
+int Dungeon::CurrentFloor() const {
+    return currentFloor;
+}
+
+int Dungeon::MaxFloors() const {
+    return totalFloors;
+}
+
+bool Dungeon::HasBossRoom() const {
+    return currentFloor < totalFloors;
+}
+
+bool Dungeon::IsFinalFloor() const {
+    return currentFloor >= totalFloors;
+}
+
+bool Dungeon::AllCombatRoomsCleared() const {
+    for (const Room& room : rooms) {
+        if (room.type == RoomType::NORMAL || room.type == RoomType::BOSS) {
+            if (!room.cleared) return false;
+        }
+    }
+    return true;
 }
 
 Room& Dungeon::CurrentRoom() {

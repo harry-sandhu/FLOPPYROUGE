@@ -1,7 +1,7 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: floor map added, cleared rooms stay empty, and the v2 gameplay
-foundation is now in place.
+Last updated: three-floor dungeon progression, clearer floor map, projectile
+movement fixes, and special enemy variants are now in place.
 
 ## Contest constraints (don't lose sight of these)
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
@@ -36,7 +36,12 @@ foundation is now in place.
       (`game/rooms/room`)
 - [x] Dungeon system — generated room graph, transitions, room types,
       room-cleared state, treasure/curse loot hooks (`game/dungeon`)
-- [x] Floor mini-map in the top-right corner
+- [x] Floor mini-map in the top-right corner with a legend
+- [x] Three-floor progression with boss floors 1 and 2, floor 3 as the finale
+- [x] Rooms can stay empty, and normal-room enemy counts scale by floor
+- [x] Enemies and bosses wait briefly after spawning before attacking
+- [x] Projectile movement now advances separately from collision handling
+- [x] Special enemy variants: reinforcers, creepers, and death-burst enemies
 - [x] Bitmap font text rendering (`engine/text`)
 - [x] Custom data file parser — key=value blocks, no STL string, no JSON
       dependency (`engine/data_parser`)
@@ -69,5 +74,5 @@ foundation is now in place.
 - No audio yet, so hits, shots, deaths, and boss attacks are silent
 - No camera layer yet because the gameplay still fits inside one active room
 - Item rewards are functional, but there is no full inventory UI yet
-- The dungeon is one-floor for now; full multi-floor progression is still a
-  later step
+- The dungeon now spans three floors, but the floor layouts and enemy mix
+  still need tuning

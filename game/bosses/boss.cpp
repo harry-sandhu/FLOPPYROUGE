@@ -195,6 +195,10 @@ namespace BossAI {
 
 void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
     if (!boss.alive) return;
+    if (boss.spawnDelayRemaining > 0.0f) {
+        boss.spawnDelayRemaining -= dt;
+        if (boss.spawnDelayRemaining > 0.0f) return;
+    }
 
     if (boss.phase == 1 && boss.hp <= boss.maxHp / 2) {
         boss.phase = 2;

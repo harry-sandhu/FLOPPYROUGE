@@ -30,6 +30,7 @@ struct Boss {
     float chargeTimeRemaining = 0.0f;
     float chargeDuration = 0.5f;
     float chargeSpeed = 220.0f;
+    float spawnDelayRemaining = 0.0f;
 
     int contactDamage = 15;
     int chargeContactDamage = 25;
