@@ -1,7 +1,11 @@
 #include "enemy.h"
+#include "../player/projectile_system.h"
 #include <cmath>
 
 namespace {
+    constexpr int ENEMY_PROJECTILE_DAMAGE = 8;
+    constexpr float ENEMY_PROJECTILE_RANGE = 999999.0f;
+
     Vec2 DirectionTo(Vec2 from, Vec2 to, float& outDist) {
         Vec2 d = { to.x - from.x, to.y - from.y };
         outDist = std::sqrt(d.x * d.x + d.y * d.y);
@@ -34,10 +38,13 @@ namespace {
 
         enemy.shootTimer -= dt;
         if (enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
-            Projectile p;
-            p.pos = enemy.pos;
-            p.vel = { dir.x * enemy.shotSpeed, dir.y * enemy.shotSpeed };
-            enemyProjectiles.push_back(p);
+            ProjectileSystem::Spawn(
+                enemyProjectiles,
+                enemy.pos,
+                { dir.x * enemy.shotSpeed, dir.y * enemy.shotSpeed },
+                ENEMY_PROJECTILE_DAMAGE,
+                ENEMY_PROJECTILE_RANGE
+            );
             enemy.shootTimer = enemy.shootCooldown;
         }
     }

@@ -1,5 +1,6 @@
 #include "projectile_system.h"
 #include <algorithm>
+#include <cmath>
 #include "../../engine/collision.h"
 #include "../../engine/renderer.h"
 
@@ -8,27 +9,41 @@ namespace {
     bool OutOfBounds(Vec2 pos) {
         return pos.x < -16.0f || pos.x > 336.0f || pos.y < -16.0f || pos.y > 196.0f;
     }
+
+    void AdvanceProjectile(Projectile& p, float dt) {
+        float stepX = p.vel.x * dt;
+        float stepY = p.vel.y * dt;
+        p.pos.x += stepX;
+        p.pos.y += stepY;
+
+        float travel = std::sqrt(stepX * stepX + stepY * stepY);
+        p.remainingRange -= travel;
+
+        if (p.remainingRange <= 0.0f || OutOfBounds(p.pos)) {
+            p.alive = false;
+        }
+    }
 }
 
 namespace ProjectileSystem {
 
-void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel) {
+void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage, float remainingRange) {
     Projectile p;
     p.pos = pos;
     p.vel = vel;
+    p.damage = damage;
+    p.remainingRange = remainingRange;
     projectiles.push_back(p);
 }
 
 void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, Enemy& enemy, float projectileSize, float dt) {
     for (auto& p : projectiles) {
         if (!p.alive) continue;
-        p.pos.x += p.vel.x * dt;
-        p.pos.y += p.vel.y * dt;
-        if (OutOfBounds(p.pos)) p.alive = false;
+        AdvanceProjectile(p, dt);
 
-        if (enemy.alive && Collision::CheckAABB(p.GetRect(projectileSize), enemy.GetRect())) {
+        if (enemy.alive && p.alive && Collision::CheckAABB(p.GetRect(projectileSize), enemy.GetRect())) {
             p.alive = false;
-            enemy.hp -= 10;
+            enemy.hp -= p.damage;
             if (enemy.hp <= 0) enemy.alive = false;
         }
     }
@@ -41,17 +56,15 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, Enemy& enemy,
 }
 
 void UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& player, float projectileSize,
-                               int damage, float invincibleDuration, float dt) {
+                               float invincibleDuration, float dt) {
     for (auto& p : projectiles) {
         if (!p.alive) continue;
-        p.pos.x += p.vel.x * dt;
-        p.pos.y += p.vel.y * dt;
-        if (OutOfBounds(p.pos)) p.alive = false;
+        AdvanceProjectile(p, dt);
 
         Rect projRect = p.GetRect(projectileSize);
-        if (Collision::CheckAABB(projRect, player.GetRect())) {
+        if (p.alive && Collision::CheckAABB(projRect, player.GetRect())) {
             p.alive = false;
-            PlayerLogic::TakeDamage(player, damage, invincibleDuration);
+            PlayerLogic::TakeDamage(player, p.damage, invincibleDuration);
         }
     }
 
@@ -65,13 +78,11 @@ void UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& play
 void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, float projectileSize, float dt) {
     for (auto& p : projectiles) {
         if (!p.alive) continue;
-        p.pos.x += p.vel.x * dt;
-        p.pos.y += p.vel.y * dt;
-        if (OutOfBounds(p.pos)) p.alive = false;
+        AdvanceProjectile(p, dt);
 
-        if (boss.alive && Collision::CheckAABB(p.GetRect(projectileSize), boss.GetRect())) {
+        if (boss.alive && p.alive && Collision::CheckAABB(p.GetRect(projectileSize), boss.GetRect())) {
             p.alive = false;
-            boss.hp -= 10;
+            boss.hp -= p.damage;
             if (boss.hp <= 0) { boss.hp = 0; boss.alive = false; }
         }
     }

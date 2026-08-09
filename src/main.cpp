@@ -34,7 +34,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     Player player;
     player.pos = { 150.0f, 130.0f };
     const int contactDamage = 10;
-    const int enemyShotDamage = 8;
     const float invincibleDuration = 0.75f;
 
     GameState state = GameState::PLAYING;
@@ -47,7 +46,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     std::vector<Projectile> playerShots;
     std::vector<Projectile> enemyShots;
-    const float projectileSpeed = 140.0f;
     const float projectileSize = 3.0f;
 
     auto ResetGame = [&]() {
@@ -68,26 +66,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         Input::Update();
 
         if (state == GameState::PLAYING || state == GameState::BOSS_FIGHT) {
-            PlayerLogic::HandleMovement(player, dt);
             PlayerLogic::UpdateTimers(player, dt);
+            PlayerLogic::HandleMovement(player, dt);
             player.pos = room.ClampToRoom(player.pos, (float)player.size, (float)player.size);
-
-            int shootKeysPressed = 0;
-Vec2 shootDir = { 0.0f, 0.0f };
-
-if (Input::IsPressed(VK_UP))    { shootKeysPressed++; shootDir = { 0.0f, -1.0f }; }
-if (Input::IsPressed(VK_DOWN))  { shootKeysPressed++; shootDir = { 0.0f,  1.0f }; }
-if (Input::IsPressed(VK_LEFT))  { shootKeysPressed++; shootDir = { -1.0f, 0.0f }; }
-if (Input::IsPressed(VK_RIGHT)) { shootKeysPressed++; shootDir = { 1.0f,  0.0f }; }
-
-if (shootKeysPressed == 1) {
-    Vec2 spawnPos = {
-        player.pos.x + player.size / 2.0f,
-        player.pos.y + player.size / 2.0f
-    };
-    ProjectileSystem::Spawn(playerShots, spawnPos,
-        { shootDir.x * projectileSpeed, shootDir.y * projectileSpeed });
-}
+            PlayerLogic::HandleShooting(player, dt, playerShots);
         }
 
         if (state == GameState::PLAYING) {
@@ -105,7 +87,7 @@ if (shootKeysPressed == 1) {
             }
 
             ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
-                                                        enemyShotDamage, invincibleDuration, dt);
+                                                        invincibleDuration, dt);
 
             if (player.hp <= 0) {
                 state = GameState::LOST;
@@ -118,7 +100,7 @@ if (shootKeysPressed == 1) {
             BossAI::Update(boss, player.pos, dt, enemyShots);
             ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
             ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
-                                                        enemyShotDamage, invincibleDuration, dt);
+                                                        invincibleDuration, dt);
 
             if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
                 int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;

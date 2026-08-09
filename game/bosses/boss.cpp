@@ -1,8 +1,11 @@
 #include "boss.h"
+#include "../player/projectile_system.h"
 #include <cmath>
 
 namespace {
     constexpr float PI = 3.14159265f;
+    constexpr int BOSS_PROJECTILE_DAMAGE = 8;
+    constexpr float BOSS_PROJECTILE_RANGE = 999999.0f;
 
     Vec2 Normalize(Vec2 v) {
         float len = std::sqrt(v.x * v.x + v.y * v.y);
@@ -20,10 +23,13 @@ namespace {
         for (int i = 0; i < count; ++i) {
             float t = (count == 1) ? 0.0f : (float)i / (count - 1) - 0.5f;
             float angle = baseAngle + t * spread;
-            Projectile p;
-            p.pos = boss.pos;
-            p.vel = { std::cos(angle) * speed, std::sin(angle) * speed };
-            out.push_back(p);
+            ProjectileSystem::Spawn(
+                out,
+                boss.pos,
+                { std::cos(angle) * speed, std::sin(angle) * speed },
+                BOSS_PROJECTILE_DAMAGE,
+                BOSS_PROJECTILE_RANGE
+            );
         }
     }
 
@@ -32,10 +38,13 @@ namespace {
         const float speed = 70.0f;
         for (int i = 0; i < count; ++i) {
             float angle = (2.0f * PI) * ((float)i / count);
-            Projectile p;
-            p.pos = boss.pos;
-            p.vel = { std::cos(angle) * speed, std::sin(angle) * speed };
-            out.push_back(p);
+            ProjectileSystem::Spawn(
+                out,
+                boss.pos,
+                { std::cos(angle) * speed, std::sin(angle) * speed },
+                BOSS_PROJECTILE_DAMAGE,
+                BOSS_PROJECTILE_RANGE
+            );
         }
     }
 
