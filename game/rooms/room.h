@@ -21,6 +21,7 @@ struct Room {
 
     bool cleared = false;
     bool gateOpen = false;
+    bool lootGranted = false;
 
     int north = -1;
     int south = -1;

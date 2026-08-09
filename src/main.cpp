@@ -8,6 +8,7 @@
 #include "../game/player/player.h"
 #include "../game/player/projectile_system.h"
 #include "../game/items/item_database.h"
+#include "../game/items/item_system.h"
 #include "../game/enemies/enemy.h"
 #include "../game/enemies/enemy_database.h"
 #include "../game/bosses/boss.h"
@@ -73,6 +74,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             }
         } else if (room.type == RoomType::BOSS) {
             boss = SpawnBossVariant(room.bossVariant);
+        } else if ((room.type == RoomType::TREASURE || room.type == RoomType::CURSE) && !room.lootGranted) {
+            for (int itemId : room.itemSpawnList) {
+                ItemSystem::GrantItem(player, itemId);
+            }
+            dungeon.CurrentRoom().lootGranted = true;
         }
     };
 

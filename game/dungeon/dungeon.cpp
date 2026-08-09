@@ -3,6 +3,7 @@
 #include <climits>
 #include <queue>
 #include "../enemies/enemy_database.h"
+#include "../items/item_database.h"
 
 namespace {
     constexpr int CURSE_DAMAGE = 10;
@@ -103,12 +104,14 @@ void Dungeon::ApplyRoomDefaults() {
             case RoomType::CURSE:
                 room.cleared = true;
                 room.gateOpen = true;
+                room.lootGranted = false;
                 break;
             case RoomType::NORMAL:
             case RoomType::BOSS:
             default:
                 room.cleared = false;
                 room.gateOpen = false;
+                room.lootGranted = false;
                 break;
         }
     }
@@ -251,6 +254,7 @@ bool Dungeon::Generate(uint32_t seed) {
         rooms[curseIndex].type = RoomType::CURSE;
 
         const int enemyCount = EnemyDatabase::Count();
+        const int itemCount = ItemDatabase::Count();
         for (int i = 0; i < (int)rooms.size(); ++i) {
             rooms[i].enemySpawnList.clear();
             rooms[i].itemSpawnList.clear();
@@ -260,6 +264,13 @@ bool Dungeon::Generate(uint32_t seed) {
                 for (int j = 0; j < spawnCount; ++j) {
                     rooms[i].enemySpawnList.push_back(RNG::Range(0, enemyCount - 1));
                 }
+            } else if (rooms[i].type == RoomType::TREASURE && itemCount > 0) {
+                int itemDrops = 1 + RNG::Range(0, 1);
+                for (int j = 0; j < itemDrops; ++j) {
+                    rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
+                }
+            } else if (rooms[i].type == RoomType::CURSE && itemCount > 0) {
+                rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
             }
         }
 
