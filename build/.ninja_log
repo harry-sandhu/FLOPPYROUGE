@@ -1,11 +1,15 @@
 # ninja log v7
-1	22	1786231429156052088	CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o	5bb2bb1faa256be8
-1	277	1786231429156645484	CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o	5c7994afbf745ff5
-1	1118	1786231429156264137	CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o	95b394a887c9e215
-0	1154	1786231429155545134	CMakeFiles/FloppyRogue.dir/engine/window.cpp.o	47e2f3c2fade249f
-2	1179	1786231429156648413	CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o	73923f378d6f64db
-1	1323	1786231429155648411	CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o	49169d806e0077f1
-1	1366	1786231429155873612	CMakeFiles/FloppyRogue.dir/engine/input.cpp.o	5e8feba9d86df8ed
-1	1384	1786231429156457370	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	5ca7d14aa62afa73
-0	1533	1786231429154648409	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	ce2aa5e2cd231573
-1533	1710	1786231430686651508	FloppyRogue	6b6ad4344a2f0562
+3	36	1786281666931779806	CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o	5cb127ce9aa7d69e
+2	45	1786281666930086186	CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o	ac1b2587f87ed147
+3	389	1786281666931122805	CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o	1330e51c3a593405
+2	436	1786281666930443962	CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o	2f0d2ee95f3dcf22
+2	491	1786281666930953485	CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o	26bb411a715f0b95
+2	1225	1786281666930256748	CMakeFiles/FloppyRogue.dir/engine/text.cpp.o	37c17643af3b62ae
+3	1326	1786281666931368098	CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o	1834080f0d17300d
+2	1455	1786281666930605247	CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o	d1444e48667df36d
+1	1481	1786281666929911836	CMakeFiles/FloppyRogue.dir/engine/input.cpp.o	4cbb985bdaa727ea
+1	1509	1786281666929754259	CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o	de7b8b4487d246a0
+1	1522	1786281666928188873	CMakeFiles/FloppyRogue.dir/src/main.cpp.o	389129612fecc0fa
+1	1573	1786281666929616568	CMakeFiles/FloppyRogue.dir/engine/window.cpp.o	1013d982e13426ab
+2	1844	1786281666930770709	CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o	c2198190a95c0122
+1844	1909	1786281668772848690	FloppyRogue	5f58231f5c0125cf

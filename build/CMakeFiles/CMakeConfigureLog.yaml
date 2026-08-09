@@ -1199,8 +1199,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-ZoBjpp"
-      binary: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-ZoBjpp"
+      source: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-LJmvB1"
+      binary: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-LJmvB1"
     cmakeVariables:
       CMAKE_CXX_FLAGS: ""
       CMAKE_CXX_FLAGS_DEBUG: "-g"
@@ -1211,10 +1211,10 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: false
       stdout: |
-        Change Dir: '/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-ZoBjpp'
+        Change Dir: '/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-LJmvB1'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_fc611
-        [1/2] /usr/bin/x86_64-w64-mingw32-g++   -v -o CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        Run Build Command(s): /usr/bin/ninja -v cmTC_c37b1
+        [1/2] /usr/bin/x86_64-w64-mingw32-g++   -v -o CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         Using built-in specs.
         COLLECT_GCC=/usr/bin/x86_64-w64-mingw32-g++
         Target: x86_64-w64-mingw32
@@ -1222,8 +1222,8 @@ events:
         Thread model: posix
         Supported LTO compression algorithms: zlib zstd
         gcc version 16.1.0 (GCC) 
-        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_fc611.dir/'
-         /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/cc1plus -quiet -v -D_REENTRANT /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_fc611.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -o /tmp/ccW6or5M.s
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_c37b1.dir/'
+         /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/cc1plus -quiet -v -D_REENTRANT /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_c37b1.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -o /tmp/ccHSoKDB.s
         GNU C++20 (GCC) version 16.1.0 (x86_64-w64-mingw32)
         	compiled by GNU C version 16.1.1 20260430, GMP version 6.3.0, MPFR version 4.2.2, MPC version 1.4.1, isl version isl-0.27-GMP
         
@@ -1239,13 +1239,13 @@ events:
          /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/include
         End of search list.
         Compiler executable checksum: 464f8e890391386675a724b2a21a3557
-        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_fc611.dir/'
-         /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/bin/as -v -o CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccW6or5M.s
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_c37b1.dir/'
+         /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/bin/as -v -o CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccHSoKDB.s
         GNU assembler version 2.46.0 (x86_64-w64-mingw32) using BFD version (GNU Binutils) 2.46.0.20260210
         COMPILER_PATH=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/bin/
         LIBRARY_PATH=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/
-        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.'
-        [2/2] : && /usr/bin/x86_64-w64-mingw32-g++  -v -Wl,-v CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_fc611   && :
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.'
+        [2/2] : && /usr/bin/x86_64-w64-mingw32-g++  -v -Wl,-v CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_c37b1   && :
         Using built-in specs.
         COLLECT_GCC=/usr/bin/x86_64-w64-mingw32-g++
         COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/lto-wrapper
@@ -1256,12 +1256,12 @@ events:
         gcc version 16.1.0 (GCC) 
         COMPILER_PATH=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/bin/
         LIBRARY_PATH=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib/:/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/
-        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_fc611.exe' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_fc611.'
-         /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/collect2 -plugin /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/lto-wrapper -plugin-opt=-fresolution=/tmp/cc7tszjt.res -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lpthread -plugin-opt=-pass-through=-ladvapi32 -plugin-opt=-pass-through=-lshell32 -plugin-opt=-pass-through=-luser32 -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -m i386pep -Bdynamic -o cmTC_fc611.exe /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib/crt2.o /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtbegin.o -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0 -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib -v CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtend.o
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_c37b1.exe' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_c37b1.'
+         /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/collect2 -plugin /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccqLZl19.res -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lpthread -plugin-opt=-pass-through=-ladvapi32 -plugin-opt=-pass-through=-lshell32 -plugin-opt=-pass-through=-luser32 -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -m i386pep -Bdynamic -o cmTC_c37b1.exe /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib/crt2.o /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtbegin.o -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0 -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib -v CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtend.o
         collect2 version 16.1.0
-        /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/bin/ld -plugin /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/lto-wrapper -plugin-opt=-fresolution=/tmp/cc7tszjt.res -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lpthread -plugin-opt=-pass-through=-ladvapi32 -plugin-opt=-pass-through=-lshell32 -plugin-opt=-pass-through=-luser32 -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -m i386pep -Bdynamic -o cmTC_fc611.exe /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib/crt2.o /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtbegin.o -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0 -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib -v CMakeFiles/cmTC_fc611.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtend.o
+        /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/bin/ld -plugin /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccqLZl19.res -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lpthread -plugin-opt=-pass-through=-ladvapi32 -plugin-opt=-pass-through=-lshell32 -plugin-opt=-pass-through=-luser32 -plugin-opt=-pass-through=-lkernel32 -plugin-opt=-pass-through=-lmingw32 -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lmingwex -plugin-opt=-pass-through=-lmsvcrt -plugin-opt=-pass-through=-lkernel32 -m i386pep -Bdynamic -o cmTC_c37b1.exe /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib/crt2.o /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtbegin.o -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0 -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib/../lib -L/usr/lib/gcc/x86_64-w64-mingw32/16.1.0/../../../../x86_64-w64-mingw32/lib -v CMakeFiles/cmTC_c37b1.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc_s -lgcc -lmingwex -lmsvcrt -lkernel32 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/crtend.o
         GNU ld (GNU Binutils) 2.46.0.20260210
-        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_fc611.exe' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_fc611.'
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_c37b1.exe' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_c37b1.'
         
       exitCode: 0
   -
@@ -1272,8 +1272,8 @@ events:
     checks:
       - "Check for working CXX compiler: /usr/bin/x86_64-w64-mingw32-g++"
     directories:
-      source: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-Rhx8ND"
-      binary: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-Rhx8ND"
+      source: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-xtJYqL"
+      binary: "/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-xtJYqL"
     cmakeVariables:
       CMAKE_CXX_FLAGS: ""
       CMAKE_CXX_FLAGS_DEBUG: "-g"
@@ -1284,11 +1284,11 @@ events:
       variable: "CMAKE_CXX_COMPILER_WORKS"
       cached: false
       stdout: |
-        Change Dir: '/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-Rhx8ND'
+        Change Dir: '/home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-xtJYqL'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_e5028
-        [1/2] /usr/bin/x86_64-w64-mingw32-g++    -o CMakeFiles/cmTC_e5028.dir/testCXXCompiler.cxx.o -c /home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-Rhx8ND/testCXXCompiler.cxx
-        [2/2] : && /usr/bin/x86_64-w64-mingw32-g++   CMakeFiles/cmTC_e5028.dir/testCXXCompiler.cxx.o -o cmTC_e5028   && :
+        Run Build Command(s): /usr/bin/ninja -v cmTC_c904f
+        [1/2] /usr/bin/x86_64-w64-mingw32-g++    -o CMakeFiles/cmTC_c904f.dir/testCXXCompiler.cxx.o -c /home/primordic/projects/Game_development/FloppyRogue/build/CMakeFiles/CMakeScratch/TryCompile-xtJYqL/testCXXCompiler.cxx
+        [2/2] : && /usr/bin/x86_64-w64-mingw32-g++   CMakeFiles/cmTC_c904f.dir/testCXXCompiler.cxx.o -o cmTC_c904f   && :
         
       exitCode: 0
 ...

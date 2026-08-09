@@ -52,7 +52,7 @@ build cmake_object_order_depends_target_FloppyRogue: phony || .
 build CMakeFiles/FloppyRogue.dir/src/main.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/src/main.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/src/main.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/src
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -62,7 +62,7 @@ build CMakeFiles/FloppyRogue.dir/src/main.cpp.o: CXX_COMPILER__FloppyRogue_unsca
 build CMakeFiles/FloppyRogue.dir/engine/window.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/window.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/engine/window.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -72,7 +72,7 @@ build CMakeFiles/FloppyRogue.dir/engine/window.cpp.o: CXX_COMPILER__FloppyRogue_
 build CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/renderer.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -82,7 +82,7 @@ build CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o: CXX_COMPILER__FloppyRogu
 build CMakeFiles/FloppyRogue.dir/engine/input.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/input.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/engine/input.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -92,7 +92,27 @@ build CMakeFiles/FloppyRogue.dir/engine/input.cpp.o: CXX_COMPILER__FloppyRogue_u
 build CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/collision.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
+  OBJECT_DIR = CMakeFiles/FloppyRogue.dir
+  OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
+  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
+  TARGET_PDB = FloppyRogue.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
+
+build CMakeFiles/FloppyRogue.dir/engine/text.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/text.cpp || cmake_object_order_depends_target_FloppyRogue
+  CONFIG = Release
+  DEP_FILE = CMakeFiles/FloppyRogue.dir/engine/text.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
+  OBJECT_DIR = CMakeFiles/FloppyRogue.dir
+  OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
+  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
+  TARGET_PDB = FloppyRogue.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
+
+build CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/engine/data_parser.cpp || cmake_object_order_depends_target_FloppyRogue
+  CONFIG = Release
+  DEP_FILE = CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/engine
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -102,7 +122,7 @@ build CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o: CXX_COMPILER__FloppyRog
 build CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/player/player.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/player
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -112,7 +132,7 @@ build CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o: CXX_COMPILER__FloppyR
 build CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/player/projectile_system.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/player
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -122,7 +142,17 @@ build CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o: CXX_COMPIL
 build CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/enemies/enemy.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
+  OBJECT_DIR = CMakeFiles/FloppyRogue.dir
+  OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/enemies
+  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
+  TARGET_PDB = FloppyRogue.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
+
+build CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/enemies/enemy_database.cpp || cmake_object_order_depends_target_FloppyRogue
+  CONFIG = Release
+  DEP_FILE = CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/enemies
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
@@ -132,9 +162,19 @@ build CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o: CXX_COMPILER__FloppyR
 build CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/ui/hud.cpp || cmake_object_order_depends_target_FloppyRogue
   CONFIG = Release
   DEP_FILE = CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os -flto
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/ui
+  TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
+  TARGET_PDB = FloppyRogue.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
+
+build CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o: CXX_COMPILER__FloppyRogue_unscanned_Release /home/primordic/projects/Game_development/FloppyRogue/game/rooms/room.cpp || cmake_object_order_depends_target_FloppyRogue
+  CONFIG = Release
+  DEP_FILE = CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fno-exceptions -fno-rtti -Os
+  OBJECT_DIR = CMakeFiles/FloppyRogue.dir
+  OBJECT_FILE_DIR = CMakeFiles/FloppyRogue.dir/game/rooms
   TARGET_COMPILE_PDB = CMakeFiles/FloppyRogue.dir/
   TARGET_PDB = FloppyRogue.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/FloppyRogue.dir
@@ -147,10 +187,10 @@ build CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o: CXX_COMPILER__FloppyRogue_un
 #############################################
 # Link the executable FloppyRogue
 
-build FloppyRogue: CXX_EXECUTABLE_LINKER__FloppyRogue_Release CMakeFiles/FloppyRogue.dir/src/main.cpp.o CMakeFiles/FloppyRogue.dir/engine/window.cpp.o CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o CMakeFiles/FloppyRogue.dir/engine/input.cpp.o CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o
+build FloppyRogue: CXX_EXECUTABLE_LINKER__FloppyRogue_Release CMakeFiles/FloppyRogue.dir/src/main.cpp.o CMakeFiles/FloppyRogue.dir/engine/window.cpp.o CMakeFiles/FloppyRogue.dir/engine/renderer.cpp.o CMakeFiles/FloppyRogue.dir/engine/input.cpp.o CMakeFiles/FloppyRogue.dir/engine/collision.cpp.o CMakeFiles/FloppyRogue.dir/engine/text.cpp.o CMakeFiles/FloppyRogue.dir/engine/data_parser.cpp.o CMakeFiles/FloppyRogue.dir/game/player/player.cpp.o CMakeFiles/FloppyRogue.dir/game/player/projectile_system.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy.cpp.o CMakeFiles/FloppyRogue.dir/game/enemies/enemy_database.cpp.o CMakeFiles/FloppyRogue.dir/game/ui/hud.cpp.o CMakeFiles/FloppyRogue.dir/game/rooms/room.cpp.o
   CONFIG = Release
   FLAGS = -O3 -DNDEBUG
-  LINK_FLAGS = -static -s -flto
+  LINK_FLAGS = -s -static-libgcc -static-libstdc++ -static
   LINK_LIBRARIES = -lgdi32  -luser32  -lkernel32
   OBJECT_DIR = CMakeFiles/FloppyRogue.dir
   POST_BUILD = :

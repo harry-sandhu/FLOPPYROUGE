@@ -1,5 +1,7 @@
 #pragma once
 #include "../../engine/core/types.h"
+#include "../player/projectile.h"
+#include <vector>
 
 enum class AIType {
     CHASER,
@@ -18,10 +20,15 @@ struct Enemy {
     AIType aiType = AIType::CHASER;
     bool alive = true;
 
+    float shootTimer = 0.0f;
+    float shootCooldown = 1.5f;
+    float shootRange = 110.0f;
+    float preferredDistance = 70.0f;
+    float shotSpeed = 80.0f;
+
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
 };
 
 namespace EnemyAI {
-    // Advances the enemy one frame according to its aiType.
-    void Update(Enemy& enemy, Vec2 playerPos, float dt);
+    void Update(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles);
 }

@@ -3,5 +3,6 @@
 
 namespace HUD {
     void DrawHealthBar(const Player& player);
-    void DrawGameOverBanner(); // placeholder rect until text rendering exists
+    void DrawGameOverBanner();
+    void DrawRoomClearedBanner();
 }

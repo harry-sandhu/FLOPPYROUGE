@@ -10,10 +10,14 @@ add_executable(FloppyRogue WIN32
     engine/renderer.cpp
     engine/input.cpp
     engine/collision.cpp
+    engine/text.cpp
+    engine/data_parser.cpp
     game/player/player.cpp
     game/player/projectile_system.cpp
     game/enemies/enemy.cpp
+    game/enemies/enemy_database.cpp
     game/ui/hud.cpp
+    game/rooms/room.cpp
 )
 
 target_compile_options(FloppyRogue PRIVATE
@@ -22,8 +26,11 @@ target_compile_options(FloppyRogue PRIVATE
     -Os
 )
 
-target_link_options(FloppyRogue PRIVATE -static -s -flto)
-
-target_compile_options(FloppyRogue PRIVATE -flto)
+target_link_options(FloppyRogue PRIVATE
+    -s
+    -static-libgcc
+    -static-libstdc++
+    -static
+)
 
 target_link_libraries(FloppyRogue PRIVATE gdi32 user32 kernel32)

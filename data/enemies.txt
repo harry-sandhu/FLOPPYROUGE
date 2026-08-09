@@ -1,0 +1,17 @@
+[Zombie]
+ai=CHASER
+hp=40
+speed=35
+w=12
+h=12
+
+[Gunner]
+ai=SHOOTER
+hp=25
+speed=30
+w=12
+h=12
+shoot_cooldown=1.2
+shoot_range=120
+preferred_distance=80
+shot_speed=90
