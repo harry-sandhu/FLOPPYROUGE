@@ -45,6 +45,7 @@ namespace {
         player.dashTimeRemaining = player.dashDuration;
         player.dashCooldownRemaining = player.dashCooldown;
         player.invincibleTimer = std::max(player.invincibleTimer, player.dashDuration);
+        player.actionFlashTimer = std::max(player.actionFlashTimer, 0.10f);
     }
 }
 
@@ -105,13 +106,15 @@ void HandleShooting(Player& player, float /*dt*/, std::vector<Projectile>& playe
 
     float fireInterval = (player.fireRate > 0.0f) ? (1.0f / player.fireRate) : 0.0f;
     player.fireCooldownRemaining = fireInterval;
+    player.actionFlashTimer = std::max(player.actionFlashTimer, 0.06f);
 }
 
-void TakeDamage(Player& player, int amount, float invincibleDuration) {
-    if (player.IsInvincible()) return;
+bool TakeDamage(Player& player, int amount, float invincibleDuration) {
+    if (player.IsInvincible()) return false;
     player.hp -= amount;
     if (player.hp < 0) player.hp = 0;
     player.invincibleTimer = invincibleDuration;
+    return true;
 }
 
 void UpdateTimers(Player& player, float dt) {
@@ -128,6 +131,11 @@ void UpdateTimers(Player& player, float dt) {
     if (player.dashCooldownRemaining > 0.0f) {
         player.dashCooldownRemaining -= dt;
         if (player.dashCooldownRemaining < 0.0f) player.dashCooldownRemaining = 0.0f;
+    }
+
+    if (player.actionFlashTimer > 0.0f) {
+        player.actionFlashTimer -= dt;
+        if (player.actionFlashTimer < 0.0f) player.actionFlashTimer = 0.0f;
     }
 
     if (player.isDashing && player.dashTimeRemaining > 0.0f) {

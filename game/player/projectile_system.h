@@ -17,8 +17,8 @@ namespace ProjectileSystem {
 
     void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, float projectileSize, float dt);
 
-    void UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& player, float projectileSize,
-                                   float invincibleDuration, float dt);
+    bool UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& player, float projectileSize,
+                                  float invincibleDuration, float dt);
 
-    void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color);
+    void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color, Vec2 offset = { 0.0f, 0.0f });
 }

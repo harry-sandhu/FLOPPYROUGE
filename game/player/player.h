@@ -26,6 +26,7 @@ struct Player {
     float fireCooldownRemaining = 0.0f;
     float dashCooldownRemaining = 0.0f;
     float dashTimeRemaining = 0.0f;
+    float actionFlashTimer = 0.0f;
 
     bool hasDiagonalFire = false;
     bool hasDash = false;
@@ -44,6 +45,6 @@ struct Player {
 namespace PlayerLogic {
     void HandleMovement(Player& player, float dt);
     void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerProjectiles);
-    void TakeDamage(Player& player, int amount, float invincibleDuration);
+    bool TakeDamage(Player& player, int amount, float invincibleDuration);
     void UpdateTimers(Player& player, float dt);
 }

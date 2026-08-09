@@ -102,14 +102,15 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, Enemy& enemy,
     );
 }
 
-void UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& player, float projectileSize,
+bool UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& player, float projectileSize,
                                float invincibleDuration, float dt) {
+    bool tookDamage = false;
     for (auto& p : projectiles) {
         if (!p.alive) continue;
         Rect projRect = p.GetRect(projectileSize);
         if (p.alive && Collision::CheckAABB(projRect, player.GetRect())) {
             p.alive = false;
-            PlayerLogic::TakeDamage(player, p.damage, invincibleDuration);
+            tookDamage = PlayerLogic::TakeDamage(player, p.damage, invincibleDuration) || tookDamage;
         }
     }
 
@@ -118,6 +119,8 @@ void UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& play
             [](const Projectile& p) { return !p.alive; }),
         projectiles.end()
     );
+
+    return tookDamage;
 }
 
 void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, float projectileSize, float dt) {
@@ -137,9 +140,9 @@ void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, fl
     );
 }
 
-void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color) {
+void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color, Vec2 offset) {
     for (auto& p : projectiles) {
-        Renderer::DrawRect((int)p.pos.x, (int)p.pos.y, size, size, color);
+        Renderer::DrawRect((int)(p.pos.x + offset.x), (int)(p.pos.y + offset.y), size, size, color);
     }
 }
 

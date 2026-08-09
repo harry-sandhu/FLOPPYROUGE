@@ -1,4 +1,6 @@
 #include <windows.h>
+#include <algorithm>
+#include <cmath>
 #include <vector>
 #include "../engine/window.h"
 #include "../engine/renderer.h"
@@ -35,12 +37,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     Boss boss;
     std::vector<Projectile> playerShots;
     std::vector<Projectile> enemyShots;
+    float screenShakeTimer = 0.0f;
+    float screenShakeStrength = 0.0f;
 
     const int contactDamage = 8;
     const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
 
     GameState state = GameState::RUNNING;
+
+    auto AddScreenShake = [&](float duration, float strength) {
+        screenShakeTimer = std::max(screenShakeTimer, duration);
+        screenShakeStrength = std::max(screenShakeStrength, strength);
+    };
+
+    auto DamagePlayer = [&](int amount) {
+        if (PlayerLogic::TakeDamage(player, amount, invincibleDuration)) {
+            AddScreenShake(0.14f, 2.0f);
+        }
+    };
 
     auto ScaleEnemyForFloor = [&](Enemy& enemy) {
         int floor = dungeon.CurrentFloor();
@@ -153,6 +168,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 ItemSystem::GrantItem(player, itemId);
             }
             dungeon.CurrentRoom().lootGranted = true;
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+            AddScreenShake(0.06f, 0.8f);
         }
     };
 
@@ -187,6 +204,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             ProjectileSystem::Advance(enemyShots, dt);
             PlayerLogic::HandleMovement(player, dt);
 
+            if (screenShakeTimer > 0.0f) {
+                screenShakeTimer -= dt;
+                if (screenShakeTimer < 0.0f) screenShakeTimer = 0.0f;
+            }
+
             if (dungeon.TryTransition(player)) {
                 LoadRoomEncounter();
             }
@@ -206,7 +228,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                                               spawnedEnemies, enemyShots, dt);
 
                     if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
-                        PlayerLogic::TakeDamage(player, contactDamage, invincibleDuration);
+                        DamagePlayer(contactDamage);
                     }
                     if (enemy.alive) anyAlive = true;
                 }
@@ -219,8 +241,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     anyAlive = true;
                 }
 
-                ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
-                                                            invincibleDuration, dt);
+                if (ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
+                                                               invincibleDuration, dt)) {
+                    AddScreenShake(0.14f, 2.0f);
+                }
 
                 if (!anyAlive) {
                     dungeon.MarkCurrentRoomCleared();
@@ -231,18 +255,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             } else if (room.type == RoomType::BOSS) {
                 BossAI::Update(boss, player.pos, dt, enemyShots);
                 ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
-                ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
-                                                            invincibleDuration, dt);
+                if (ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
+                                                               invincibleDuration, dt)) {
+                    AddScreenShake(0.14f, 2.0f);
+                }
 
                 if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
                     int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
-                    PlayerLogic::TakeDamage(player, dmg, invincibleDuration);
+                    DamagePlayer(dmg);
                 }
 
                 if (!boss.alive) {
                     dungeon.MarkCurrentRoomCleared();
                     enemyShots.clear();
                     playerShots.clear();
+                    AddScreenShake(0.22f, 2.6f);
                     if (dungeon.AdvanceFloor((uint32_t)GetTickCount() + 97u * (uint32_t)dungeon.CurrentFloor())) {
                         dungeon.PlacePlayerAtCurrentRoomCenter(player);
                         LoadRoomEncounter();
@@ -264,11 +291,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         const Room& room = dungeon.CurrentRoom();
+        Vec2 shakeOffset = { 0.0f, 0.0f };
+        if (screenShakeTimer > 0.0f) {
+            float shakeScale = screenShakeTimer / 0.14f;
+            if (shakeScale < 0.0f) shakeScale = 0.0f;
+            if (shakeScale > 1.0f) shakeScale = 1.0f;
+            shakeOffset.x = std::sin(screenShakeTimer * 97.0f) * screenShakeStrength * shakeScale;
+            shakeOffset.y = std::cos(screenShakeTimer * 131.0f) * screenShakeStrength * shakeScale;
+        }
 
         Renderer::Clear(0xFF1A1A1A);
 
         uint32_t playerColor = player.IsInvincible() ? 0xFFFF8888 : 0xFF00FF88;
-        Renderer::DrawRect((int)player.pos.x, (int)player.pos.y, player.size, player.size, playerColor);
+        if (player.actionFlashTimer > 0.0f) {
+            Renderer::DrawRect((int)(player.pos.x + shakeOffset.x) - 1, (int)(player.pos.y + shakeOffset.y) - 1,
+                               player.size + 2, player.size + 2, 0xFFFFFFAA);
+        }
+        Renderer::DrawRect((int)(player.pos.x + shakeOffset.x), (int)(player.pos.y + shakeOffset.y),
+                           player.size, player.size, playerColor);
 
         if (room.type == RoomType::NORMAL) {
             for (auto& enemy : enemies) {
@@ -277,21 +317,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if (enemy.specialType == EnemySpecialType::REINFORCER) color = 0xFF66DDFF;
                 if (enemy.specialType == EnemySpecialType::CREEPER) color = 0xFF55FF55;
                 if (enemy.specialType == EnemySpecialType::DEATH_RING) color = 0xFFFFFF66;
-                Renderer::DrawRect((int)enemy.pos.x, (int)enemy.pos.y, (int)enemy.w, (int)enemy.h, color);
-            }
+            Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
+                               (int)enemy.w, (int)enemy.h, color);
         }
+    }
 
         if (room.type == RoomType::BOSS && boss.alive) {
             uint32_t baseColor = 0xFFAA33FF;
             if (boss.variant == 1) baseColor = 0xFFFF9933;
             if (boss.variant == 2) baseColor = 0xFF33FFCC;
             uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : baseColor;
-            Renderer::DrawRect((int)boss.pos.x, (int)boss.pos.y, (int)boss.w, (int)boss.h, bossColor);
+            Renderer::DrawRect((int)(boss.pos.x + shakeOffset.x), (int)(boss.pos.y + shakeOffset.y),
+                               (int)boss.w, (int)boss.h, bossColor);
             HUD::DrawBossHealthBar(boss);
         }
 
-        ProjectileSystem::Draw(playerShots, (int)projectileSize, 0xFFFFFF00);
-        ProjectileSystem::Draw(enemyShots, (int)projectileSize, 0xFFFF66FF);
+        ProjectileSystem::Draw(playerShots, (int)projectileSize, 0xFFFFFF00, shakeOffset);
+        ProjectileSystem::Draw(enemyShots, (int)projectileSize, 0xFFFF66FF, shakeOffset);
 
         HUD::DrawHealthBar(player);
         if (state == GameState::LOST) HUD::DrawGameOverBanner();
