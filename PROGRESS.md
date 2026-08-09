@@ -1,14 +1,14 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: three-floor dungeon progression, clearer floor map, projectile
-movement fixes, and special enemy variants are now in place.
+Last updated: phase 8 size audit after the content, tuning, polish, and UI
+passes. The run is still comfortably under the contest limit.
 
 ## Contest constraints (don't lose sight of these)
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
 - Deadline: Sept 4, 2026, 23:59
 - Judging order: (1) finished game, (2) under size cap, (3) fun
-- Last measured release build size: **123KB (~8% of cap)** before the big v2
-  content pass; recheck after the recent dungeon/item/enemy changes
+- Last measured release build size: **281,600 bytes (~19% of cap)** after the
+  phase 7 UI pass and phase 8 size audit
 
 ## Done
 - [x] Win32 window creation + message pump (`engine/window`)
@@ -49,6 +49,9 @@ movement fixes, and special enemy variants are now in place.
 - [x] Treasure rooms grant item rewards, curse rooms can also award loot
 - [x] HUD module: player HP bar, boss HP bar, game-over/room-cleared
       banners, floor map (`game/ui/hud`)
+- [x] Run status HUD: floor, room, dash, item count, pickup name, boss phase
+- [x] Screen shake and action flash feedback for hits, pickups, dashes, and
+      boss kills
 - [x] main.cpp reduced to orchestration only (input -> systems -> draw)
 - [x] Fixed MinGW/GCC 16 linker bug: removed std::string entirely from
       data_parser and enemy_database (fixed-size char buffers instead)
@@ -56,13 +59,13 @@ movement fixes, and special enemy variants are now in place.
       confirmed no libwinpthread-1.dll dependency at runtime under Wine
 
 ## In progress / next up
-- [ ] Re-measure exe size after the dungeon/item/enemy/boss additions
+- [x] Re-measured exe size after the dungeon/item/enemy/boss additions
 - [ ] Procedural sprite generation (`engine/procgen`) to replace flat-color
       rectangles with real pixel-art-style shapes
 - [ ] Audio system (`engine/audio`) for shoot/hit/death/boss SFX and music
 - [ ] Camera system (`engine/camera`) for world -> screen offset tracking
 - [ ] Animation system (`engine/animation`) for frame-timer sprite indexing
-- [ ] Juice/polish pass: screen shake, hit-stop, particle effects
+- [ ] Juice/polish pass: hit-stop, particles, screen shake refinement
 - [ ] Difficulty tuning / playtesting pass
 - [ ] UPX packaging step for final submission
 - [ ] Final size check against the 1,474,560 byte cap + submission
