@@ -1,6 +1,6 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: phase 8 size audit after the content, tuning, polish, and UI
+Last updated: phase 9 smoke test after the content, tuning, polish, and UI
 passes. The run is still comfortably under the contest limit.
 
 ## Contest constraints (don't lose sight of these)
@@ -60,6 +60,8 @@ passes. The run is still comfortably under the contest limit.
 
 ## In progress / next up
 - [x] Re-measured exe size after the dungeon/item/enemy/boss additions
+- [x] Smoke-tested the release executable under Wine; no startup crash
+      observed before the timeout
 - [ ] Procedural sprite generation (`engine/procgen`) to replace flat-color
       rectangles with real pixel-art-style shapes
 - [ ] Audio system (`engine/audio`) for shoot/hit/death/boss SFX and music
@@ -69,6 +71,7 @@ passes. The run is still comfortably under the contest limit.
 - [ ] Difficulty tuning / playtesting pass
 - [ ] UPX packaging step for final submission
 - [ ] Final size check against the 1,474,560 byte cap + submission
+- [ ] Full interactive run verification
 
 ## Known shortcuts taken
 - Rooms are generated as a graph and shown in the mini-map, but the playfield
