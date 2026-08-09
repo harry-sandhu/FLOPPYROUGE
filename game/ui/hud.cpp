@@ -129,6 +129,24 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
     }
 }
 
+void DrawItemPreview(const char* name, const char* desc) {
+    int nameW = Text::MeasureWidth(name, 1);
+    int descW = Text::MeasureWidth(desc, 1);
+    int boxW = std::max(nameW, descW) + 12;
+    if (boxW > 300) boxW = 300;
+    int boxX = (320 - boxW) / 2;
+    int boxY = 146;
+
+    Renderer::DrawRect(boxX, boxY, boxW, 20, 0xFF141118);
+    Renderer::DrawRect(boxX, boxY, boxW, 1, 0xFF555566);
+    Renderer::DrawRect(boxX, boxY + 19, boxW, 1, 0xFF555566);
+    Renderer::DrawRect(boxX, boxY, 1, 20, 0xFF555566);
+    Renderer::DrawRect(boxX + boxW - 1, boxY, 1, 20, 0xFF555566);
+
+    Text::DrawString(name, (320 - nameW) / 2, boxY + 3, 0xFFFFC84D, 1);
+    Text::DrawString(desc, (320 - descW) / 2, boxY + 12, 0xFFCCCCCC, 1);
+}
+
 void DrawTitleScreen() {
     Renderer::DrawRect(0, 0, 320, 180, 0xFF0F0D12);
     Renderer::DrawRect(0, 0, 320, 18, 0xFF221933);

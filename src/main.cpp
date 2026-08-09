@@ -281,6 +281,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     };
 
     auto TryCollectCurrentRoomPickups = [&]() -> bool {
+
         Room& room = dungeon.CurrentRoom();
         const float pickupSize = 8.0f;
 
@@ -343,6 +344,49 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         return false;
+    };
+    
+    const float itemPreviewRadius = 20.0f;
+
+    auto FindNearbyPreview = [&](const Room& room, const char*& outName, const char*& outDesc) -> bool {
+        Vec2 playerCenter = { player.pos.x + player.size * 0.5f, player.pos.y + player.size * 0.5f };
+        float bestDistSq = itemPreviewRadius * itemPreviewRadius;
+        const RoomPickup* nearest = nullptr;
+
+        for (const auto& pickup : room.pickups) {
+            if (pickup.collected) continue;
+            if (pickup.type != RoomPickupType::ITEM &&
+                pickup.type != RoomPickupType::HEART &&
+                pickup.type != RoomPickupType::BOMB) continue;
+
+            Vec2 pickupCenter = { pickup.pos.x + 4.0f, pickup.pos.y + 4.0f };
+            float dx = pickupCenter.x - playerCenter.x;
+            float dy = pickupCenter.y - playerCenter.y;
+            float distSq = dx * dx + dy * dy;
+            if (distSq <= bestDistSq) {
+                bestDistSq = distSq;
+                nearest = &pickup;
+            }
+        }
+
+        if (!nearest) return false;
+
+        if (nearest->type == RoomPickupType::HEART) {
+            outName = "Heart";
+            outDesc = "Restores a full heart of health";
+            return true;
+        }
+        if (nearest->type == RoomPickupType::BOMB) {
+            outName = "Bomb";
+            outDesc = "Place it, 3s fuse, damages nearby foes";
+            return true;
+        }
+
+        const ItemTemplate* item = ItemDatabase::Get(nearest->itemId);
+        if (!item) return false;
+        outName = item->name;
+        outDesc = item->desc;
+        return true;
     };
 
     while (Window::PollEvents()) {
@@ -615,6 +659,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                        size - 4, size - 4, 0xFF332211);
                 }
             }
+
+            const char* previewName = nullptr;
+        const char* previewDesc = nullptr;
+        if (roomPtr && FindNearbyPreview(*roomPtr, previewName, previewDesc)) {
+            HUD::DrawItemPreview(previewName, previewDesc);
+        }
         }
 
                 for (const auto& bomb : bombs) {

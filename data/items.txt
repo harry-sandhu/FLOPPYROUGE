@@ -3,74 +3,87 @@ type=stat_mod
 stat=damage
 mode=add
 value=5
+desc=A bit more punch behind every shot
 
 [FireRateUp]
 type=stat_mod
 stat=fireRate
 mode=multiply
 value=1.2
+desc=Shoot noticeably faster
 
 [RangeUp]
 type=stat_mod
 stat=range
 mode=add
 value=30
+desc=Shots travel farther before fading
 
 [MoveBoots]
 type=stat_mod
 stat=moveSpeed
 mode=add
 value=15
+desc=Quicker feet, quicker dodges
 
 [MultiShot]
 type=stat_mod
 stat=projectileCount
 mode=add
 value=1
+desc=Fires an extra projectile per shot
 
 [DiagonalFire]
 type=unlock
 flag=diagonal_fire
+desc=Unlocks diagonal shooting
 
 [Dash]
 type=unlock
 flag=dash
+desc=Unlocks a short burst dash
 
 [VitalityUp]
 type=stat_mod
 stat=maxHp
 mode=add
 value=20
+desc=Raises your maximum health
 
 [SwiftShot]
 type=stat_mod
 stat=shotSpeed
 mode=add
 value=25
+desc=Projectiles fly faster
 
 [QuickFire]
 type=stat_mod
 stat=fireRate
 mode=multiply
 value=1.15
+desc=A modest boost to fire rate
 
 [Barrage]
 type=stat_mod
 stat=projectileCount
 mode=add
 value=1
+desc=Another projectile joins the volley
 
 [LongStride]
 type=stat_mod
 stat=moveSpeed
 mode=add
 value=10
+desc=A little extra speed underfoot
 
 [LongSight]
 type=stat_mod
 stat=range
 mode=add
 value=45
+desc=Shots reach much farther
 
 [GlassCannon]
 type=stat_mod
@@ -80,6 +93,7 @@ value=14
 stat2=moveSpeed
 mode2=add
 value2=-12
+desc=Big damage, but you move slower
 
 [CursedVigor]
 type=stat_mod
@@ -89,40 +103,47 @@ value=35
 stat2=fireRate
 mode2=multiply
 value2=0.9
+desc=Tons of HP, but shots come slower
 
 [PiercingRounds]
 type=stat_mod
 stat=piercingChance
 mode=add
 value=0.5
+desc=Shots have a chance to pierce foes
 
 [Explosivo]
 type=stat_mod
 stat=explosiveChance
 mode=add
 value=0.45
+desc=Shots may detonate on impact
 
 [HomingCore]
 type=unlock
 flag=homing
+desc=Unlocks gentle shot homing
 
 [HomingBoost]
 type=stat_mod
 stat=homingChance
 mode=add
 value=0.4
+desc=Shots home in more reliably
 
 [StickyShot]
 type=stat_mod
 stat=stickyChance
 mode=add
 value=0.5
+desc=Shots may stick and linger on foes
 
 [ToxinGland]
 type=stat_mod
 stat=poisonChance
 mode=add
 value=0.5
+desc=Shots may poison enemies over time
 
 [HeavyRounds]
 type=stat_mod
@@ -132,6 +153,7 @@ value=8
 stat2=fireRate
 mode2=multiply
 value2=0.85
+desc=Hits harder, fires a bit slower
 
 [AdrenalRush]
 type=stat_mod
@@ -141,3 +163,101 @@ value=22
 stat2=maxHp
 mode2=add
 value2=-10
+desc=Much faster, but frailer
+
+[WeepingShallot]
+type=stat_mod
+stat=fireRate
+mode=multiply
+value=1.25
+desc=Tears fall faster than ever
+
+[ThirdEye]
+type=stat_mod
+stat=projectileCount
+mode=add
+value=1
+desc=An extra eye, an extra shot
+
+[CricketsLeg]
+type=stat_mod
+stat=damage
+mode=add
+value=6
+desc=A sharper, deadlier bite
+
+[PolyphemusScowl]
+type=stat_mod
+stat=damage
+mode=add
+value=20
+stat2=fireRate
+mode2=multiply
+value2=0.7
+desc=Massive damage, much slower tears
+
+[GuppysBlessing]
+type=stat_mod
+stat=heal
+mode=add
+value=4
+stat2=luck
+mode2=add
+value2=1
+desc=Heals you and blesses your luck
+
+[MomsOldSpoon]
+type=unlock
+flag=homing
+desc=Old, worn, oddly guides your shots
+
+[IpecacVial]
+type=stat_mod
+stat=explosiveChance
+mode=add
+value=0.5
+desc=Every shot risks a small explosion
+
+[NumberTwo]
+type=stat_mod
+stat=poisonChance
+mode=add
+value=0.4
+stat2=moveSpeed
+mode2=add
+value2=-5
+desc=Toxic shots, but it slows you down
+
+[TechLens]
+type=stat_mod
+stat=piercingChance
+mode=add
+value=0.5
+desc=A focusing lens - shots pierce true
+
+[BrokenGlasses]
+type=stat_mod
+stat=range
+mode=add
+value=60
+stat2=moveSpeed
+mode2=add
+value2=-8
+desc=See farther, but stumble slower
+
+[RustyKeyring]
+type=stat_mod
+stat=luck
+mode=add
+value=2
+desc=Fortune favors the bold
+
+[TwistedPacifier]
+type=stat_mod
+stat=fireRate
+mode=multiply
+value=1.3
+stat2=projectileCount
+mode2=add
+value2=1
+desc=Rapid twin shots, hard to resist

@@ -13,4 +13,5 @@ namespace HUD {
     void DrawRoomClearedBanner();
     void DrawBossHealthBar(const Boss& boss);
     void DrawFloorMap(const Dungeon& dungeon);
+    void DrawItemPreview(const char* name, const char* desc);
 }

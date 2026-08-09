@@ -40,14 +40,13 @@ enum class ItemFlag {
 
 struct ItemTemplate {
     char name[32] = {};
+    char desc[48] = {};
     ItemType type = ItemType::STAT_MOD;
     ItemStat stat = ItemStat::DAMAGE;
     ItemMode mode = ItemMode::ADD;
     ItemFlag flag = ItemFlag::UNKNOWN;
     float value = 0.0f;
 
-    // Optional second stat mod, for trade-off items (e.g. damage up / move
-    // speed down). stat2 stays UNKNOWN unless the data file sets it.
     ItemStat stat2 = ItemStat::UNKNOWN;
     ItemMode mode2 = ItemMode::ADD;
     float value2 = 0.0f;

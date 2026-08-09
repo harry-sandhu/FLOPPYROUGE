@@ -3,7 +3,7 @@
 
 constexpr int MAX_FIELDS = 16;
 constexpr int FIELD_KEY_LEN = 32;
-constexpr int FIELD_VAL_LEN = 32;
+constexpr int FIELD_VAL_LEN = 48;
 constexpr int BLOCK_NAME_LEN = 32;
 
 struct DataField {
