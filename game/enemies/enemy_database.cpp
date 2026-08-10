@@ -46,20 +46,27 @@ namespace {
         e.shootRange = t.shootRange;
         e.preferredDistance = t.preferredDistance;
         e.shotSpeed = t.shotSpeed;
+        e.hasHomingShots = t.hasHomingShots;
+        e.bouncesOffWalls = t.bouncesOffWalls;
+        e.explodesOnTimer = t.explodesOnTimer;
+        e.splitsOnDeath = t.splitsOnDeath;
+        e.fuseDuration = t.fuseDuration;
     }
 }
 
 namespace EnemyDatabase {
 
 bool Load(const char* path) {
-    std::vector<DataBlock> blocks = DataParser::ParseFile(path);
+    std::vector blocks = DataParser::ParseFile(path);
     if (blocks.empty()) return false;
 
     g_templateCount = 0;
+
     for (auto& block : blocks) {
         if (g_templateCount >= MAX_ENEMY_TEMPLATES) break;
 
         EnemyTemplate& t = g_templates[g_templateCount++];
+
         std::strncpy(t.name, block.name, sizeof(t.name) - 1);
         t.aiType = ParseAIType(block.GetString("ai", "CHASER"));
         t.attackPattern = ParseAttackPattern(block.GetString("attack_pattern", "SINGLE"));
@@ -72,9 +79,25 @@ bool Load(const char* path) {
         t.shootRange = block.GetFloat("shoot_range", 110.0f);
         t.preferredDistance = block.GetFloat("preferred_distance", 70.0f);
         t.shotSpeed = block.GetFloat("shot_speed", 80.0f);
+        t.hasHomingShots = block.GetBool("homing_shots", false);
+        t.bouncesOffWalls = block.GetBool("bounces_off_walls", false);
+        t.explodesOnTimer = block.GetBool("explodes_on_timer", false);
+        t.splitsOnDeath = block.GetBool("splits_on_death", false);
+        t.fuseDuration = block.GetFloat("fuse_duration", 1.2f);
+        t.tier = std::max(1, block.GetInt("tier", 1));
     }
+
     return true;
 }
+
+
+// Put Tier HERE — outside Load()
+int Tier(int index) {
+    const EnemyTemplate* t = FindByIndex(index);
+    return t ? t->tier : 1;
+}
+
+
 
 int Count() {
     return g_templateCount;

@@ -2,7 +2,8 @@
 
 enum class ItemType {
     STAT_MOD,
-    UNLOCK
+    UNLOCK,
+    PROC_SYNERGY
 };
 
 enum class ItemStat {
@@ -50,4 +51,5 @@ struct ItemTemplate {
     ItemStat stat2 = ItemStat::UNKNOWN;
     ItemMode mode2 = ItemMode::ADD;
     float value2 = 0.0f;
+    float perProcValue = 0.0f;
 };

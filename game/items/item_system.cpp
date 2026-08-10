@@ -79,6 +79,18 @@ namespace {
             ApplyStatModValues(player, item.stat2, item.mode2, item.value2);
         }
     }
+
+    void ApplyProcSynergy(Player& player, const ItemTemplate& item) {
+        int procCount = 0;
+        if (player.homingChance > 0.0f) procCount++;
+        if (player.poisonChance > 0.0f) procCount++;
+        if (player.stickyChance > 0.0f) procCount++;
+        if (player.piercingChance > 0.0f) procCount++;
+        if (player.explosiveChance > 0.0f) procCount++;
+
+        int bonus = (int)std::lround(item.perProcValue * (float)procCount);
+        player.damage = std::max(1, player.damage + bonus);
+    }
 }
 
 namespace ItemSystem {
@@ -86,6 +98,8 @@ namespace ItemSystem {
 void ApplyItem(Player& player, const ItemTemplate& item) {
     if (item.type == ItemType::UNLOCK) {
         ApplyUnlock(player, item);
+    } else if (item.type == ItemType::PROC_SYNERGY) {
+        ApplyProcSynergy(player, item);
     } else {
         ApplyStatMod(player, item);
     }

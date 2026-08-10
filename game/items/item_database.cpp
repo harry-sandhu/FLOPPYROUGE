@@ -9,6 +9,7 @@ namespace {
 
     ItemType ParseType(const char* s) {
         if (std::strcmp(s, "unlock") == 0) return ItemType::UNLOCK;
+        if (std::strcmp(s, "proc_synergy") == 0) return ItemType::PROC_SYNERGY;
         return ItemType::STAT_MOD;
     }
 
@@ -78,6 +79,7 @@ bool Load(const char* path) {
         item.stat2 = ParseStat(block.GetString("stat2", "unknown"));
         item.mode2 = ParseMode(block.GetString("mode2", "add"));
         item.value2 = block.GetFloat("value2", 0.0f);
+        item.perProcValue = block.GetFloat("per_proc_value", 0.0f);
     }
 
     return true;

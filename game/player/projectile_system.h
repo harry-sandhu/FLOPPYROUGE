@@ -12,7 +12,8 @@ namespace ProjectileSystem {
                bool homing = false, bool poison = false, bool sticky = false,
                bool piercing = false, bool explosive = false);
     void Advance(std::vector<Projectile>& projectiles, float dt,
-                 const std::vector<Enemy>* roomEnemies = nullptr, const Boss* boss = nullptr);
+                 const std::vector<Enemy>* roomEnemies = nullptr, const Boss* boss = nullptr,
+                 const Vec2* playerPos = nullptr);
 
     void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<Enemy>& roomEnemies, Enemy& enemy,
                                  float projectileSize, std::vector<Enemy>& spawnedEnemies,

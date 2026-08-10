@@ -362,3 +362,8 @@ stat2=range
 mode2=add
 value2=-15
 desc=Fast on your feet, shorter reach
+
+[SynergyCore]
+type=proc_synergy
+per_proc_value=4
+desc=Damage rises with each proc effect you already carry

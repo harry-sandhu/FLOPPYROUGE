@@ -9,6 +9,7 @@
 
 namespace {
     constexpr int MAX_GENERATION_ATTEMPTS = 64;
+    constexpr int BOSS_VARIANT_TIER[10] = { 1, 1, 2, 2, 3, 2, 2, 3, 2, 3 };
 
     // Normal-room connection-degree distribution: 10% / 50% / 30% / 10%
     // for 1 / 2 / 3 / 4 connections. START/BOSS/TREASURE/CURSE are excluded.
@@ -323,7 +324,16 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             }
         }
         rooms[bossRoomIndex].type = RoomType::BOSS;
-        rooms[bossRoomIndex].bossVariant = RNG::Range(0, 5);
+
+        std::vector<int> eligibleBossVariants;
+        for (int v = 0; v < 10; ++v) {
+            if (BOSS_VARIANT_TIER[v] <= currentFloor) {
+                eligibleBossVariants.push_back(v);
+            }
+        }
+        
+        rooms[bossRoomIndex].bossVariant =
+            eligibleBossVariants[RNG::Range(0, (int)eligibleBossVariants.size() - 1)];
 
         std::vector<int> remaining;
         for (int idx : deadEnds) {
@@ -343,6 +353,19 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
 
         const int enemyCount = EnemyDatabase::Count();
         const int itemCount = ItemDatabase::Count();
+
+        std::vector<int> eligibleEnemyIndices;
+        for (int e = 0; e < enemyCount; ++e) {
+            if (EnemyDatabase::Tier(e) <= currentFloor) eligibleEnemyIndices.push_back(e);
+        }
+        if (eligibleEnemyIndices.empty()) {
+            for (int e = 0; e < enemyCount; ++e) eligibleEnemyIndices.push_back(e); // safety fallback
+        }
+
+        auto PickEnemyIndex = [&]() {
+            return eligibleEnemyIndices[RNG::Range(0, (int)eligibleEnemyIndices.size() - 1)];
+        };
+
         for (int i = 0; i < (int)rooms.size(); ++i) {
             rooms[i].enemySpawnList.clear();
             rooms[i].itemSpawnList.clear();
@@ -357,7 +380,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                     + settings.normalEnemyPerFloor * currentFloor
                     + (distBonus > 2 ? settings.deepRoomBonus : 0);
                 for (int j = 0; j < spawnCount; ++j) {
-                    rooms[i].enemySpawnList.push_back(RNG::Range(0, enemyCount - 1));
+                    rooms[i].enemySpawnList.push_back(PickEnemyIndex());
                 }
             } else if (rooms[i].type == RoomType::TREASURE && itemCount > 0) {
                 int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);
@@ -374,7 +397,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                         + settings.normalEnemyPerFloor * currentFloor
                         + (distBonus > 2 ? settings.deepRoomBonus : 0);
                     for (int j = 0; j < spawnCount; ++j) {
-                        rooms[i].enemySpawnList.push_back(RNG::Range(0, enemyCount - 1));
+                        rooms[i].enemySpawnList.push_back(PickEnemyIndex());
                     }
                 } else if (itemCount > 0) {
                     int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);

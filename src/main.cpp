@@ -406,7 +406,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
             PlayerLogic::UpdateTimers(player, dt);
             ProjectileSystem::Advance(playerShots, dt, &enemies, (room->type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
-            ProjectileSystem::Advance(enemyShots, dt);
+            ProjectileSystem::Advance(enemyShots, dt, nullptr, nullptr, &player.pos);
             PlayerLogic::HandleMovement(player, dt);
 
             if (screenShakeTimer > 0.0f) {
@@ -513,9 +513,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if ((room->type == RoomType::NORMAL || room->IsEnemyCurseRoom()) && !room->cleared) {
                     bool anyAlive = false;
                     std::vector<Enemy> spawnedEnemies;
-                    for (auto& enemy : enemies) {
+                   for (auto& enemy : enemies) {
                         EnemyAI::Update(enemy, player.pos, dt, enemies, spawnedEnemies, enemyShots);
+                        Vec2 preClampPos = enemy.pos;
                         enemy.pos = room->ClampToRoom(enemy.pos, enemy.w, enemy.h);
+                        if (enemy.bouncesOffWalls && enemy.isCharging) {
+                            if (enemy.pos.x != preClampPos.x) enemy.chargeDir.x = -enemy.chargeDir.x;
+                            if (enemy.pos.y != preClampPos.y) enemy.chargeDir.y = -enemy.chargeDir.y;
+                        }
 
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, enemy, projectileSize,
                                                                   spawnedEnemies, enemyShots, dt);
@@ -558,7 +563,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     std::vector<Enemy> scratchSpawned; // boss-room adds never summon further adds
                     for (auto& add : enemies) {
                         EnemyAI::Update(add, player.pos, dt, enemies, scratchSpawned, enemyShots);
+                        Vec2 preClampPos = add.pos;
                         add.pos = room->ClampToRoom(add.pos, add.w, add.h);
+                        if (add.bouncesOffWalls && add.isCharging) {
+                            if (add.pos.x != preClampPos.x) add.chargeDir.x = -add.chargeDir.x;
+                            if (add.pos.y != preClampPos.y) add.chargeDir.y = -add.chargeDir.y;
+                        }
 
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, add, projectileSize,
                                                                   scratchSpawned, enemyShots, dt);
@@ -581,6 +591,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
                         DamagePlayer(dmg);
                     }
+
+                    if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
+                        int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
+                        DamagePlayer(dmg);
+                    }
+
+                    for (auto& hazard : boss.hazards) {
+                        float dx = (player.pos.x + player.size * 0.5f) - hazard.pos.x;
+                        float dy = (player.pos.y + player.size * 0.5f) - hazard.pos.y;
+                        if (dx * dx + dy * dy <= hazard.radius * hazard.radius) {
+                            hazard.tickTimer -= dt;
+                            if (hazard.tickTimer <= 0.0f) {
+                                hazard.tickTimer = 0.5f;
+                                DamagePlayer(hazard.tickDamage);
+                            }
+                        }
+                    }
+
+                    
 
                     if (!boss.alive) {
                         dungeon.MarkCurrentRoomCleared();

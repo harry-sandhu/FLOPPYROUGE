@@ -44,11 +44,15 @@ namespace {
                     ProjectileSystem::Spawn(
                         out, enemy.pos,
                         { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
-                      EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
+                        EnemyProjectileDamage(enemy),
+                        ENEMY_PROJECTILE_RANGE,
+                        0.0f,
+                        enemy.hasHomingShots
                     );
                 }
                 break;
             }
+    
             case AttackPattern::RADIAL: {
                 const int count = 8;
                 for (int i = 0; i < count; ++i) {
@@ -56,11 +60,15 @@ namespace {
                     ProjectileSystem::Spawn(
                         out, enemy.pos,
                         { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
-                       EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
+                        EnemyProjectileDamage(enemy),
+                        ENEMY_PROJECTILE_RANGE,
+                        0.0f,
+                        enemy.hasHomingShots
                     );
                 }
                 break;
             }
+    
             case AttackPattern::SPIRAL: {
                 const int count = 6;
                 for (int i = 0; i < count; ++i) {
@@ -68,18 +76,25 @@ namespace {
                     ProjectileSystem::Spawn(
                         out, enemy.pos,
                         { std::cos(angle) * enemy.shotSpeed, std::sin(angle) * enemy.shotSpeed },
-                       EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
+                        EnemyProjectileDamage(enemy),
+                        ENEMY_PROJECTILE_RANGE,
+                        0.0f,
+                        enemy.hasHomingShots
                     );
                 }
                 enemy.spiralOffset += 0.35f;
                 break;
             }
+    
             case AttackPattern::SINGLE:
             default:
                 ProjectileSystem::Spawn(
                     out, enemy.pos,
                     { dir.x * enemy.shotSpeed, dir.y * enemy.shotSpeed },
-                   EnemyProjectileDamage(enemy), ENEMY_PROJECTILE_RANGE
+                    EnemyProjectileDamage(enemy),
+                    ENEMY_PROJECTILE_RANGE,
+                    0.0f,
+                    enemy.hasHomingShots
                 );
                 break;
         }
@@ -115,6 +130,14 @@ namespace {
     }
 
     void UpdateCharger(Enemy& enemy, Vec2 playerPos, float dt) {
+        if (enemy.bouncesOffWalls && enemy.isCharging) {
+            enemy.pos.x += enemy.chargeDir.x * enemy.speed * 4.0f * dt;
+            enemy.pos.y += enemy.chargeDir.y * enemy.speed * 4.0f * dt;
+            enemy.chargeTimeRemaining -= dt;
+            if (enemy.chargeTimeRemaining <= 0.0f) enemy.isCharging = false;
+            return;
+        }
+
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
@@ -123,6 +146,11 @@ namespace {
         if (enemy.shootTimer <= 0.0f) {
             moveSpeed *= 4.0f;
             enemy.shootTimer = enemy.shootCooldown;
+            if (enemy.bouncesOffWalls) {
+                enemy.isCharging = true;
+                enemy.chargeDir = dir;
+                enemy.chargeTimeRemaining = 0.35f;
+            }
         }
 
         enemy.pos.x += dir.x * moveSpeed * dt;
@@ -159,6 +187,25 @@ namespace {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
+        if (enemy.explodesOnTimer) {
+            if (enemy.fuseTimer <= 0.0f && dist > enemy.shootRange) {
+                float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+                enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
+                enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
+            } else if (enemy.fuseTimer <= 0.0f) {
+                enemy.fuseTimer = enemy.fuseDuration; // arm the fuse once in range
+            }
+
+            if (enemy.fuseTimer > 0.0f) {
+                enemy.fuseTimer -= dt;
+                if (enemy.fuseTimer <= 0.0f) {
+                    FireByPattern(enemy, dir, enemyProjectiles);
+                    enemy.alive = false;
+                }
+            }
+            return;
+        }
+
         float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
         enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
         enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
@@ -169,7 +216,6 @@ namespace {
             enemy.alive = false;
         }
     }
-
     void MaybeDropCreep(Enemy& enemy, Vec2 beforePos, float dt, std::vector<Projectile>& enemyProjectiles) {
         if (enemy.specialType != EnemySpecialType::CREEPER) return;
 

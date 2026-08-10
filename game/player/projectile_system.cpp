@@ -21,7 +21,8 @@ namespace {
         return v;
     }
 
-    Vec2 FindHomingTarget(const std::vector<Enemy>* roomEnemies, const Boss* boss, Vec2 from, bool& found) {
+    Vec2 FindHomingTarget(const std::vector<Enemy>* roomEnemies, const Boss* boss, const Vec2* playerPos,
+                          Vec2 from, bool& found) {
         found = false;
         Vec2 target = from;
         float bestDistSq = 0.0f;
@@ -52,13 +53,24 @@ namespace {
             }
         }
 
+        if (playerPos) {
+            float dx = playerPos->x - from.x;
+            float dy = playerPos->y - from.y;
+            float distSq = dx * dx + dy * dy;
+            if (!found || distSq < bestDistSq) {
+                found = true;
+                target = *playerPos;
+            }
+        }
+
         return target;
     }
 
-    void AdvanceProjectile(Projectile& p, float dt, const std::vector<Enemy>* roomEnemies, const Boss* boss) {
+    void AdvanceProjectile(Projectile& p, float dt, const std::vector<Enemy>* roomEnemies, const Boss* boss,
+                           const Vec2* playerPos) {
         if (p.homing) {
             bool found = false;
-            Vec2 target = FindHomingTarget(roomEnemies, boss, p.pos, found);
+            Vec2 target = FindHomingTarget(roomEnemies, boss, playerPos, p.pos, found);
             if (found) {
                 Vec2 desired = Normalize({ target.x - p.pos.x, target.y - p.pos.y });
                 float speed = std::sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
@@ -132,10 +144,11 @@ void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage,
     projectiles.push_back(p);
 }
 
-void Advance(std::vector<Projectile>& projectiles, float dt, const std::vector<Enemy>* roomEnemies, const Boss* boss) {
+void Advance(std::vector<Projectile>& projectiles, float dt, const std::vector<Enemy>* roomEnemies,
+             const Boss* boss, const Vec2* playerPos) {
     for (auto& p : projectiles) {
         if (!p.alive) continue;
-        AdvanceProjectile(p, dt, roomEnemies, boss);
+        AdvanceProjectile(p, dt, roomEnemies, boss, playerPos);
     }
 
     projectiles.erase(
@@ -209,6 +222,17 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
                     2,
                     999999.0f
                 );
+            }
+        }
+
+        if (enemy.splitsOnDeath && !enemy.isSplitChild) {
+            for (int i = 0; i < 2; ++i) {
+                Vec2 offset = { (float)(i * 8 - 4), (float)(i * 5 - 2) };
+                Enemy child = EnemyDatabase::Spawn(enemy.templateName, { enemy.pos.x + offset.x, enemy.pos.y + offset.y });
+                child.hp = std::max(1, enemy.maxHp / 3);
+                child.maxHp = child.hp;
+                child.isSplitChild = true;
+                spawnedEnemies.push_back(child);
             }
         }
     }

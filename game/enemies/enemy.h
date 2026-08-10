@@ -53,6 +53,19 @@ struct Enemy {
 
     bool shielded = false;
 
+    bool hasHomingShots = false;
+    bool bouncesOffWalls = false;
+    bool explodesOnTimer = false;
+    bool splitsOnDeath = false;
+    bool isSplitChild = false;   // guards against split-children re-splitting
+
+    float fuseTimer = 0.0f;
+    float fuseDuration = 1.2f;
+
+    bool isCharging = false;      // used only when bouncesOffWalls is true
+    Vec2 chargeDir = { 0.0f, 0.0f };
+    float chargeTimeRemaining = 0.0f;
+
     EnemySpecialType specialType = EnemySpecialType::NONE;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }

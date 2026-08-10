@@ -7,7 +7,25 @@
 enum class BossAttackType {
     SPREAD_SHOT,
     RADIAL_BURST,
-    CHARGE
+    CHARGE,
+    LASER_SWEEP,
+    SUMMON_WAVE,
+    FLOOR_HAZARD,
+    MIRROR_SHOT
+};
+
+
+
+// A persistent damage zone dropped by FLOOR_HAZARD. `timeRemaining` is
+// owned/decremented by BossAI::Update (expiry); `tickTimer` is owned by
+// whoever checks player overlap each frame (main.cpp) and decrements it
+// while the player stands inside `radius`.
+struct BossHazard {
+    Vec2 pos = { 0.0f, 0.0f };
+    float radius = 16.0f;
+    float timeRemaining = 3.0f;
+    float tickTimer = 0.0f;
+    int tickDamage = 1;
 };
 
 struct Boss {
@@ -43,6 +61,7 @@ struct Boss {
     int contactDamage = 2;
     int chargeContactDamage = 3;
     int maxAdds = 4;
+    std::vector<BossHazard> hazards;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
 };
@@ -60,4 +79,8 @@ Boss SpawnBoss3();
 Boss SpawnBoss4();
 Boss SpawnBoss5();
 Boss SpawnBoss6();
+Boss SpawnBoss7();
+Boss SpawnBoss8();
+Boss SpawnBoss9();
+Boss SpawnBoss10();
 Boss SpawnBossVariant(int variant);
