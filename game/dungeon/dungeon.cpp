@@ -10,6 +10,18 @@
 namespace {
     constexpr int MAX_GENERATION_ATTEMPTS = 64;
 
+    // Normal-room connection-degree distribution: 10% / 50% / 30% / 10%
+    // for 1 / 2 / 3 / 4 connections. START/BOSS/TREASURE/CURSE are excluded.
+    int RollNormalRoomTargetDegree() {
+        int roll = RNG::Range(0, 99);
+        if (roll < 10) return 1;   // 10%
+        if (roll < 60) return 2;   // +50% -> 60
+        if (roll < 90) return 3;   // +30% -> 90
+        return 4;                  // remaining 10%
+    }
+
+    // ... existing DoorDir, TransitionCandidate, ComputeDistances stay as-is
+
     enum class DoorDir {
         NORTH,
         SOUTH,
@@ -214,12 +226,30 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         int growthAttempts = 0;
         const int maxGrowthAttempts = normalRoomTarget * 20;
 
+        // Degree bookkeeping. Index-aligned with `rooms`. START room (index
+        // startRoomIndex) is intentionally left unconstrained/unused here -
+        // it's always a valid growth parent regardless of how many rooms
+        // end up touching it.
+        std::vector<int> roomDegree(rooms.size(), 0);
+        std::vector<int> roomTargetDegree(rooms.size(), 0);
+
         while (addedNormals < normalRoomTarget && growthAttempts < maxGrowthAttempts) {
             growthAttempts++;
 
-            int poolSize = 1 + (int)normalRoomIndices.size();
-            int pick = RNG::Range(0, poolSize - 1);
-            int parentIndex = (pick == 0) ? startRoomIndex : normalRoomIndices[pick - 1];
+            // Eligible parents: START (always) + any normal room that hasn't
+            // reached its rolled target degree yet. Once a room hits its
+            // target it drops out of the pool, though it can still passively
+            // gain +1 degree later if another room grows toward it from the
+            // other side (soft floor, not a hard ceiling).
+            std::vector<int> eligibleParents;
+            eligibleParents.push_back(startRoomIndex);
+            for (int idx : normalRoomIndices) {
+                if (roomDegree[idx] < roomTargetDegree[idx]) {
+                    eligibleParents.push_back(idx);
+                }
+            }
+
+            int parentIndex = eligibleParents[RNG::Range(0, (int)eligibleParents.size() - 1)];
 
             const Room& parent = rooms[parentIndex];
             int px = (int)parent.gridPos.x;
@@ -238,6 +268,27 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             rooms[roomIndex].type = RoomType::NORMAL;
             normalRoomIndices.push_back(roomIndex);
             addedNormals++;
+
+            // Grow the bookkeeping vectors and roll this room's target degree.
+            roomDegree.resize(rooms.size(), 0);
+            roomTargetDegree.resize(rooms.size(), 0);
+            roomTargetDegree[roomIndex] = RollNormalRoomTargetDegree();
+            rooms[roomIndex].targetDegree = roomTargetDegree[roomIndex];
+
+            // BuildConnections() later links ANY grid-adjacent rooms, not
+            // just parent/child pairs, so credit degree to every neighbor
+            // that already exists at this cell - not just the chosen parent.
+            int nx = (int)cell.x, ny = (int)cell.y;
+            const int neighborCells[4][2] = {
+                { nx + 1, ny }, { nx - 1, ny }, { nx, ny + 1 }, { nx, ny - 1 }
+            };
+            for (auto& nc : neighborCells) {
+                int neighborRoom = RoomIndexAtCell(nc[0], nc[1]);
+                if (neighborRoom >= 0 && neighborRoom != roomIndex) {
+                    roomDegree[roomIndex]++;
+                    roomDegree[neighborRoom]++;
+                }
+            }
         }
 
         if (addedNormals < normalRoomTarget) continue;
@@ -272,7 +323,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             }
         }
         rooms[bossRoomIndex].type = RoomType::BOSS;
-        rooms[bossRoomIndex].bossVariant = RNG::Range(0, 2);
+        rooms[bossRoomIndex].bossVariant = RNG::Range(0, 5);
 
         std::vector<int> remaining;
         for (int idx : deadEnds) {

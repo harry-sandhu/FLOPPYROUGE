@@ -63,8 +63,11 @@ bool Load(const char* path) {
     for (auto& block : blocks) {
         if (g_templateCount >= MAX_ITEM_TEMPLATES) break;
 
+        
         ItemTemplate& item = g_templates[g_templateCount++];
         std::strncpy(item.name, block.name, sizeof(item.name) - 1);
+        std::strncpy(item.desc, block.GetString("desc", "???"), sizeof(item.desc) - 1);
+        item.desc[sizeof(item.desc) - 1] = '\0';
         item.type = ParseType(block.GetString("type", "stat_mod"));
         item.stat = ParseStat(block.GetString("stat", "damage"));
         item.mode = ParseMode(block.GetString("mode", "add"));

@@ -261,3 +261,104 @@ stat2=projectileCount
 mode2=add
 value2=1
 desc=Rapid twin shots, hard to resist
+
+
+[VenomLoad]
+type=stat_mod
+stat=poisonChance
+mode=add
+value=0.3
+stat2=piercingChance
+mode2=add
+value2=0.3
+desc=Toxic, piercing shots that reward stacking procs
+
+[StickyVenom]
+type=stat_mod
+stat=poisonChance
+mode=add
+value=0.25
+stat2=stickyChance
+mode2=add
+value2=0.25
+desc=Shots cling and poison on contact
+
+[Overclock]
+type=stat_mod
+stat=fireRate
+mode=multiply
+value=1.4
+stat2=maxHp
+mode2=add
+value2=-15
+desc=Blistering fire rate, thinner skin
+
+[GildedHeart]
+type=stat_mod
+stat=maxHp
+mode=add
+value=25
+stat2=heal
+mode2=add
+value2=2
+desc=A sturdier, self-mending heart
+
+[SecondWind]
+type=stat_mod
+stat=heal
+mode=add
+value=3
+stat2=luck
+mode2=add
+value2=2
+desc=Fortune smiles on the wounded
+
+[BunkerStance]
+type=stat_mod
+stat=maxHp
+mode=add
+value=30
+stat2=moveSpeed
+mode2=add
+value2=-10
+desc=Dig in - more health, less speed
+
+[TwinBarrel]
+type=stat_mod
+stat=projectileCount
+mode=add
+value=1
+stat2=range
+mode2=add
+value2=20
+desc=An extra barrel with a bit more reach
+
+[ScatterCore]
+type=stat_mod
+stat=projectileCount
+mode=add
+value=2
+stat2=damage
+mode2=add
+value2=-4
+desc=Wide volleys, each shot a little weaker
+
+[EmberRounds]
+type=stat_mod
+stat=explosiveChance
+mode=add
+value=0.3
+stat2=homingChance
+mode2=add
+value2=0.2
+desc=Seeking shots that occasionally detonate
+
+[Featherweight]
+type=stat_mod
+stat=moveSpeed
+mode=add
+value=18
+stat2=range
+mode2=add
+value2=-15
+desc=Fast on your feet, shorter reach

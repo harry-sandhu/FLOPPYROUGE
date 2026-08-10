@@ -44,6 +44,7 @@ struct Room {
     int west = -1;
 
     int bossVariant = 0;
+    int targetDegree = 0;
 
     std::vector<int> enemySpawnList;
     std::vector<int> itemSpawnList;
