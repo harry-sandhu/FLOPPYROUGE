@@ -50,16 +50,22 @@ struct Boss {
     float chargeDuration = 0.5f;
     float chargeSpeed = 220.0f;
     float spawnDelayRemaining = 0.0f;
+    // See Enemy::attackDelayRemaining - same two-stage spawn model applies
+    // to bosses: inert during spawnDelayRemaining, movable-but-harmless
+    // until attackDelayRemaining also expires.
+    float attackDelayRemaining = 0.0f;
     float poisonTimer = 0.0f;
     float poisonTickTimer = 0.0f;
     int poisonDamage = 0;
     float stickyTimer = 0.0f;
     float stickySpeedMultiplier = 1.0f;
 
-    // Damage in half-heart units (player has 6 hp = 3 hearts). Untelegraphed
-    // contact is 1 heart; a charge/slam (dodgeable) is 1.5 hearts.
-    int contactDamage = 2;
-    int chargeContactDamage = 3;
+    // Damage in half-heart units (player has 6 hp = 3 hearts). Hard cap
+    // across the whole game: every damage source is either 1 (half heart)
+    // or 2 (a full heart), never more - untelegraphed contact defaults to
+    // half a heart, a charge/slam (dodgeable, telegraphed) to a full heart.
+    int contactDamage = 1;
+    int chargeContactDamage = 2;
     int maxAdds = 4;
     std::vector<BossHazard> hazards;
 

@@ -363,7 +363,7 @@ namespace {
                 boss.attackCooldownPhase2 = 1.0f;
                 boss.chargeSpeed = 240.0f;
                 boss.contactDamage = 2;
-                boss.chargeContactDamage = 3;
+                boss.chargeContactDamage = 2;
                 break;
             case 4:
                 boss.hp = boss.maxHp = 460;
@@ -371,8 +371,8 @@ namespace {
                 boss.attackCooldownPhase1 = 1.5f;
                 boss.attackCooldownPhase2 = 0.85f;
                 boss.chargeSpeed = 260.0f;
-                boss.contactDamage = 3;
-                boss.chargeContactDamage = 4;
+                boss.contactDamage = 2;
+                boss.chargeContactDamage = 2;
                 break;
             case 5:
                 boss.hp = boss.maxHp = 300;
@@ -381,7 +381,7 @@ namespace {
                 boss.attackCooldownPhase2 = 1.6f;
                 boss.chargeSpeed = 180.0f;
                 boss.contactDamage = 2;
-                boss.chargeContactDamage = 3;
+                boss.chargeContactDamage = 2;
                 boss.maxAdds = 5;
                 break;
 
@@ -392,7 +392,7 @@ namespace {
                 boss.attackCooldownPhase2 = 1.2f;
                 boss.chargeSpeed = 235.0f;
                 boss.contactDamage = 2;
-                boss.chargeContactDamage = 3;
+                boss.chargeContactDamage = 2;
                 break;
             case 7: // attrition: laser sweep + summon wave
                 boss.hp = boss.maxHp = 430;
@@ -439,6 +439,9 @@ namespace BossAI {
 void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
             const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
     if (!boss.alive) return;
+    if (boss.attackDelayRemaining > 0.0f) {
+        boss.attackDelayRemaining -= dt;
+    }
     if (boss.spawnDelayRemaining > 0.0f) {
         boss.spawnDelayRemaining -= dt;
         if (boss.spawnDelayRemaining > 0.0f) return;
@@ -488,18 +491,18 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
     boss.pos.y += dir.y * boss.driftSpeed * slowScale * dt;
 
     switch (boss.variant) {
-        case 1: UpdateVariant1(boss, playerPos, dt, bossProjectiles); break;
-        case 2: UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
-        case 3: UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
-        case 4: UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
-        case 5: UpdateVariant5(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-        case 6: UpdateVariant6(boss, playerPos, dt, bossProjectiles); break;
-        case 7: UpdateVariant7(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-        case 8: UpdateVariant8(boss, playerPos, dt, bossProjectiles); break;
-        case 9: UpdateVariant9(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
+        case 1: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant1(boss, playerPos, dt, bossProjectiles); break;
+        case 2: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
+        case 3: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
+        case 4: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
+        case 5: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant5(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
+        case 6: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant6(boss, playerPos, dt, bossProjectiles); break;
+        case 7: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant7(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
+        case 8: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant8(boss, playerPos, dt, bossProjectiles); break;
+        case 9: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant9(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
         case 0:
         default:
-            UpdateVariant0(boss, playerPos, dt, bossProjectiles);
+            if (boss.attackDelayRemaining <= 0.0f) UpdateVariant0(boss, playerPos, dt, bossProjectiles);
             break;
     }
 }

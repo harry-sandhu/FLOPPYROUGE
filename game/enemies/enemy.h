@@ -42,6 +42,11 @@ struct Enemy {
     float preferredDistance = 70.0f;
     float shotSpeed = 80.0f;
     float spawnDelayRemaining = 0.0f;
+    // Counts down in parallel with spawnDelayRemaining. The enemy is fully
+    // inert while spawnDelayRemaining > 0 (still "spawning"); once that
+    // expires it can move, but can't deal any damage (contact or shots)
+    // until attackDelayRemaining also reaches 0.
+    float attackDelayRemaining = 0.0f;
     float creepDropTimer = 0.0f;
     float creepDropInterval = 0.30f;
     float poisonTimer = 0.0f;

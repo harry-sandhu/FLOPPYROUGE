@@ -176,7 +176,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         enemy.shootRange *= 1.0f + 0.04f * floorOffset;
         enemy.preferredDistance *= 1.0f + 0.02f * floorOffset;
         enemy.shotSpeed *= 1.0f + 0.04f * floorOffset;
-        enemy.spawnDelayRemaining = 0.5f;
+        enemy.spawnDelayRemaining = 1.0f;
+        enemy.attackDelayRemaining = 1.5f;
     };
 
     auto ScaleBossForFloor = [&](Boss& boss) {
@@ -192,7 +193,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         if (boss.attackCooldownPhase1 < 0.85f) boss.attackCooldownPhase1 = 0.85f;
         if (boss.attackCooldownPhase2 < 0.60f) boss.attackCooldownPhase2 = 0.60f;
         boss.chargeSpeed *= 1.0f + 0.06f * floorOffset;
-        boss.spawnDelayRemaining = 0.5f;
+        boss.spawnDelayRemaining = 1.0f;
+        boss.attackDelayRemaining = 1.5f;
         boss.attackTimer = boss.attackCooldownPhase1;
     };
 
@@ -231,7 +233,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         if (enemy.hp < 1) enemy.hp = 1;
         enemy.maxHp = enemy.hp;
-        enemy.spawnDelayRemaining = 0.5f;
+        enemy.spawnDelayRemaining = 1.0f;
+        enemy.attackDelayRemaining = 1.5f;
     };
 
     auto LoadRoomEncounter = [&]() {
@@ -420,7 +423,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
             activeRoom = &dungeon.CurrentRoom();
             room = activeRoom;
-            player.pos = room->ClampToRoom(player.pos, (float)player.size, (float)player.size);
+            player.pos = room->ClampPlayerToRoom(player.pos, (float)player.size, (float)player.size);
             PlayerLogic::HandleShooting(player, dt, playerShots);
 
             if (Input::IsPressed('B') && player.bombCount > 0) {
@@ -525,7 +528,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, enemy, projectileSize,
                                                                   spawnedEnemies, enemyShots, dt);
 
-                        if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
+                        if (enemy.alive && enemy.attackDelayRemaining <= 0.0f &&
+                            Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
                             DamagePlayer(ContactDamageFor(enemy));
                         }
                         if (enemy.alive) anyAlive = true;
@@ -573,7 +577,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, add, projectileSize,
                                                                   scratchSpawned, enemyShots, dt);
 
-                        if (add.alive && Collision::CheckAABB(player.GetRect(), add.GetRect())) {
+                        if (add.alive && add.attackDelayRemaining <= 0.0f &&
+                            Collision::CheckAABB(player.GetRect(), add.GetRect())) {
                             DamagePlayer(ContactDamageFor(add));
                         }
                     }
@@ -587,12 +592,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         AddScreenShake(0.14f, 2.0f);
                     }
 
-                    if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
-                        int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
-                        DamagePlayer(dmg);
-                    }
-
-                    if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
+                    if (boss.alive && boss.attackDelayRemaining <= 0.0f &&
+                        Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
                         int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
                         DamagePlayer(dmg);
                     }
@@ -650,6 +651,60 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             HUD::DrawTitleScreen();
             Renderer::Present();
             continue;
+        }
+
+        if (roomPtr) {
+            const Room& wr = *roomPtr;
+            const float wt = Room::WALL_THICKNESS;
+            const float dhw = Room::DOOR_HALF_WIDTH;
+            const uint32_t wallColor = 0xFF3A2E22;
+            const uint32_t doorOpenColor = 0xFFB8863B;
+            const uint32_t doorLockedColor = 0xFF5A2A2A;
+
+            int rx = (int)(wr.x + shakeOffset.x);
+            int ry = (int)(wr.y + shakeOffset.y);
+            int rw = (int)wr.width;
+            int rh = (int)wr.height;
+            int midX = rx + rw / 2;
+            int midY = ry + rh / 2;
+            int gapL = midX - (int)dhw, gapR = midX + (int)dhw;
+            int gapT = midY - (int)dhw, gapB = midY + (int)dhw;
+            uint32_t doorColor = wr.gateOpen ? doorOpenColor : doorLockedColor;
+
+            // North wall
+            if (wr.north >= 0) {
+                Renderer::DrawRect(rx, ry, gapL - rx, (int)wt, wallColor);
+                Renderer::DrawRect(gapR, ry, rx + rw - gapR, (int)wt, wallColor);
+                Renderer::DrawRect(gapL, ry, gapR - gapL, (int)wt, doorColor);
+            } else {
+                Renderer::DrawRect(rx, ry, rw, (int)wt, wallColor);
+            }
+            // South wall
+            int sy = ry + rh - (int)wt;
+            if (wr.south >= 0) {
+                Renderer::DrawRect(rx, sy, gapL - rx, (int)wt, wallColor);
+                Renderer::DrawRect(gapR, sy, rx + rw - gapR, (int)wt, wallColor);
+                Renderer::DrawRect(gapL, sy, gapR - gapL, (int)wt, doorColor);
+            } else {
+                Renderer::DrawRect(rx, sy, rw, (int)wt, wallColor);
+            }
+            // West wall
+            if (wr.west >= 0) {
+                Renderer::DrawRect(rx, ry, (int)wt, gapT - ry, wallColor);
+                Renderer::DrawRect(rx, gapB, (int)wt, ry + rh - gapB, wallColor);
+                Renderer::DrawRect(rx, gapT, (int)wt, gapB - gapT, doorColor);
+            } else {
+                Renderer::DrawRect(rx, ry, (int)wt, rh, wallColor);
+            }
+            // East wall
+            int ex = rx + rw - (int)wt;
+            if (wr.east >= 0) {
+                Renderer::DrawRect(ex, ry, (int)wt, gapT - ry, wallColor);
+                Renderer::DrawRect(ex, gapB, (int)wt, ry + rh - gapB, wallColor);
+                Renderer::DrawRect(ex, gapT, (int)wt, gapB - gapT, doorColor);
+            } else {
+                Renderer::DrawRect(ex, ry, (int)wt, rh, wallColor);
+            }
         }
 
         uint32_t playerColor = player.IsInvincible() ? 0xFFFF8888 : 0xFF00FF88;

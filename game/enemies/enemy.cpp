@@ -108,7 +108,8 @@ namespace {
         enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
     }
 
-    void UpdateShooter(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles) {
+    void UpdateShooter(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles,
+                        bool attackReady) {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
@@ -123,13 +124,13 @@ namespace {
         }
 
         enemy.shootTimer -= dt;
-        if (enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
+        if (attackReady && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
             FireByPattern(enemy, dir, enemyProjectiles);
             enemy.shootTimer = enemy.shootCooldown;
         }
     }
 
-    void UpdateCharger(Enemy& enemy, Vec2 playerPos, float dt) {
+    void UpdateCharger(Enemy& enemy, Vec2 playerPos, float dt, bool attackReady) {
         if (enemy.bouncesOffWalls && enemy.isCharging) {
             enemy.pos.x += enemy.chargeDir.x * enemy.speed * 4.0f * dt;
             enemy.pos.y += enemy.chargeDir.y * enemy.speed * 4.0f * dt;
@@ -143,7 +144,7 @@ namespace {
 
         enemy.shootTimer -= dt;
         float moveSpeed = enemy.speed;
-        if (enemy.shootTimer <= 0.0f) {
+        if (attackReady && enemy.shootTimer <= 0.0f) {
             moveSpeed *= 4.0f;
             enemy.shootTimer = enemy.shootCooldown;
             if (enemy.bouncesOffWalls) {
@@ -158,7 +159,8 @@ namespace {
     }
 
     void UpdateSummoner(Enemy& enemy, Vec2 playerPos, float dt,
-                        const std::vector<Enemy>& roomEnemies, std::vector<Enemy>& spawnedEnemies) {
+                        const std::vector<Enemy>& roomEnemies, std::vector<Enemy>& spawnedEnemies,
+                        bool attackReady) {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
@@ -173,7 +175,7 @@ namespace {
         }
 
         enemy.shootTimer -= dt;
-        if (enemy.shootTimer <= 0.0f && (int)roomEnemies.size() < SUMMONER_MAX_ADDITIONAL_ENEMIES) {
+        if (attackReady && enemy.shootTimer <= 0.0f && (int)roomEnemies.size() < SUMMONER_MAX_ADDITIONAL_ENEMIES) {
             Vec2 spawnPos = {
                 enemy.pos.x + dir.x * 14.0f,
                 enemy.pos.y + dir.y * 14.0f
@@ -183,7 +185,8 @@ namespace {
         }
     }
 
-    void UpdateExploder(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles) {
+    void UpdateExploder(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles,
+                        bool attackReady) {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
@@ -192,7 +195,7 @@ namespace {
                 float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
                 enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
                 enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
-            } else if (enemy.fuseTimer <= 0.0f) {
+            } else if (enemy.fuseTimer <= 0.0f && attackReady) {
                 enemy.fuseTimer = enemy.fuseDuration; // arm the fuse once in range
             }
 
@@ -211,7 +214,7 @@ namespace {
         enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
 
         enemy.shootTimer -= dt;
-        if (enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
+        if (attackReady && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
             FireByPattern(enemy, dir, enemyProjectiles);
             enemy.alive = false;
         }
@@ -244,10 +247,14 @@ namespace EnemyAI {
 void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& roomEnemies,
             std::vector<Enemy>& spawnedEnemies, std::vector<Projectile>& enemyProjectiles) {
     if (!enemy.alive) return;
+    if (enemy.attackDelayRemaining > 0.0f) {
+        enemy.attackDelayRemaining -= dt;
+    }
     if (enemy.spawnDelayRemaining > 0.0f) {
         enemy.spawnDelayRemaining -= dt;
         if (enemy.spawnDelayRemaining > 0.0f) return;
     }
+    bool attackReady = enemy.attackDelayRemaining <= 0.0f;
 
     if (enemy.poisonTimer > 0.0f) {
         enemy.poisonTimer -= dt;
@@ -274,16 +281,16 @@ void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& ro
             UpdateChaser(enemy, playerPos, dt);
             break;
         case AIType::SHOOTER:
-            UpdateShooter(enemy, playerPos, dt, enemyProjectiles);
+            UpdateShooter(enemy, playerPos, dt, enemyProjectiles, attackReady);
             break;
         case AIType::CHARGER:
-            UpdateCharger(enemy, playerPos, dt);
+            UpdateCharger(enemy, playerPos, dt, attackReady);
             break;
         case AIType::SUMMONER:
-            UpdateSummoner(enemy, playerPos, dt, roomEnemies, spawnedEnemies);
+            UpdateSummoner(enemy, playerPos, dt, roomEnemies, spawnedEnemies, attackReady);
             break;
         case AIType::EXPLODER:
-            UpdateExploder(enemy, playerPos, dt, enemyProjectiles);
+            UpdateExploder(enemy, playerPos, dt, enemyProjectiles, attackReady);
             break;
     }
 
