@@ -9,9 +9,10 @@ namespace HUD {
     void DrawHealthBar(const Player& player);
     void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& room, const Boss* boss);
     void DrawTitleScreen();
+    void DrawFloorTransition(int floor, int maxFloors, const char* treasureLine, bool canContinue);
     void DrawGameOverBanner();
     void DrawRoomClearedBanner();
     void DrawBossHealthBar(const Boss& boss);
-    void DrawFloorMap(const Dungeon& dungeon);
+    void DrawFloorMap(const Dungeon& dungeon, const Player& player);
     void DrawItemPreview(const char* name, const char* desc);
 }

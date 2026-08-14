@@ -4,6 +4,7 @@
 #include "../dungeon/dungeon.h"
 #include <cstdio>
 #include <climits>
+#include <queue>
 
 namespace HUD {
 
@@ -102,18 +103,44 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
     }
     Text::DrawString(line, 5, 51, 0xFFEAEAEA, 1);
 
-    std::snprintf(line, sizeof(line), "ITEMS %d", player.ownedItemCount);
+    std::snprintf(line, sizeof(line), "ITEMS %d", (int)player.ownedItemIds.size());
     Text::DrawString(line, 5, 60, 0xFFEAEAEA, 1);
 
-    if (player.hasHomingShots || player.poisonChance > 0.0f || player.stickyChance > 0.0f ||
-        player.piercingChance > 0.0f || player.explosiveChance > 0.0f) {
-        char fx[48] = {};
-        std::snprintf(fx, sizeof(fx), "FX%s%s%s%s%s",
+    bool hasAnyFx = player.hasHomingShots || player.poisonChance > 0.0f || player.stickyChance > 0.0f ||
+        player.piercingChance > 0.0f || player.explosiveChance > 0.0f || player.burnChance > 0.0f ||
+        player.freezeChance > 0.0f || player.magnetChance > 0.0f || player.boomerangChance > 0.0f ||
+        player.growingChance > 0.0f || player.shrinkingChance > 0.0f || player.chainChance > 0.0f ||
+        player.gravityChance > 0.0f || player.vortexChance > 0.0f || player.critChance > 0.0f ||
+        player.lifestealChance > 0.0f || player.markChance > 0.0f || player.wallBounceChance > 0.0f ||
+        player.enemyBounceChance > 0.0f || player.splitChance > 0.0f || player.hasVoidHeart ||
+        player.hasTwinSoul || player.hasParasiteCore || player.hasLastShot || player.hasDevastator ||
+        player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites || player.hasChargedShots;
+
+    if (hasAnyFx) {
+        char fx[160] = {};
+        std::snprintf(fx, sizeof(fx), "FX%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
                       player.hasHomingShots ? " HOM" : "",
                       player.poisonChance > 0.0f ? " P" : "",
                       player.stickyChance > 0.0f ? " S" : "",
                       player.piercingChance > 0.0f ? " PI" : "",
-                      player.explosiveChance > 0.0f ? " EX" : "");
+                      player.explosiveChance > 0.0f ? " EX" : "",
+                      player.burnChance > 0.0f ? " BRN" : "",
+                      player.freezeChance > 0.0f ? " FRZ" : "",
+                      player.magnetChance > 0.0f ? " MAG" : "",
+                      player.boomerangChance > 0.0f ? " BOO" : "",
+                      player.chainChance > 0.0f ? " CHN" : "",
+                      player.gravityChance > 0.0f || player.vortexChance > 0.0f ? " GRV" : "",
+                      player.critChance > 0.0f ? " CRT" : "",
+                      player.lifestealChance > 0.0f ? " LIF" : "",
+                      player.markChance > 0.0f ? " MRK" : "",
+                      player.wallBounceChance > 0.0f ? " RIC" : "",
+                      player.enemyBounceChance > 0.0f ? " RUB" : "",
+                      player.splitChance > 0.0f ? " SPL" : "",
+                      player.hasVoidHeart ? " VOID" : "",
+                      player.hasTwinSoul ? " TWIN" : "",
+                      (player.hasParasiteCore || player.hasLastShot || player.hasDevastator ||
+                       player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites ||
+                       player.hasChargedShots) ? " +" : "");
         Text::DrawString(fx, 5, 69, 0xFFBBBBFF, 1);
     }
 
@@ -147,10 +174,10 @@ void DrawItemPreview(const char* name, const char* desc) {
     Text::DrawString(desc, (320 - descW) / 2, boxY + 12, 0xFFCCCCCC, 1);
 }
 
-void DrawTitleScreen() {
-    Renderer::DrawRect(0, 0, 320, 180, 0xFF0F0D12);
-    Renderer::DrawRect(0, 0, 320, 18, 0xFF221933);
-    Renderer::DrawRect(0, 162, 320, 18, 0xFF221933);
+    void DrawTitleScreen() {
+        Renderer::DrawRect(0, 0, 320, 180, 0xFF0F0D12);
+        Renderer::DrawRect(0, 0, 320, 18, 0xFF221933);
+        Renderer::DrawRect(0, 162, 320, 18, 0xFF221933);
 
     const char* title = "FloppyRogue";
     int titleW = Text::MeasureWidth(title, 3);
@@ -165,6 +192,32 @@ void DrawTitleScreen() {
     Text::DrawString("ARROWS SHOOT", 92, 106, 0xFFEAEAEA, 1);
     Text::DrawString("SPACE  DASH", 92, 118, 0xFFEAEAEA, 1);
     Text::DrawString("PICK UP ITEMS IN ROOMS", 62, 136, 0xFFFFC84D, 1);
+}
+
+void DrawFloorTransition(int floor, int maxFloors, const char* treasureLine, bool canContinue) {
+    Renderer::DrawRect(0, 0, 320, 180, 0xFF0C1016);
+    Renderer::DrawRect(0, 0, 320, 16, 0xFF1C2A44);
+    Renderer::DrawRect(0, 164, 320, 16, 0xFF1C2A44);
+
+    const char* title = "FLOOR";
+    int titleW = Text::MeasureWidth(title, 2);
+    Text::DrawString(title, (320 - titleW) / 2, 28, 0xFFFFFFFF, 2);
+
+    char floorLine[32];
+    std::snprintf(floorLine, sizeof(floorLine), "%d/%d", floor, maxFloors);
+    int floorLineW = Text::MeasureWidth(floorLine, 3);
+    Text::DrawString(floorLine, (320 - floorLineW) / 2, 52, 0xFFFFD16A, 3);
+
+    Text::DrawString("NEW AREAS ARE HIDDEN UNTIL YOU CLEAR THEM", 42, 92, 0xFFEAEAEA, 1);
+
+    if (treasureLine && treasureLine[0] != '\0') {
+        int treasureW = Text::MeasureWidth(treasureLine, 1);
+        Text::DrawString(treasureLine, (320 - treasureW) / 2, 112, 0xFFFFC84D, 1);
+    }
+
+    const char* prompt = canContinue ? "ENTER / SPACE TO START" : "LOADING...";
+    int promptW = Text::MeasureWidth(prompt, 1);
+    Text::DrawString(prompt, (320 - promptW) / 2, 140, 0xFFFFFFFF, 1);
 }
 
 void DrawGameOverBanner() {
@@ -187,9 +240,51 @@ void DrawBossHealthBar(const Boss& boss) {
     Renderer::DrawRect(barX, 8, fillWidth, 5, 0xFFAA33FF);
 }
 
-void DrawFloorMap(const Dungeon& dungeon) {
+void DrawFloorMap(const Dungeon& dungeon, const Player& player) {
+    if (!player.hasCompass) return;
+
     const std::vector<Room>& rooms = dungeon.Rooms();
     if (rooms.empty()) return;
+    int currentIndex = dungeon.CurrentRoomIndex();
+    if (currentIndex < 0 || currentIndex >= (int)rooms.size()) return;
+
+    std::vector<bool> revealed(rooms.size(), false);
+    std::queue<int> q;
+
+    auto Reveal = [&](int index) {
+        if (index < 0 || index >= (int)rooms.size()) return;
+        if (revealed[index]) return;
+        revealed[index] = true;
+        q.push(index);
+    };
+
+    Reveal(currentIndex);
+    while (!q.empty()) {
+        int index = q.front();
+        q.pop();
+        const Room& room = rooms[index];
+
+        const int neighbors[4] = { room.north, room.south, room.east, room.west };
+        for (int next : neighbors) {
+            if (next < 0 || next >= (int)rooms.size()) continue;
+            if (revealed[next]) continue;
+            if (!rooms[next].cleared) continue;
+            revealed[next] = true;
+            q.push(next);
+        }
+    }
+
+    std::vector<bool> outlined(rooms.size(), false);
+    for (int i = 0; i < (int)rooms.size(); ++i) {
+        if (!revealed[i]) continue;
+        const Room& room = rooms[i];
+        const int neighbors[4] = { room.north, room.south, room.east, room.west };
+        for (int next : neighbors) {
+            if (next < 0 || next >= (int)rooms.size()) continue;
+            if (revealed[next]) continue;
+            outlined[next] = true;
+        }
+    }
 
     int minGridX = INT_MAX;
     int minGridY = INT_MAX;
@@ -226,20 +321,23 @@ void DrawFloorMap(const Dungeon& dungeon) {
         return Vec2{ (float)(mapX + gx * (cellSize + gap)), (float)(mapY + gy * (cellSize + gap)) };
     };
 
-    for (const Room& room : rooms) {
+    for (int i = 0; i < (int)rooms.size(); ++i) {
+        if (!revealed[i]) continue;
+        const Room& room = rooms[i];
         Vec2 origin = CellOrigin(room);
         int x = (int)origin.x;
         int y = (int)origin.y;
 
-        if (room.east >= 0 && room.east < (int)rooms.size()) {
+        if (room.east >= 0 && room.east < (int)rooms.size() && revealed[room.east]) {
             Renderer::DrawRect(x + cellSize, y + 2, gap, 1, 0xFF666666);
         }
-        if (room.south >= 0 && room.south < (int)rooms.size()) {
+        if (room.south >= 0 && room.south < (int)rooms.size() && revealed[room.south]) {
             Renderer::DrawRect(x + 2, y + cellSize, 1, gap, 0xFF666666);
         }
     }
 
     for (int i = 0; i < (int)rooms.size(); ++i) {
+        if (!revealed[i]) continue;
         const Room& room = rooms[i];
         Vec2 origin = CellOrigin(room);
         int x = (int)origin.x;
@@ -249,6 +347,22 @@ void DrawFloorMap(const Dungeon& dungeon) {
         if (i == dungeon.CurrentRoomIndex()) {
             DrawOutline(x - 1, y - 1, cellSize + 2, cellSize + 2, 0xFFFFFFFF);
         }
+    }
+
+    for (int i = 0; i < (int)rooms.size(); ++i) {
+        if (!outlined[i] || revealed[i]) continue;
+        const Room& room = rooms[i];
+        Vec2 origin = CellOrigin(room);
+        int x = (int)origin.x;
+        int y = (int)origin.y;
+
+        uint32_t outlineColor = 0xFF666666;
+        if (room.type == RoomType::START) outlineColor = 0xFF4B7F5A;
+        else if (room.type == RoomType::BOSS) outlineColor = 0xFF7A4A9E;
+        else if (room.type == RoomType::TREASURE) outlineColor = 0xFF8A7330;
+        else if (room.type == RoomType::CURSE) outlineColor = 0xFF8A4040;
+
+        DrawOutline(x, y, cellSize, cellSize, outlineColor);
     }
 
     const int legendX = mapX - 1;
