@@ -5,4 +5,5 @@
 namespace ItemSystem {
     void ApplyItem(Player& player, const ItemTemplate& item);
     void GrantItem(Player& player, int itemId);
+    int ComputeSynergyBonus(const Player& player);
 }
