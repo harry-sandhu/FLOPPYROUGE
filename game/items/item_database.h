@@ -1,7 +1,7 @@
 #pragma once
 #include "item.h"
 
-constexpr int MAX_ITEM_TEMPLATES = 64;
+constexpr int MAX_ITEM_TEMPLATES = 128;
 
 namespace ItemDatabase {
     bool Load(const char* path);

@@ -31,6 +31,22 @@ namespace {
         if (std::strcmp(s, "dashSpeed") == 0) return ItemStat::DASH_SPEED;
         if (std::strcmp(s, "dashDuration") == 0) return ItemStat::DASH_DURATION;
         if (std::strcmp(s, "dashCooldown") == 0) return ItemStat::DASH_COOLDOWN;
+        if (std::strcmp(s, "critChance") == 0) return ItemStat::CRIT_CHANCE;
+        if (std::strcmp(s, "lifestealChance") == 0) return ItemStat::LIFESTEAL_CHANCE;
+        if (std::strcmp(s, "burnChance") == 0) return ItemStat::BURN_CHANCE;
+        if (std::strcmp(s, "freezeChance") == 0) return ItemStat::FREEZE_CHANCE;
+        if (std::strcmp(s, "magnetChance") == 0) return ItemStat::MAGNET_CHANCE;
+        if (std::strcmp(s, "boomerangChance") == 0) return ItemStat::BOOMERANG_CHANCE;
+        if (std::strcmp(s, "growingChance") == 0) return ItemStat::GROWING_CHANCE;
+        if (std::strcmp(s, "shrinkingChance") == 0) return ItemStat::SHRINKING_CHANCE;
+        if (std::strcmp(s, "chainChance") == 0) return ItemStat::CHAIN_CHANCE;
+        if (std::strcmp(s, "gravityChance") == 0) return ItemStat::GRAVITY_CHANCE;
+        if (std::strcmp(s, "vortexChance") == 0) return ItemStat::VORTEX_CHANCE;
+        if (std::strcmp(s, "markChance") == 0) return ItemStat::MARK_CHANCE;
+        if (std::strcmp(s, "wallBounceChance") == 0) return ItemStat::WALL_BOUNCE_CHANCE;
+        if (std::strcmp(s, "enemyBounceChance") == 0) return ItemStat::ENEMY_BOUNCE_CHANCE;
+        if (std::strcmp(s, "splitChance") == 0) return ItemStat::SPLIT_CHANCE;
+        if (std::strcmp(s, "dodgeChance") == 0) return ItemStat::DODGE_CHANCE;
         return ItemStat::UNKNOWN;
     }
 
@@ -43,6 +59,26 @@ namespace {
         if (std::strcmp(s, "diagonal_fire") == 0) return ItemFlag::DIAGONAL_FIRE;
         if (std::strcmp(s, "dash") == 0) return ItemFlag::DASH;
         if (std::strcmp(s, "homing") == 0) return ItemFlag::HOMING;
+        if (std::strcmp(s, "void_heart") == 0) return ItemFlag::VOID_HEART;
+        if (std::strcmp(s, "twin_soul") == 0) return ItemFlag::TWIN_SOUL;
+        if (std::strcmp(s, "parasite_core") == 0) return ItemFlag::PARASITE_CORE;
+        if (std::strcmp(s, "last_shot") == 0) return ItemFlag::LAST_SHOT;
+        if (std::strcmp(s, "devastator") == 0) return ItemFlag::DEVASTATOR;
+        if (std::strcmp(s, "infinite_loop") == 0) return ItemFlag::INFINITE_LOOP;
+        if (std::strcmp(s, "chaos_engine") == 0) return ItemFlag::CHAOS_ENGINE;
+        if (std::strcmp(s, "satellites") == 0) return ItemFlag::SATELLITES;
+        if (std::strcmp(s, "charged_shots") == 0) return ItemFlag::CHARGED_SHOTS;
+        if (std::strcmp(s, "shield_charm") == 0) return ItemFlag::SHIELD_CHARM;
+        if (std::strcmp(s, "guardian_angel") == 0) return ItemFlag::GUARDIAN_ANGEL;
+        if (std::strcmp(s, "spiked_armor") == 0) return ItemFlag::SPIKED_ARMOR;
+        if (std::strcmp(s, "second_wind") == 0) return ItemFlag::SECOND_WIND;
+        if (std::strcmp(s, "iron_will") == 0) return ItemFlag::IRON_WILL;
+        if (std::strcmp(s, "compass") == 0) return ItemFlag::COMPASS;
+        if (std::strcmp(s, "treasure_sense") == 0) return ItemFlag::TREASURE_SENSE;
+        if (std::strcmp(s, "martyrdom") == 0) return ItemFlag::MARTYRDOM;
+        if (std::strcmp(s, "overclock") == 0) return ItemFlag::OVERCLOCK;
+        if (std::strcmp(s, "hollow_core") == 0) return ItemFlag::HOLLOW_CORE;
+        if (std::strcmp(s, "second_sun") == 0) return ItemFlag::SECOND_SUN;
         return ItemFlag::UNKNOWN;
     }
 
