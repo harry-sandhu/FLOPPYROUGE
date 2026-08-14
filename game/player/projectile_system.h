@@ -9,20 +9,26 @@
 namespace ProjectileSystem {
     void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage = 0,
                float remainingRange = 999999.0f, float lifeRemaining = 0.0f,
-               bool homing = false, bool poison = false, bool sticky = false,
-               bool piercing = false, bool explosive = false);
+               const ProjectileMods& mods = ProjectileMods());
+
     void Advance(std::vector<Projectile>& projectiles, float dt,
                  const std::vector<Enemy>* roomEnemies = nullptr, const Boss* boss = nullptr,
                  const Vec2* playerPos = nullptr);
 
     void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<Enemy>& roomEnemies, Enemy& enemy,
                                  float projectileSize, std::vector<Enemy>& spawnedEnemies,
-                                 std::vector<Projectile>& enemyProjectiles, float dt);
+                                 std::vector<Projectile>& enemyProjectiles, float dt, Player* player = nullptr);
 
-    void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, float projectileSize, float dt);
+    void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, float projectileSize, float dt,
+                                Player* player = nullptr);
 
     bool UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& player, float projectileSize,
                                   float invincibleDuration, int currentFloor, float dt);
 
     void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color, Vec2 offset = { 0.0f, 0.0f });
+
+    // Satellites item support: updates orbiter angles/lifetimes, damages
+    // anything they touch, and draws them. roomEnemies/boss may be nullptr.
+    void UpdateOrbiters(Player& player, float dt, std::vector<Enemy>* roomEnemies, Boss* boss);
+    void DrawOrbiters(const Player& player, Vec2 offset = { 0.0f, 0.0f });
 }
