@@ -207,9 +207,11 @@ value2=1
 desc=Heals you and blesses your luck
 
 [MomsOldSpoon]
-type=unlock
-flag=homing
-desc=Old, worn, oddly guides your shots
+type=stat_mod
+stat=magnetChance
+mode=add
+value=0.5
+desc=Shots gently bend toward nearby enemies
 
 [IpecacVial]
 type=stat_mod
@@ -367,3 +369,240 @@ desc=Fast on your feet, shorter reach
 type=proc_synergy
 per_proc_value=4
 desc=Damage rises with each proc effect you already carry
+
+
+[FractureCell]
+type=stat_mod
+stat=splitChance
+mode=add
+value=0.35
+desc=Shots split into two on impact
+
+[RicochetCore]
+type=stat_mod
+stat=wallBounceChance
+mode=add
+value=0.5
+desc=Shots bounce off walls
+
+[Hellfire]
+type=stat_mod
+stat=burnChance
+mode=add
+value=1.0
+desc=Every shot can set enemies ablaze
+
+[Frostbite]
+type=stat_mod
+stat=freezeChance
+mode=add
+value=0.35
+desc=Chance to freeze enemies solid
+
+[ReturnTicket]
+type=stat_mod
+stat=boomerangChance
+mode=add
+value=0.6
+desc=Shots return to you after max range
+
+[GravityCore]
+type=stat_mod
+stat=gravityChance
+mode=add
+value=0.4
+desc=Impacts pull nearby enemies inward
+
+[ArcBattery]
+type=stat_mod
+stat=chainChance
+mode=add
+value=0.35
+desc=Damage arcs to nearby enemies
+
+[Capacitor]
+type=unlock
+flag=charged_shots
+desc=Hold a direction to charge stronger shots
+
+[MutantCore]
+type=stat_mod
+stat=projectileCount
+mode=add
+value=2
+stat2=damage
+mode2=multiply
+value2=0.65
+desc=Fires three weaker shots at once
+
+[HeavyDroplet]
+type=stat_mod
+stat=growingChance
+mode=add
+value=0.5
+stat2=shotSpeed
+mode2=multiply
+value2=0.85
+desc=Larger, slower shots that hit harder at range
+
+[NeedleStorm]
+type=stat_mod
+stat=fireRate
+mode=multiply
+value=1.5
+stat2=shrinkingChance
+mode2=add
+value2=0.5
+desc=Very fast, lighter shots
+
+[RubberTear]
+type=stat_mod
+stat=enemyBounceChance
+mode=add
+value=0.4
+desc=Shots can bounce off enemies to hit again
+
+[LastShot]
+type=unlock
+flag=last_shot
+desc=Consecutive hits make your next shots hit harder
+
+[ParasiteCore]
+type=unlock
+flag=parasite_core
+desc=Enemy deaths spawn extra shots outward
+
+[VoidHeart]
+type=unlock
+flag=void_heart
+desc=Shots ignore the edges of the room
+
+[LuckyChamber]
+type=stat_mod
+stat=critChance
+mode=add
+value=0.15
+desc=Chance for a shot to land a critical hit
+
+[BloodBattery]
+type=stat_mod
+stat=lifestealChance
+mode=add
+value=0.25
+desc=Small chance to heal on a killing blow
+
+[ReapersMark]
+type=stat_mod
+stat=markChance
+mode=add
+value=0.5
+desc=Marked enemies take a burst of damage after enough hits
+
+[BlackHoleCore]
+type=stat_mod
+stat=vortexChance
+mode=add
+value=0.3
+desc=Impacts pull enemies in with much greater force
+
+[TwinSoul]
+type=unlock
+flag=twin_soul
+desc=Every shot fires a mirrored twin
+
+[Devastator]
+type=unlock
+flag=devastator
+desc=Every 20th shot becomes a giant, powerful blast
+
+[InfiniteLoop]
+type=unlock
+flag=infinite_loop
+desc=Every 10th shot deals bonus damage
+
+[ChaosEngine]
+type=unlock
+flag=chaos_engine
+desc=Every shot randomly gains a modifier
+
+[Satellites]
+type=unlock
+flag=satellites
+desc=Every 5th shot summons an orbiting shard
+
+[NeedleCore]
+type=stat_mod
+stat=shrinkingChance
+mode=add
+value=0.5
+desc=Shots start strong and weaken over distance
+
+[MagnetShard]
+type=stat_mod
+stat=magnetChance
+mode=add
+value=0.4
+desc=Shots gently curve toward nearby enemies
+
+
+[ShieldCharm]
+type=unlock
+flag=shield_charm
+desc=Absorbs one hit per room, no HP lost
+
+[GuardianAngel]
+type=unlock
+flag=guardian_angel
+desc=Survive one fatal hit per run at 1 HP
+
+[SpikedArmor]
+type=unlock
+flag=spiked_armor
+desc=Enemies that touch you take damage back
+
+[SecondWind]
+type=unlock
+flag=second_wind
+desc=First time you drop to your last HP, gain a shield
+
+[IronWill]
+type=unlock
+flag=iron_will
+desc=Invincibility after being hit lasts 50% longer
+
+[LuckyFoot]
+type=stat_mod
+stat=dodgeChance
+mode=add
+value=0.12
+desc=Small chance to dodge a hit entirely
+
+[Compass]
+type=unlock
+flag=compass
+desc=Reveals cleared rooms connected to where you are
+
+[TreasureSense]
+type=unlock
+flag=treasure_sense
+desc=Shows what's in the treasure room before each floor
+
+[Martyrdom]
+type=unlock
+flag=martyrdom
+desc=All incoming damage is doubled. No going back.
+
+[Overclock]
+type=unlock
+flag=overclock
+desc=Much faster and quicker, but bleeds HP over time
+
+[HollowCore]
+type=unlock
+flag=hollow_core
+desc=A surge of random power floods your shots
+
+[SecondSun]
+type=unlock
+flag=second_sun
+desc=A second light orbits you, always
