@@ -194,6 +194,7 @@ namespace {
                 case BossAttackType::SPREAD_SHOT:  FireSpreadShot(boss, playerPos, bossProjectiles); break;
                 case BossAttackType::RADIAL_BURST: FireRadialBurst(boss, bossProjectiles); break;
                 case BossAttackType::CHARGE:       StartCharge(boss, playerPos); break;
+                default: break;
             }
             boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
@@ -418,7 +419,7 @@ namespace {
                 boss.contactDamage = 3;
                 boss.chargeContactDamage = 4;
                 boss.maxAdds = 4;
-                break;    
+                break;
             case 0:
             default:
                 boss.hp = boss.maxHp = 290;
@@ -465,6 +466,23 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
         }
     }
 
+    if (boss.burnTimer > 0.0f) {
+        boss.burnTimer -= dt;
+        boss.burnTickTimer -= dt;
+        if (boss.burnTickTimer <= 0.0f) {
+            boss.burnTickTimer = 0.5f;
+            boss.hp -= std::max(1, boss.burnDamage);
+            if (boss.hp <= 0) boss.alive = false;
+        }
+    }
+
+    if (boss.freezeTimer > 0.0f) {
+        boss.freezeTimer -= dt;
+        if (boss.freezeTimer < 0.0f) boss.freezeTimer = 0.0f;
+    }
+
+    if (!boss.alive) return;
+
     // Tick down and expire any active floor hazards, regardless of variant.
     for (auto it = boss.hazards.begin(); it != boss.hazards.end(); ) {
         it->timeRemaining -= dt;
@@ -475,6 +493,8 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
     if (boss.phase == 1 && boss.hp <= boss.maxHp / 2) {
         boss.phase = 2;
     }
+
+    if (boss.IsFrozen()) return; // frozen: no movement, no attacks, hazards/status still tick above
 
     if (boss.isCharging) {
         float slowScale = (boss.stickyTimer > 0.0f) ? boss.stickySpeedMultiplier : 1.0f;

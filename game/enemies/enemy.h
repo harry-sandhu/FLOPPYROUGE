@@ -54,6 +54,11 @@ struct Enemy {
     int poisonDamage = 0;
     float stickyTimer = 0.0f;
     float stickySpeedMultiplier = 1.0f;
+    float burnTimer = 0.0f;
+    float burnTickTimer = 0.0f;
+    int burnDamage = 0;
+    float freezeTimer = 0.0f;
+    int markStacks = 0;
     float spiralOffset = 0.0f;
 
     bool shielded = false;
@@ -74,6 +79,7 @@ struct Enemy {
     EnemySpecialType specialType = EnemySpecialType::NONE;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
+    bool IsFrozen() const { return freezeTimer > 0.0f; }
 };
 
 namespace EnemyAI {

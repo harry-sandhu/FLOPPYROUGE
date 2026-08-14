@@ -21,6 +21,11 @@ namespace {
             : ENEMY_PROJECTILE_DAMAGE_SPECIAL;
     }
 
+    float FrozenSlowScale(const Enemy& enemy) {
+        if (enemy.IsFrozen()) return 0.0f;
+        return (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+    }
+
     Vec2 DirectionTo(Vec2 from, Vec2 to, float& outDist) {
         Vec2 d = { to.x - from.x, to.y - from.y };
         outDist = std::sqrt(d.x * d.x + d.y * d.y);
@@ -35,6 +40,9 @@ namespace {
     // enemy (radial/spiral patterns). Shared by SHOOTER and EXPLODER so any
     // enemy in data can be given any pattern with no new C++.
     void FireByPattern(Enemy& enemy, Vec2 dir, std::vector<Projectile>& out) {
+        ProjectileMods mods;
+        mods.homing = enemy.hasHomingShots;
+
         switch (enemy.attackPattern) {
             case AttackPattern::TRIPLE: {
                 float baseAngle = std::atan2(dir.y, dir.x);
@@ -47,12 +55,12 @@ namespace {
                         EnemyProjectileDamage(enemy),
                         ENEMY_PROJECTILE_RANGE,
                         0.0f,
-                        enemy.hasHomingShots
+                        mods
                     );
                 }
                 break;
             }
-    
+
             case AttackPattern::RADIAL: {
                 const int count = 8;
                 for (int i = 0; i < count; ++i) {
@@ -63,12 +71,12 @@ namespace {
                         EnemyProjectileDamage(enemy),
                         ENEMY_PROJECTILE_RANGE,
                         0.0f,
-                        enemy.hasHomingShots
+                        mods
                     );
                 }
                 break;
             }
-    
+
             case AttackPattern::SPIRAL: {
                 const int count = 6;
                 for (int i = 0; i < count; ++i) {
@@ -79,13 +87,13 @@ namespace {
                         EnemyProjectileDamage(enemy),
                         ENEMY_PROJECTILE_RANGE,
                         0.0f,
-                        enemy.hasHomingShots
+                        mods
                     );
                 }
                 enemy.spiralOffset += 0.35f;
                 break;
             }
-    
+
             case AttackPattern::SINGLE:
             default:
                 ProjectileSystem::Spawn(
@@ -94,7 +102,7 @@ namespace {
                     EnemyProjectileDamage(enemy),
                     ENEMY_PROJECTILE_RANGE,
                     0.0f,
-                    enemy.hasHomingShots
+                    mods
                 );
                 break;
         }
@@ -103,7 +111,7 @@ namespace {
     void UpdateChaser(Enemy& enemy, Vec2 playerPos, float dt) {
         float dist;
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
-        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+        float slowScale = FrozenSlowScale(enemy);
         enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
         enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
     }
@@ -114,7 +122,7 @@ namespace {
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
         const float buffer = 15.0f;
-        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+        float slowScale = FrozenSlowScale(enemy);
         if (dist < enemy.preferredDistance - buffer) {
             enemy.pos.x -= dir.x * enemy.speed * slowScale * dt;
             enemy.pos.y -= dir.y * enemy.speed * slowScale * dt;
@@ -124,13 +132,15 @@ namespace {
         }
 
         enemy.shootTimer -= dt;
-        if (attackReady && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
+        if (attackReady && !enemy.IsFrozen() && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
             FireByPattern(enemy, dir, enemyProjectiles);
             enemy.shootTimer = enemy.shootCooldown;
         }
     }
 
     void UpdateCharger(Enemy& enemy, Vec2 playerPos, float dt, bool attackReady) {
+        if (enemy.IsFrozen()) return;
+
         if (enemy.bouncesOffWalls && enemy.isCharging) {
             enemy.pos.x += enemy.chargeDir.x * enemy.speed * 4.0f * dt;
             enemy.pos.y += enemy.chargeDir.y * enemy.speed * 4.0f * dt;
@@ -165,7 +175,7 @@ namespace {
         Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
 
         const float buffer = 20.0f;
-        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+        float slowScale = FrozenSlowScale(enemy);
         if (dist < enemy.preferredDistance - buffer) {
             enemy.pos.x -= dir.x * enemy.speed * slowScale * dt;
             enemy.pos.y -= dir.y * enemy.speed * slowScale * dt;
@@ -175,7 +185,7 @@ namespace {
         }
 
         enemy.shootTimer -= dt;
-        if (attackReady && enemy.shootTimer <= 0.0f && (int)roomEnemies.size() < SUMMONER_MAX_ADDITIONAL_ENEMIES) {
+        if (attackReady && !enemy.IsFrozen() && enemy.shootTimer <= 0.0f && (int)roomEnemies.size() < SUMMONER_MAX_ADDITIONAL_ENEMIES) {
             Vec2 spawnPos = {
                 enemy.pos.x + dir.x * 14.0f,
                 enemy.pos.y + dir.y * 14.0f
@@ -192,14 +202,14 @@ namespace {
 
         if (enemy.explodesOnTimer) {
             if (enemy.fuseTimer <= 0.0f && dist > enemy.shootRange) {
-                float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+                float slowScale = FrozenSlowScale(enemy);
                 enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
                 enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
-            } else if (enemy.fuseTimer <= 0.0f && attackReady) {
+            } else if (enemy.fuseTimer <= 0.0f && attackReady && !enemy.IsFrozen()) {
                 enemy.fuseTimer = enemy.fuseDuration; // arm the fuse once in range
             }
 
-            if (enemy.fuseTimer > 0.0f) {
+            if (enemy.fuseTimer > 0.0f && !enemy.IsFrozen()) {
                 enemy.fuseTimer -= dt;
                 if (enemy.fuseTimer <= 0.0f) {
                     FireByPattern(enemy, dir, enemyProjectiles);
@@ -209,12 +219,12 @@ namespace {
             return;
         }
 
-        float slowScale = (enemy.stickyTimer > 0.0f) ? enemy.stickySpeedMultiplier : 1.0f;
+        float slowScale = FrozenSlowScale(enemy);
         enemy.pos.x += dir.x * enemy.speed * slowScale * dt;
         enemy.pos.y += dir.y * enemy.speed * slowScale * dt;
 
         enemy.shootTimer -= dt;
-        if (attackReady && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
+        if (attackReady && !enemy.IsFrozen() && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
             FireByPattern(enemy, dir, enemyProjectiles);
             enemy.alive = false;
         }
@@ -273,6 +283,23 @@ void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& ro
             enemy.stickySpeedMultiplier = 1.0f;
         }
     }
+
+    if (enemy.burnTimer > 0.0f) {
+        enemy.burnTimer -= dt;
+        enemy.burnTickTimer -= dt;
+        if (enemy.burnTickTimer <= 0.0f) {
+            enemy.burnTickTimer = 0.5f;
+            enemy.hp -= std::max(1, enemy.burnDamage);
+            if (enemy.hp <= 0) enemy.alive = false;
+        }
+    }
+
+    if (enemy.freezeTimer > 0.0f) {
+        enemy.freezeTimer -= dt;
+        if (enemy.freezeTimer < 0.0f) enemy.freezeTimer = 0.0f;
+    }
+
+    if (!enemy.alive) return;
 
     Vec2 beforePos = enemy.pos;
 
