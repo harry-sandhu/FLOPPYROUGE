@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <vector>
 #include "../engine/window.h"
 #include "../engine/renderer.h"
@@ -19,7 +21,73 @@
 #include "../game/ui/hud.h"
 #include "../engine/collision.h"
 
-enum class GameState { TITLE, PLAYING, GAME_OVER };
+namespace {
+    void ResolvePlayerSolidCollision(Player& player, const Rect& obstacleRect) {
+        Rect pr = player.GetRect();
+        float pLeft = pr.x, pRight = pr.x + pr.w;
+        float pTop = pr.y, pBottom = pr.y + pr.h;
+        float oLeft = obstacleRect.x, oRight = obstacleRect.x + obstacleRect.w;
+        float oTop = obstacleRect.y, oBottom = obstacleRect.y + obstacleRect.h;
+
+        float overlapX = std::min(pRight, oRight) - std::max(pLeft, oLeft);
+        float overlapY = std::min(pBottom, oBottom) - std::max(pTop, oTop);
+        if (overlapX <= 0.0f || overlapY <= 0.0f) return;
+
+        if (overlapX < overlapY) {
+            float playerCenterX = pLeft + pr.w * 0.5f;
+            float obstacleCenterX = oLeft + obstacleRect.w * 0.5f;
+            player.pos.x += (playerCenterX < obstacleCenterX) ? -overlapX : overlapX;
+        } else {
+            float playerCenterY = pTop + pr.h * 0.5f;
+            float obstacleCenterY = oTop + obstacleRect.h * 0.5f;
+            player.pos.y += (playerCenterY < obstacleCenterY) ? -overlapY : overlapY;
+        }
+    }
+
+    void BuildTreasureSenseLine(const Dungeon& dungeon, const Player& player, char* out, size_t outSize) {
+        if (!out || outSize == 0) return;
+        out[0] = '\0';
+        if (!player.hasTreasureSense) return;
+
+        const Room* treasureRoom = nullptr;
+        for (const Room& room : dungeon.Rooms()) {
+            if (room.type == RoomType::TREASURE) {
+                treasureRoom = &room;
+                break;
+            }
+        }
+        if (!treasureRoom) return;
+
+        auto Append = [&](const char* text) {
+            if (!text || text[0] == '\0') return;
+            size_t len = std::strlen(out);
+            if (len >= outSize - 1) return;
+            std::snprintf(out + len, outSize - len, "%s", text);
+        };
+
+        Append("TREASURE: ");
+        if (treasureRoom->itemSpawnList.empty()) {
+            Append("EMPTY");
+            return;
+        }
+
+        int shown = 0;
+        for (int itemId : treasureRoom->itemSpawnList) {
+            const ItemTemplate* item = ItemDatabase::Get(itemId);
+            if (!item || item->name[0] == '\0') continue;
+
+            if (shown > 0) Append(", ");
+            Append(item->name);
+            shown++;
+        }
+
+        if (shown == 0) {
+            Append("EMPTY");
+        }
+    }
+}
+
+enum class GameState { TITLE, FLOOR_TRANSITION, PLAYING, GAME_OVER };
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     if (!Window::Create(1280, 720, "FloppyRogue")) return 1;
@@ -67,6 +135,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     auto AddScreenShake = [&](float duration, float strength) {
         screenShakeTimer = std::max(screenShakeTimer, duration);
         screenShakeStrength = std::max(screenShakeStrength, strength);
+    };
+
+    float floorTransitionTimer = 0.0f;
+    int floorTransitionFloor = 1;
+    char floorTransitionTreasureLine[160] = {};
+
+    auto ClearRunEntities = [&]() {
+        enemies.clear();
+        enemyShots.clear();
+        playerShots.clear();
+        bombs.clear();
+        boss = Boss{};
+        boss.alive = false;
+    };
+
+    auto BeginFloorTransition = [&]() {
+        floorTransitionTimer = 0.0f;
+        floorTransitionFloor = dungeon.CurrentFloor();
+        BuildTreasureSenseLine(dungeon, player, floorTransitionTreasureLine, sizeof(floorTransitionTreasureLine));
+        screenShakeTimer = 0.0f;
+        screenShakeStrength = 0.0f;
+        state = GameState::FLOOR_TRANSITION;
     };
 
     auto DamagePlayer = [&](int amount) {
@@ -139,7 +229,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     auto StartRun = [&]() {
         player = Player{};
-        state = GameState::PLAYING;
+        ClearRunEntities();
         screenShakeTimer = 0.0f;
         screenShakeStrength = 0.0f;
 
@@ -155,12 +245,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         dungeon.PlacePlayerAtCurrentRoomCenter(player);
-        enemies.clear();
-        enemyShots.clear();
-        playerShots.clear();
-        bombs.clear();
-        boss = Boss{};
-        boss.alive = false;
+        BeginFloorTransition();
     };
 
     auto ScaleEnemyForFloor = [&](Enemy& enemy) {
@@ -283,6 +368,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
     };
 
+    auto EnterGameplay = [&]() {
+        state = GameState::PLAYING;
+        LoadRoomEncounter();
+    };
+
     auto TryCollectCurrentRoomPickups = [&]() -> bool {
 
         Room& room = dungeon.CurrentRoom();
@@ -319,14 +409,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 case RoomPickupType::EXIT:
                     if (room.type == RoomType::BOSS && room.cleared) {
                         pickup.collected = true;
-                        enemies.clear();
-                        enemyShots.clear();
-                        playerShots.clear();
-
                         uint32_t nextSeed = (uint32_t)GetTickCount() + 97u * (uint32_t)(dungeon.CurrentFloor() + 1);
                         if (dungeon.AdvanceFloor(nextSeed)) {
                             dungeon.PlacePlayerAtCurrentRoomCenter(player);
-                            LoadRoomEncounter();
+                            ClearRunEntities();
+                            BeginFloorTransition();
                         } else {
                             state = GameState::TITLE;
                         }
@@ -397,11 +484,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         Input::Update();
 
         Room* activeRoom = nullptr;
+        bool enterGameplayAfterPresent = false;
 
         if (state == GameState::TITLE) {
             if (Input::IsPressed(VK_RETURN) || Input::IsPressed(VK_SPACE)) {
                 StartRun();
-                LoadRoomEncounter();
+            }
+        } else if (state == GameState::FLOOR_TRANSITION) {
+            floorTransitionTimer += dt;
+            bool canContinue = floorTransitionTimer >= 0.75f;
+            if ((canContinue && (Input::IsPressed(VK_RETURN) || Input::IsPressed(VK_SPACE))) ||
+                floorTransitionTimer >= 1.75f) {
+                enterGameplayAfterPresent = true;
             }
         } else if (state == GameState::PLAYING) {
             activeRoom = &dungeon.CurrentRoom();
@@ -526,22 +620,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         }
 
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, enemy, projectileSize,
-                                                                  spawnedEnemies, enemyShots, dt);
+                                                                  spawnedEnemies, enemyShots, dt, &player);
 
-                        if (enemy.alive && enemy.attackDelayRemaining <= 0.0f &&
-                            Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
-                            DamagePlayer(ContactDamageFor(enemy));
+                        if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
+                            ResolvePlayerSolidCollision(player, enemy.GetRect());
+                            if (enemy.attackDelayRemaining <= 0.0f) {
+                                DamagePlayer(ContactDamageFor(enemy));
+                            }
+                            if (player.hasSpikedArmor && player.spikedArmorTickTimer <= 0.0f) {
+                                player.spikedArmorTickTimer = 0.4f;
+                                enemy.hp -= 1;
+                                if (enemy.hp <= 0) enemy.alive = false;
+                            }
                         }
                         if (enemy.alive) anyAlive = true;
                     }
 
-                    if (!spawnedEnemies.empty()) {
+                                        if (!spawnedEnemies.empty()) {
                         for (auto& spawned : spawnedEnemies) {
                             ScaleEnemyForFloor(spawned);
                         }
                         enemies.insert(enemies.end(), spawnedEnemies.begin(), spawnedEnemies.end());
                         anyAlive = true;
                     }
+
+                    ProjectileSystem::UpdateOrbiters(player, dt, &enemies, nullptr);
 
                     if (ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
                                                                    invincibleDuration, dungeon.CurrentFloor(), dt)) {
@@ -575,27 +678,43 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         }
 
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, add, projectileSize,
-                                                                  scratchSpawned, enemyShots, dt);
+                                                                  scratchSpawned, enemyShots, dt, &player);
 
-                        if (add.alive && add.attackDelayRemaining <= 0.0f &&
-                            Collision::CheckAABB(player.GetRect(), add.GetRect())) {
-                            DamagePlayer(ContactDamageFor(add));
+                        if (add.alive && Collision::CheckAABB(player.GetRect(), add.GetRect())) {
+                            ResolvePlayerSolidCollision(player, add.GetRect());
+                            if (add.attackDelayRemaining <= 0.0f) {
+                                DamagePlayer(ContactDamageFor(add));
+                            }
+                            if (player.hasSpikedArmor && player.spikedArmorTickTimer <= 0.0f) {
+                                player.spikedArmorTickTimer = 0.4f;
+                                add.hp -= 1;
+                                if (add.hp <= 0) add.alive = false;
+                            }
                         }
                     }
-                    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+                                        enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
                                                  [](const Enemy& e) { return !e.alive; }),
                                  enemies.end());
 
-                    ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt);
+                    ProjectileSystem::UpdateOrbiters(player, dt, &enemies, &boss);
+
+                    ProjectileSystem::UpdateAndCollideVsBoss(playerShots, boss, projectileSize, dt, &player);
                     if (ProjectileSystem::UpdateAndCollideVsPlayer(enemyShots, player, projectileSize,
                                                                    invincibleDuration, dungeon.CurrentFloor(), dt)) {
                         AddScreenShake(0.14f, 2.0f);
                     }
 
-                    if (boss.alive && boss.attackDelayRemaining <= 0.0f &&
-                        Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
-                        int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
-                        DamagePlayer(dmg);
+                    if (boss.alive && Collision::CheckAABB(player.GetRect(), boss.GetRect())) {
+                        ResolvePlayerSolidCollision(player, boss.GetRect());
+                        if (boss.attackDelayRemaining <= 0.0f) {
+                            int dmg = boss.isCharging ? boss.chargeContactDamage : boss.contactDamage;
+                            DamagePlayer(dmg);
+                        }
+                        if (player.hasSpikedArmor && player.spikedArmorTickTimer <= 0.0f) {
+                            player.spikedArmorTickTimer = 0.4f;
+                            boss.hp -= 1;
+                            if (boss.hp <= 0) { boss.hp = 0; boss.alive = false; }
+                        }
                     }
 
                     for (auto& hazard : boss.hazards) {
@@ -631,7 +750,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         } else if (state == GameState::GAME_OVER) {
             if (Input::IsPressed('R')) {
                 StartRun();
-                LoadRoomEncounter();
             }
         }
 
@@ -650,6 +768,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         if (state == GameState::TITLE) {
             HUD::DrawTitleScreen();
             Renderer::Present();
+            if (enterGameplayAfterPresent) EnterGameplay();
+            continue;
+        }
+
+        if (state == GameState::FLOOR_TRANSITION) {
+            HUD::DrawFloorTransition(floorTransitionFloor, dungeon.MaxFloors(), floorTransitionTreasureLine,
+                                     floorTransitionTimer >= 0.75f);
+            Renderer::Present();
+            if (enterGameplayAfterPresent) EnterGameplay();
             continue;
         }
 
@@ -838,6 +965,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         ProjectileSystem::Draw(playerShots, (int)projectileSize, 0xFFFFFF00, shakeOffset);
+        ProjectileSystem::DrawOrbiters(player, shakeOffset);
         ProjectileSystem::Draw(enemyShots, (int)projectileSize, 0xFFFF66FF, shakeOffset);
 
         HUD::DrawHealthBar(player);
@@ -851,7 +979,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             roomPtr->cleared) {
             HUD::DrawRoomClearedBanner();
         }
-        HUD::DrawFloorMap(dungeon);
+        HUD::DrawFloorMap(dungeon, player);
 
         Renderer::Present();
     }
