@@ -17,6 +17,7 @@
 #include "../game/enemies/enemy.h"
 #include "../game/enemies/enemy_database.h"
 #include "../game/bosses/boss.h"
+#include "../game/bosses/boss_database.h"
 #include "../game/dungeon/dungeon.h"
 #include "../game/ui/hud.h"
 #include "../engine/collision.h"
@@ -85,6 +86,95 @@ namespace {
             Append("EMPTY");
         }
     }
+
+    void NormalizeCoins(Player& player) {
+        int total = std::max(0, player.nickelCoins + player.silverCoins * 5 + player.goldCoins * 10);
+        player.goldCoins = total / 10;
+        total %= 10;
+        player.silverCoins = total / 5;
+        total %= 5;
+        player.nickelCoins = total;
+    }
+
+    void AddCoinValue(Player& player, int value) {
+        if (value <= 0) return;
+        int total = player.nickelCoins + player.silverCoins * 5 + player.goldCoins * 10 + value;
+        player.goldCoins = total / 10;
+        total %= 10;
+        player.silverCoins = total / 5;
+        total %= 5;
+        player.nickelCoins = total;
+    }
+
+    bool SpendCoins(Player& player, int cost) {
+        if (cost <= 0) return true;
+        int total = player.nickelCoins + player.silverCoins * 5 + player.goldCoins * 10;
+        if (total < cost) return false;
+        total -= cost;
+        player.goldCoins = total / 10;
+        total %= 10;
+        player.silverCoins = total / 5;
+        total %= 5;
+        player.nickelCoins = total;
+        return true;
+    }
+
+    const char* ChestTypeName(ChestType type) {
+        switch (type) {
+            case ChestType::WOODEN: return "WOODEN";
+            case ChestType::IRON:   return "IRON";
+            case ChestType::STONE:  return "STONE";
+            case ChestType::GOLDEN: return "GOLDEN";
+            case ChestType::DEVIL:  return "DEVIL";
+            case ChestType::ANGEL:  return "ANGEL";
+            case ChestType::GAMBLE: return "GAMBLE";
+        }
+        return "CHEST";
+    }
+
+    uint32_t ChestColor(ChestType type) {
+        switch (type) {
+            case ChestType::WOODEN: return 0xFF8B5A2B;
+            case ChestType::IRON:   return 0xFF9BA4B5;
+            case ChestType::STONE:  return 0xFF777777;
+            case ChestType::GOLDEN: return 0xFFFFC84D;
+            case ChestType::DEVIL:  return 0xFFFF5555;
+            case ChestType::ANGEL:  return 0xFFFFFF99;
+            case ChestType::GAMBLE: return 0xFFFF00FF;
+        }
+        return 0xFFFFFFFF;
+    }
+
+    float ChestItemChance(ChestType type, int attempt = 0) {
+        switch (type) {
+            case ChestType::WOODEN: return 0.10f;
+            case ChestType::IRON:   return 0.05f;
+            case ChestType::STONE:  return 0.08f;
+            case ChestType::GOLDEN: return 0.10f;
+            case ChestType::DEVIL:  return 0.50f;
+            case ChestType::ANGEL:
+                return std::clamp(0.10f + 0.10f * (float)attempt, 0.10f, 0.50f);
+            case ChestType::GAMBLE: return 1.0f;
+        }
+        return 0.0f;
+    }
+
+    int ShopPriceForItem(const ItemTemplate* item, int floor) {
+        if (!item) return 0;
+        int base = 8 + floor * 2;
+        switch (item->type) {
+            case ItemType::UNLOCK: base += 8; break;
+            case ItemType::PROC_SYNERGY: base += 6; break;
+            case ItemType::STAT_MOD: base += 2; break;
+        }
+
+        if (item->flag != ItemFlag::UNKNOWN) base += 5;
+        if (item->stat == ItemStat::MAX_HP || item->stat == ItemStat::DAMAGE || item->stat == ItemStat::PROJECTILE_COUNT) {
+            base += 3;
+        }
+        if (base < 1) base = 1;
+        return base;
+    }
 }
 
 enum class GameState { TITLE, FLOOR_TRANSITION, PLAYING, GAME_OVER };
@@ -95,6 +185,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     EnemyDatabase::Load("data/enemies.txt");
     ItemDatabase::Load("data/items.txt");
+    BossDatabase::Load("data/bosses.txt");
 
     Timer timer;
     Dungeon dungeon;
@@ -168,7 +259,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
     };
 
-    auto SpawnItemPickups = [&](Room& room) {
+    auto SpawnTreasurePickups = [&](Room& room) {
         room.pickups.clear();
 
         const Vec2 center = {
@@ -194,6 +285,66 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             };
             room.pickups.push_back(pickup);
         }
+    };
+
+    auto SpawnDevilChestRoom = [&](Room& room) {
+        room.pickups.clear();
+
+        const Vec2 center = {
+            room.x + room.width * 0.5f - 4.0f,
+            room.y + room.height * 0.5f - 4.0f
+        };
+
+        RoomPickup pickup;
+        pickup.type = RoomPickupType::CHEST;
+        pickup.chestType = ChestType::DEVIL;
+        pickup.pos = { center.x, center.y };
+        room.pickups.push_back(pickup);
+    };
+
+    auto SpawnShopStock = [&](Room& room) {
+        room.pickups.clear();
+
+        const Vec2 center = {
+            room.x + room.width * 0.5f - 4.0f,
+            room.y + room.height * 0.5f - 4.0f
+        };
+
+        const Vec2 offsets[] = {
+            { -34.0f, 0.0f },
+            { 0.0f, 0.0f },
+            { 34.0f, 0.0f },
+            { -17.0f, 18.0f },
+            { 17.0f, 18.0f }
+        };
+
+        int index = 0;
+        auto AddShopPickup = [&](RoomPickupType type, int itemId, int cost) {
+            RoomPickup pickup;
+            pickup.type = type;
+            pickup.itemId = itemId;
+            pickup.cost = cost;
+            pickup.pos = {
+                center.x + offsets[index % 5].x,
+                center.y + offsets[index % 5].y
+            };
+            index++;
+            room.pickups.push_back(pickup);
+        };
+
+        int itemCount = ItemDatabase::Count();
+        if (itemCount > 0) {
+            int shopItems = std::min(2, itemCount);
+            for (int i = 0; i < shopItems; ++i) {
+                int itemId = RNG::Range(0, itemCount - 1);
+                const ItemTemplate* item = ItemDatabase::Get(itemId);
+                AddShopPickup(RoomPickupType::ITEM, itemId, ShopPriceForItem(item, dungeon.CurrentFloor()));
+            }
+        }
+
+        AddShopPickup(RoomPickupType::HEART, -1, std::max(3, 4 + dungeon.CurrentFloor()));
+        AddShopPickup(RoomPickupType::BOMB, -1, std::max(3, 5 + dungeon.CurrentFloor()));
+        AddShopPickup(RoomPickupType::KEY, -1, std::max(4, 6 + dungeon.CurrentFloor()));
     };
 
     auto SpawnBossRewards = [&](Room& room) {
@@ -360,10 +511,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         } else if (room.type == RoomType::BOSS && !room.cleared) {
             boss = SpawnBossVariant(room.bossVariant);
             ScaleBossForFloor(boss);
-       } else if ((room.type == RoomType::TREASURE || 
-            (room.type == RoomType::CURSE && !room.IsEnemyCurseRoom())) 
-           && !room.lootGranted) {
-            SpawnItemPickups(dungeon.CurrentRoom());
+       } else if (room.type == RoomType::TREASURE && !room.lootGranted) {
+            SpawnTreasurePickups(dungeon.CurrentRoom());
+            dungeon.CurrentRoom().lootGranted = true;
+       } else if (room.type == RoomType::CURSE && !room.IsEnemyCurseRoom() && !room.lootGranted) {
+            SpawnDevilChestRoom(dungeon.CurrentRoom());
+            dungeon.CurrentRoom().lootGranted = true;
+       } else if (room.type == RoomType::SHOP && !room.lootGranted) {
+            SpawnShopStock(dungeon.CurrentRoom());
             dungeon.CurrentRoom().lootGranted = true;
         }
     };
@@ -374,9 +529,163 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     };
 
     auto TryCollectCurrentRoomPickups = [&]() -> bool {
-
         Room& room = dungeon.CurrentRoom();
         const float pickupSize = 8.0f;
+
+        auto GrantHeart = [&]() {
+            player.hp = std::min(player.hp + 2, player.maxHp);
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+            AddScreenShake(0.06f, 0.8f);
+        };
+
+        auto GrantBomb = [&]() {
+            player.bombCount++;
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+            AddScreenShake(0.06f, 0.8f);
+        };
+
+        auto GrantKey = [&]() {
+            player.keyCount++;
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+            AddScreenShake(0.06f, 0.8f);
+        };
+
+        auto GrantCoins = [&](int value) {
+            AddCoinValue(player, value);
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+            AddScreenShake(0.06f, 0.8f);
+        };
+
+        auto GrantItemById = [&](int itemId) {
+            if (itemId < 0) return false;
+            ItemSystem::GrantItem(player, itemId);
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+            AddScreenShake(0.06f, 0.8f);
+            return true;
+        };
+
+        auto PickFallbackItemId = [&]() -> int {
+            if (!room.itemSpawnList.empty()) {
+                return room.itemSpawnList[RNG::Range(0, (int)room.itemSpawnList.size() - 1)];
+            }
+            int itemCount = ItemDatabase::Count();
+            if (itemCount <= 0) return -1;
+            return RNG::Range(0, itemCount - 1);
+        };
+
+        auto OpenChest = [&](RoomPickup& pickup) -> bool {
+            int rewardItemId = (pickup.itemId >= 0) ? pickup.itemId : PickFallbackItemId();
+
+            switch (pickup.chestType) {
+                case ChestType::WOODEN: {
+                    if (RNG::Chance(ChestItemChance(pickup.chestType))) {
+                        if (GrantItemById(rewardItemId)) return true;
+                    }
+                    int roll = RNG::Range(0, 99);
+                    if (roll < 35) GrantCoins(1);
+                    else if (roll < 65) GrantHeart();
+                    else if (roll < 85) GrantBomb();
+                    else GrantKey();
+                    return true;
+                }
+                case ChestType::IRON:
+                case ChestType::STONE: {
+                    if (pickup.chestType == ChestType::IRON) {
+                        // Iron chest: costs 1 heart damage to open
+                        if (player.hp <= 1) return false; // Can't open if it would be fatal
+                        player.hp--;
+                    } else {
+                        // Stone chest: costs a bomb to open
+                        if (player.bombCount <= 0) return false;
+                        player.bombCount--;
+                    }
+                    if (RNG::Chance(ChestItemChance(pickup.chestType))) {
+                        return GrantItemById(rewardItemId);
+                    }
+                    if (pickup.chestType == ChestType::IRON) {
+                        int roll = RNG::Range(0, 99);
+                        if (roll < 50) GrantBomb();
+                        else if (roll < 80) GrantCoins(5);
+                        else GrantHeart();
+                    } else {
+                        int roll = RNG::Range(0, 99);
+                        if (roll < 30) GrantCoins(10);
+                        else if (roll < 70) GrantKey();
+                        else GrantBomb();
+                    }
+                    return true;
+                }
+                case ChestType::GOLDEN: {
+                    if (player.keyCount <= 0) return false;
+                    player.keyCount--;
+                    if (RNG::Chance(ChestItemChance(pickup.chestType))) {
+                        return GrantItemById(rewardItemId);
+                    }
+                    int roll = RNG::Range(0, 99);
+                    if (roll < 45) GrantCoins(10);
+                    else if (roll < 75) GrantKey();
+                    else GrantBomb();
+                    return true;
+                }
+                case ChestType::DEVIL: {
+                    bool combatRoom = (room.type == RoomType::NORMAL || room.IsEnemyCurseRoom());
+                    if (combatRoom && RNG::Chance(0.50f)) {
+                        room.cleared = false;
+                        room.gateOpen = false;
+
+                        const Vec2 spawnPoints[] = {
+                            { 68.0f, 34.0f },
+                            { 210.0f, 34.0f }
+                        };
+                        for (int i = 0; i < 2; ++i) {
+                            const char* enemyName = (RNG::Chance(0.5f)) ? "Zombie" : "Fly";
+                            Enemy enemy = EnemyDatabase::Spawn(enemyName, spawnPoints[i]);
+                            ScaleEnemyForFloor(enemy);
+                            MakeSpecialEnemy(enemy);
+                            enemies.push_back(enemy);
+                        }
+                        return true;
+                    }
+
+                    if (RNG::Chance(ChestItemChance(pickup.chestType))) {
+                        return GrantItemById(rewardItemId);
+                    }
+
+                    int roll = RNG::Range(0, 99);
+                    if (roll < 50) GrantCoins(10);
+                    else if (roll < 80) GrantBomb();
+                    else GrantKey();
+                    return true;
+                }
+                case ChestType::ANGEL: {
+                    if (player.keyCount <= 0) return false;
+                    player.keyCount--;
+                    pickup.chestAttempts++;
+                    if (RNG::Chance(ChestItemChance(pickup.chestType, pickup.chestAttempts - 1))) {
+                        return GrantItemById(rewardItemId);
+                    }
+                    if (pickup.chestAttempts >= 5) {
+                        return true;
+                    }
+                    return false;
+                }
+                case ChestType::GAMBLE: {
+                    // Gamble chest: costs 4-10 random keys, gives 3 items if successful
+                    int keyCost = RNG::Range(4, 10);
+                    if (player.keyCount < keyCost) return false;
+                    player.keyCount -= keyCost;
+                    
+                    // Grant 3 items
+                    for (int i = 0; i < 3; ++i) {
+                        int itemId = PickFallbackItemId();
+                        GrantItemById(itemId);
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        };
 
         for (auto& pickup : room.pickups) {
             if (pickup.collected) continue;
@@ -385,26 +694,62 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
             switch (pickup.type) {
                 case RoomPickupType::ITEM:
+                    if (pickup.cost > 0 && !SpendCoins(player, pickup.cost)) {
+                        continue;
+                    }
                     if (pickup.itemId >= 0) {
-                        ItemSystem::GrantItem(player, pickup.itemId);
-                        player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
-                        AddScreenShake(0.06f, 0.8f);
+                        GrantItemById(pickup.itemId);
                     }
                     pickup.collected = true;
                     break;
 
                 case RoomPickupType::HEART:
-                player.hp = std::min(player.hp + 2, player.maxHp); // full heart
-                pickup.collected = true;
-                player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
-                AddScreenShake(0.06f, 0.8f);
-                break;
-            case RoomPickupType::BOMB:
-                player.bombCount++;
-                pickup.collected = true;
-                player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
-                AddScreenShake(0.06f, 0.8f);
-                break;    
+                    if (pickup.cost > 0 && !SpendCoins(player, pickup.cost)) {
+                        continue;
+                    }
+                    GrantHeart();
+                    pickup.collected = true;
+                    break;
+
+                case RoomPickupType::BOMB:
+                    if (pickup.cost > 0 && !SpendCoins(player, pickup.cost)) {
+                        continue;
+                    }
+                    GrantBomb();
+                    pickup.collected = true;
+                    break;
+
+                case RoomPickupType::KEY:
+                    if (pickup.cost > 0 && !SpendCoins(player, pickup.cost)) {
+                        continue;
+                    }
+                    if (pickup.amount > 0) {
+                        player.keyCount += pickup.amount;
+                        player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+                        AddScreenShake(0.06f, 0.8f);
+                    } else {
+                        GrantKey();
+                    }
+                    pickup.collected = true;
+                    break;
+
+                case RoomPickupType::COIN:
+                    if (pickup.cost > 0 && !SpendCoins(player, pickup.cost)) {
+                        continue;
+                    }
+                    GrantCoins(pickup.amount > 0 ? pickup.amount : 1);
+                    pickup.collected = true;
+                    break;
+
+                case RoomPickupType::CHEST:
+                    if (OpenChest(pickup)) {
+                        pickup.collected = true;
+                        player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
+                        AddScreenShake(0.08f, 1.0f);
+                    } else {
+                        continue;
+                    }
+                    break;
 
                 case RoomPickupType::EXIT:
                     if (room.type == RoomType::BOSS && room.cleared) {
@@ -461,6 +806,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         if (!nearest) return false;
 
+        static char descBuffer[96];
+        descBuffer[0] = '\0';
+
         if (nearest->type == RoomPickupType::HEART) {
             outName = "Heart";
             outDesc = "Restores a full heart of health";
@@ -471,11 +819,44 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             outDesc = "Place it, 3s fuse, damages nearby foes";
             return true;
         }
+        if (nearest->type == RoomPickupType::KEY) {
+            outName = "Key";
+            if (nearest->cost > 0) {
+                std::snprintf(descBuffer, sizeof(descBuffer), "Costs %d coins", nearest->cost);
+            } else {
+                std::snprintf(descBuffer, sizeof(descBuffer), "Opens locked chests");
+            }
+            outDesc = descBuffer;
+            return true;
+        }
+        if (nearest->type == RoomPickupType::COIN) {
+            outName = "Coin";
+            std::snprintf(descBuffer, sizeof(descBuffer), "Worth %d coin%s", nearest->amount,
+                          nearest->amount == 1 ? "" : "s");
+            outDesc = descBuffer;
+            return true;
+        }
+        if (nearest->type == RoomPickupType::CHEST) {
+            outName = ChestTypeName(nearest->chestType);
+            std::snprintf(descBuffer, sizeof(descBuffer), "%s chest%s",
+                          ChestTypeName(nearest->chestType),
+                          nearest->chestType == ChestType::WOODEN ? "" :
+                          nearest->chestType == ChestType::IRON || nearest->chestType == ChestType::STONE ? " - costs a bomb" :
+                          nearest->chestType == ChestType::GOLDEN || nearest->chestType == ChestType::ANGEL ? " - costs a key" :
+                          " - risky");
+            outDesc = descBuffer;
+            return true;
+        }
 
         const ItemTemplate* item = ItemDatabase::Get(nearest->itemId);
         if (!item) return false;
         outName = item->name;
-        outDesc = item->desc;
+        if (nearest->cost > 0) {
+            std::snprintf(descBuffer, sizeof(descBuffer), "%s - costs %d coins", item->desc, nearest->cost);
+            outDesc = descBuffer;
+        } else {
+            outDesc = item->desc;
+        }
         return true;
     };
 
@@ -732,7 +1113,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     
 
                     if (!boss.alive) {
-                        dungeon.MarkCurrentRoomCleared();
                         enemies.clear();
                         enemyShots.clear();
                         playerShots.clear();
@@ -740,6 +1120,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         if (!room->lootGranted) {
                             SpawnBossRewards(*room);
                         }
+                        dungeon.MarkCurrentRoomCleared(true);
                     }
                 }
 
@@ -848,19 +1229,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                 uint32_t color = 0xFFFFC84D;
                 int size = 8;
-                
-                if (pickup.type == RoomPickupType::EXIT) {
-                    color = 0xFF776655;
-                    size = 10;
-                } else if (pickup.type == RoomPickupType::TROPHY) {
-                    color = 0xFFFFFF99;
-                    size = 12;
-                } else if (pickup.type == RoomPickupType::HEART) {
-                    color = 0xFFFF4D77;
-                    size = 8;
-                } else if (pickup.type == RoomPickupType::BOMB) {
-                    color = 0xFF333333;
-                    size = 9;
+                switch (pickup.type) {
+                    case RoomPickupType::ITEM:  color = 0xFFFFC84D; size = 8; break;
+                    case RoomPickupType::HEART: color = 0xFFFF4D77; size = 8; break;
+                    case RoomPickupType::BOMB:  color = 0xFF333333; size = 9; break;
+                    case RoomPickupType::KEY:   color = 0xFF66FFFF; size = 8; break;
+                    case RoomPickupType::COIN:  color = (pickup.amount >= 10) ? 0xFFFFD966 : (pickup.amount >= 5 ? 0xFFC0C0C0 : 0xFFFFCC66); size = 7; break;
+                    case RoomPickupType::CHEST: color = ChestColor(pickup.chestType); size = 11; break;
+                    case RoomPickupType::EXIT:  color = 0xFF776655; size = 10; break;
+                    case RoomPickupType::TROPHY: color = 0xFFFFFF99; size = 12; break;
                 }
 
                 Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x), (int)(pickup.pos.y + shakeOffset.y),
@@ -868,6 +1245,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if (pickup.type == RoomPickupType::EXIT) {
                     Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x) + 2, (int)(pickup.pos.y + shakeOffset.y) + 2,
                                        size - 4, size - 4, 0xFF332211);
+                } else if (pickup.type == RoomPickupType::CHEST) {
+                    Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x) + 2, (int)(pickup.pos.y + shakeOffset.y) + 2,
+                                       size - 4, size - 4, 0xFF1A1020);
                 }
             }
 

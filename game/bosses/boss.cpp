@@ -1,6 +1,8 @@
 #include "boss.h"
+#include "boss_database.h"
 #include "../player/projectile_system.h"
 #include "../enemies/enemy_database.h"
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -183,6 +185,48 @@ namespace {
         boss.isCharging = true;
         boss.chargeDir = Normalize({ playerPos.x - boss.pos.x, playerPos.y - boss.pos.y });
         boss.chargeTimeRemaining = boss.chargeDuration;
+    }
+
+    // Generic attack executor - dispatches to the correct attack function based on BossAttackType
+    void ExecuteAttack(Boss& boss, BossAttackType attackType, Vec2 playerPos, std::vector<Projectile>& bossProjectiles,
+                       const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
+        switch (attackType) {
+            case BossAttackType::SPREAD_SHOT:     FireSpreadShot(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::RADIAL_BURST:    FireRadialBurst(boss, bossProjectiles); break;
+            case BossAttackType::CHARGE:          StartCharge(boss, playerPos); break;
+            case BossAttackType::LASER_SWEEP:     FireLaserSweep(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::SUMMON_WAVE:     SummonAdds(boss, roomAdds, spawnedAdds); break;
+            case BossAttackType::FLOOR_HAZARD:    DropFloorHazard(boss, playerPos); break;
+            case BossAttackType::MIRROR_SHOT:     FireGappedRing(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::CARDINAL_BURST:  FireCardinalBurst(boss, bossProjectiles); break;
+            case BossAttackType::SPIRAL_BURST:    FireSpiralBurst(boss, bossProjectiles); break;
+            case BossAttackType::TRIPLE_SPREAD:   FireTripleSpread(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::DENSE_RING:      FireDenseRing(boss, bossProjectiles); break;
+            case BossAttackType::GAPPED_RING:     FireGappedRing(boss, playerPos, bossProjectiles); break;
+            default: break;
+        }
+    }
+
+    // Data-driven update function that uses attack cycles from BossTemplate
+    void UpdateBossWithDataDrivenCycle(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
+                                       const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds,
+                                       const BossTemplate* templateData) {
+        if (!templateData) return;
+        
+        boss.attackTimer -= dt;
+        if (boss.attackTimer <= 0.0f) {
+            // Select which cycle to use based on phase
+            const BossAttackType* cycle = (boss.phase == 1) ? templateData->attackCyclePhase1 : templateData->attackCyclePhase2;
+            int cycleLength = (boss.phase == 1) ? templateData->attackCyclePhase1Length : templateData->attackCyclePhase2Length;
+            
+            if (cycleLength > 0) {
+                BossAttackType attack = cycle[boss.attackIndex % cycleLength];
+                boss.attackIndex++;
+                ExecuteAttack(boss, attack, playerPos, bossProjectiles, roomAdds, spawnedAdds);
+            }
+            
+            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
+        }
     }
 
     void UpdateVariant0(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
@@ -430,6 +474,17 @@ namespace {
                 break;
         }
 
+        if (const BossTemplate* templateData = BossDatabase::Get(variant % std::max(1, BossDatabase::Count()))) {
+            boss.hp = boss.maxHp = templateData->hp;
+            boss.driftSpeed = templateData->driftSpeed;
+            boss.attackCooldownPhase1 = templateData->attackCooldownPhase1;
+            boss.attackCooldownPhase2 = templateData->attackCooldownPhase2;
+            boss.chargeSpeed = templateData->chargeSpeed;
+            boss.contactDamage = templateData->contactDamage;
+            boss.chargeContactDamage = templateData->chargeContactDamage;
+            boss.maxAdds = templateData->maxAdds;
+        }
+
         boss.attackTimer = boss.attackCooldownPhase1;
         return boss;
     }
@@ -510,20 +565,27 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
     boss.pos.x += dir.x * boss.driftSpeed * slowScale * dt;
     boss.pos.y += dir.y * boss.driftSpeed * slowScale * dt;
 
-    switch (boss.variant) {
-        case 1: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant1(boss, playerPos, dt, bossProjectiles); break;
-        case 2: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
-        case 3: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
-        case 4: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
-        case 5: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant5(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-        case 6: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant6(boss, playerPos, dt, bossProjectiles); break;
-        case 7: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant7(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-        case 8: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant8(boss, playerPos, dt, bossProjectiles); break;
-        case 9: if (boss.attackDelayRemaining <= 0.0f) UpdateVariant9(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-        case 0:
-        default:
-            if (boss.attackDelayRemaining <= 0.0f) UpdateVariant0(boss, playerPos, dt, bossProjectiles);
-            break;
+    // Try to use data-driven attack cycles if available
+    const BossTemplate* templateData = BossDatabase::Get(boss.variant % std::max(1, BossDatabase::Count()));
+    if (templateData && templateData->attackCyclePhase1Length > 0 && boss.attackDelayRemaining <= 0.0f) {
+        UpdateBossWithDataDrivenCycle(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds, templateData);
+    } else if (boss.attackDelayRemaining <= 0.0f) {
+        // Fall back to hardcoded variant updates if no data-driven cycles
+        switch (boss.variant) {
+            case 1: UpdateVariant1(boss, playerPos, dt, bossProjectiles); break;
+            case 2: UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
+            case 3: UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
+            case 4: UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
+            case 5: UpdateVariant5(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
+            case 6: UpdateVariant6(boss, playerPos, dt, bossProjectiles); break;
+            case 7: UpdateVariant7(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
+            case 8: UpdateVariant8(boss, playerPos, dt, bossProjectiles); break;
+            case 9: UpdateVariant9(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
+            case 0:
+            default:
+                UpdateVariant0(boss, playerPos, dt, bossProjectiles);
+                break;
+        }
     }
 }
 

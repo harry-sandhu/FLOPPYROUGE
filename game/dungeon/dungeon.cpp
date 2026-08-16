@@ -11,6 +11,27 @@ namespace {
     constexpr int MAX_GENERATION_ATTEMPTS = 64;
     constexpr int BOSS_VARIANT_TIER[10] = { 1, 1, 2, 2, 3, 2, 2, 3, 2, 3 };
 
+    ChestType RollChestTypeForFloor(int floor) {
+        int roll = RNG::Range(0, 99);
+        if (floor <= 1) {
+            if (roll < 70) return ChestType::WOODEN;
+            if (roll < 90) return ChestType::IRON;
+            return ChestType::GOLDEN;
+        }
+        if (floor == 2) {
+            if (roll < 35) return ChestType::WOODEN;
+            if (roll < 60) return ChestType::IRON;
+            if (roll < 80) return ChestType::STONE;
+            if (roll < 92) return ChestType::GOLDEN;
+            return ChestType::DEVIL;
+        }
+        if (roll < 20) return ChestType::STONE;
+        if (roll < 42) return ChestType::GOLDEN;
+        if (roll < 66) return ChestType::DEVIL;
+        if (roll < 88) return ChestType::ANGEL;
+        return ChestType::IRON;
+    }
+
     // Normal-room connection-degree distribution: 10% / 50% / 30% / 10%
     // for 1 / 2 / 3 / 4 connections. START/BOSS/TREASURE/CURSE are excluded.
     int RollNormalRoomTargetDegree() {
@@ -84,6 +105,8 @@ bool Dungeon::LoadSettings(const char* path) {
         settings.curseEnemyChance = std::clamp(block.GetFloat("curse_enemy_chance", settings.curseEnemyChance), 0.0f, 1.0f);
         settings.bombDropChance = std::clamp(block.GetFloat("bomb_drop_chance", settings.bombDropChance), 0.0f, 1.0f);
         settings.heartDropChance = std::clamp(block.GetFloat("heart_drop_chance", settings.heartDropChance), 0.0f, 1.0f);
+        settings.coinDropChance = std::clamp(block.GetFloat("coin_drop_chance", settings.coinDropChance), 0.0f, 1.0f);
+        settings.keyDropChance = std::clamp(block.GetFloat("key_drop_chance", settings.keyDropChance), 0.0f, 1.0f);
         loaded = true;
         break;
     }
@@ -146,6 +169,7 @@ void Dungeon::ApplyRoomDefaults() {
         switch (room.type) {
             case RoomType::START:
             case RoomType::TREASURE:
+            case RoomType::SHOP:
                 room.cleared = true;
                 room.gateOpen = true;
                 room.lootGranted = false;
@@ -313,7 +337,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             if (degree[i] == 1) deadEnds.push_back(i);
         }
 
-        if ((int)deadEnds.size() < 3) continue;
+        if ((int)deadEnds.size() < 4) continue;
 
         bossRoomIndex = deadEnds[0];
         int bestDist = distFromStart[bossRoomIndex];
@@ -340,16 +364,27 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             if (idx != bossRoomIndex) remaining.push_back(idx);
         }
 
+        if ((int)remaining.size() < 3) continue;
+
         int treasureIndex = remaining[RNG::Range(0, (int)remaining.size() - 1)];
         int curseIndex = -1;
-        for (int tries = 0; tries < 16 && curseIndex < 0; ++tries) {
+        int shopIndex = -1;
+        for (int tries = 0; tries < 32 && (curseIndex < 0 || shopIndex < 0); ++tries) {
             int candidate = remaining[RNG::Range(0, (int)remaining.size() - 1)];
-            if (candidate != treasureIndex) curseIndex = candidate;
+            if (candidate == treasureIndex) continue;
+            if (curseIndex < 0) {
+                curseIndex = candidate;
+                continue;
+            }
+            if (candidate != curseIndex) {
+                shopIndex = candidate;
+            }
         }
-        if (curseIndex < 0) continue;
+        if (curseIndex < 0 || shopIndex < 0 || shopIndex == treasureIndex || shopIndex == curseIndex) continue;
 
         rooms[treasureIndex].type = RoomType::TREASURE;
         rooms[curseIndex].type = RoomType::CURSE;
+        rooms[shopIndex].type = RoomType::SHOP;
 
         const int enemyCount = EnemyDatabase::Count();
         const int itemCount = ItemDatabase::Count();
@@ -405,6 +440,8 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                         rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
                     }
                 }
+            } else if (rooms[i].type == RoomType::SHOP) {
+                rooms[i].lootGranted = false;
             }
         }
 
@@ -524,18 +561,34 @@ void Dungeon::MarkCurrentRoomCleared(bool rollCurseReward) {
     room.cleared = true;
     room.gateOpen = true;
 
-    if (rollCurseReward && room.IsEnemyCurseRoom()) {
-        float roll = RNG::Range(0.0f, 1.0f);
-        if (roll < settings.heartDropChance) {
-            RoomPickup pickup;
-            pickup.type = RoomPickupType::HEART;
-            pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
-            room.pickups.push_back(pickup);
-        } else if (roll < settings.heartDropChance + settings.bombDropChance) {
-            RoomPickup pickup;
-            pickup.type = RoomPickupType::BOMB;
-            pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
-            room.pickups.push_back(pickup);
-        }
+    if (!rollCurseReward) return;
+    bool rewardRoom = room.type == RoomType::NORMAL || room.type == RoomType::BOSS || room.IsEnemyCurseRoom();
+    if (!rewardRoom) return;
+
+    auto MakePickup = [&](RoomPickupType type, int amount = 0) {
+        RoomPickup pickup;
+        pickup.type = type;
+        pickup.amount = amount;
+        pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
+        room.pickups.push_back(pickup);
+    };
+
+    float roll = RNG::Range(0.0f, 1.0f);
+    if (roll < 0.10f) {
+        RoomPickup pickup;
+        pickup.type = RoomPickupType::CHEST;
+        pickup.chestType = RollChestTypeForFloor(currentFloor);
+        pickup.itemId = (ItemDatabase::Count() > 0) ? RNG::Range(0, ItemDatabase::Count() - 1) : -1;
+        pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
+        room.pickups.push_back(pickup);
+    } else if (roll < 0.10f + settings.heartDropChance) {
+        MakePickup(RoomPickupType::HEART);
+    } else if (roll < 0.10f + settings.heartDropChance + settings.bombDropChance) {
+        MakePickup(RoomPickupType::BOMB);
+    } else if (roll < 0.10f + settings.heartDropChance + settings.bombDropChance + settings.coinDropChance) {
+        int coinValue = (RNG::Chance(0.08f)) ? 10 : (RNG::Chance(0.25f) ? 5 : 1);
+        MakePickup(RoomPickupType::COIN, coinValue);
+    } else if (RNG::Chance(settings.keyDropChance)) {
+        MakePickup(RoomPickupType::KEY, 1);
     }
 }

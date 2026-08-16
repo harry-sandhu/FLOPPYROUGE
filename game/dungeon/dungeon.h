@@ -20,6 +20,8 @@ struct DungeonSettings {
     float curseEnemyChance = 0.5f;
     float bombDropChance = 0.15f;
     float heartDropChance = 0.20f;
+    float coinDropChance = 0.20f;
+    float keyDropChance = 0.05f;
 };
 
 class Dungeon {

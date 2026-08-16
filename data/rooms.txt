@@ -13,3 +13,5 @@ special_enemy_chance=0.01
 curse_enemy_chance=0.5
 bomb_drop_chance=0.20
 heart_drop_chance=0.25
+coin_drop_chance=0.20
+key_drop_chance=0.05

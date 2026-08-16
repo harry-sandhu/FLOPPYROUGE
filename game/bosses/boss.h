@@ -5,13 +5,18 @@
 #include <vector>
 
 enum class BossAttackType {
-    SPREAD_SHOT,
-    RADIAL_BURST,
-    CHARGE,
-    LASER_SWEEP,
-    SUMMON_WAVE,
-    FLOOR_HAZARD,
-    MIRROR_SHOT
+    SPREAD_SHOT,       // 0
+    RADIAL_BURST,      // 1
+    CHARGE,            // 2
+    LASER_SWEEP,       // 3
+    SUMMON_WAVE,       // 4
+    FLOOR_HAZARD,      // 5
+    MIRROR_SHOT,       // 6
+    CARDINAL_BURST,    // 7
+    SPIRAL_BURST,      // 8
+    TRIPLE_SPREAD,     // 9
+    DENSE_RING,        // 10
+    GAPPED_RING        // 11
 };
 
 

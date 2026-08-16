@@ -1,7 +1,7 @@
 #pragma once
 #include "enemy.h"
 
-constexpr int MAX_ENEMY_TEMPLATES = 32;
+constexpr int MAX_ENEMY_TEMPLATES = 48;
 
 struct EnemyTemplate {
     char name[32] = {};

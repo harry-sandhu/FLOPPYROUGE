@@ -1,0 +1,110 @@
+[Variant0]
+hp=320
+drift_speed=16
+attack_cd_phase1=2.1
+attack_cd_phase2=1.35
+charge_speed=225
+contact_damage=1
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=SPREAD_SHOT RADIAL_BURST CHARGE
+
+[Variant1]
+hp=280
+drift_speed=18
+attack_cd_phase1=1.95
+attack_cd_phase2=1.20
+charge_speed=235
+contact_damage=1
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=CARDINAL_BURST TRIPLE_SPREAD CHARGE
+
+[Variant2]
+hp=360
+drift_speed=13
+attack_cd_phase1=1.85
+attack_cd_phase2=1.10
+charge_speed=245
+contact_damage=2
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=SPIRAL_BURST RADIAL_BURST TRIPLE_SPREAD
+
+[Variant3]
+hp=420
+drift_speed=15
+attack_cd_phase1=1.75
+attack_cd_phase2=1.00
+charge_speed=250
+contact_damage=2
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=SPIRAL_BURST CARDINAL_BURST SPIRAL_BURST CHARGE
+
+[Variant4]
+hp=520
+drift_speed=16
+attack_cd_phase1=1.55
+attack_cd_phase2=0.90
+charge_speed=260
+contact_damage=2
+charge_contact_damage=3
+max_adds=5
+attack_cycle_phase1=TRIPLE_SPREAD DENSE_RING CHARGE SPIRAL_BURST CARDINAL_BURST
+
+[Variant5]
+hp=340
+drift_speed=11
+attack_cd_phase1=2.35
+attack_cd_phase2=1.45
+charge_speed=190
+contact_damage=2
+charge_contact_damage=2
+max_adds=6
+attack_cycle_phase1=SUMMON_WAVE RADIAL_BURST
+attack_cycle_phase2=SUMMON_WAVE RADIAL_BURST SPREAD_SHOT
+
+[Variant6]
+hp=460
+drift_speed=14
+attack_cd_phase1=1.90
+attack_cd_phase2=1.10
+charge_speed=240
+contact_damage=2
+charge_contact_damage=3
+max_adds=4
+attack_cycle_phase1=FLOOR_HAZARD CHARGE RADIAL_BURST
+
+[Variant7]
+hp=480
+drift_speed=12
+attack_cd_phase1=2.05
+attack_cd_phase2=1.15
+charge_speed=205
+contact_damage=2
+charge_contact_damage=2
+max_adds=6
+attack_cycle_phase1=LASER_SWEEP SUMMON_WAVE LASER_SWEEP
+
+[Variant8]
+hp=400
+drift_speed=15
+attack_cd_phase1=1.75
+attack_cd_phase2=1.00
+charge_speed=225
+contact_damage=2
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=MIRROR_SHOT SPREAD_SHOT
+
+[Variant9]
+hp=620
+drift_speed=14
+attack_cd_phase1=1.45
+attack_cd_phase2=0.82
+charge_speed=255
+contact_damage=3
+charge_contact_damage=4
+max_adds=5
+attack_cycle_phase1=MIRROR_SHOT FLOOR_HAZARD LASER_SWEEP CHARGE SUMMON_WAVE SPIRAL_BURST

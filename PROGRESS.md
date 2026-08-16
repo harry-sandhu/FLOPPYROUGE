@@ -83,6 +83,22 @@ contest limit.
       fuse, and it deals AoE damage to enemies/boss in radius on
       detonation, with fuse-glow and explosion-flash rendering
       (`src/main.cpp`)
+- [x] Tier 3 enemies added: Warlord, VenomEye, SplitterLord, BombKnight,
+      HexMatron, JuggernautPrime, SnareTurret, BlightGrub
+      (`data/enemies.txt`)
+- [x] Item pool expansion: 80+ items with common, strong, weird, and build-defining
+      categories (`data/items.txt`)
+- [x] Boss attack patterns data-driven: attack cycles now loaded from
+      `data/bosses.txt` with support for phase-specific rotations
+      (`game/bosses/boss.cpp`, `game/bosses/boss_database.cpp`)
+- [x] Chest system implementation: Wooden, Iron, Stone, Golden, Devil, Angel
+      with distinct reward tables and requirements (`src/main.cpp`)
+- [x] Coin/key/bomb pickup system with drop chances per room type
+      (`src/main.cpp`, `game/dungeon/dungeon.cpp`)
+- [x] Shop room type with pricing logic for items, hearts, bombs, and keys
+      (`src/main.cpp`, `game/dungeon/dungeon.cpp`)
+- [x] Bomb count display in HUD (B [count] added to status line)
+      (`game/ui/hud.cpp`)
 
 ## In progress / next up
 - [x] Re-measured exe size after the dungeon/item/enemy/boss additions
@@ -90,21 +106,19 @@ contest limit.
       observed before the timeout
 - [x] Final size report recorded with exact bytes, KB, budget usage, and
       remaining headroom
-- [ ] Re-measure exe size and re-run the Wine smoke test after the
-      dungeon-generation rewrite and the curse/bomb system additions
+- [ ] Re-measure exe size and re-run the Wine smoke test after all the
+      content expansion and data-driven boss system additions
 - [ ] Procedural sprite generation (`engine/procgen`) to replace flat-color
       rectangles with real pixel-art-style shapes
 - [ ] Audio system (`engine/audio`) for shoot/hit/death/boss SFX and music
 - [ ] Camera system (`engine/camera`) for world -> screen offset tracking
 - [ ] Animation system (`engine/animation`) for frame-timer sprite indexing
 - [ ] Juice/polish pass: hit-stop, particles, screen shake refinement
-- [ ] Difficulty tuning / playtesting pass, including the new bigger floor
-      2/3 grids and higher room counts
+- [ ] Difficulty tuning / playtesting pass with new tier 3 enemies and expanded
+      item pools, including the new bigger floor 2/3 grids and higher room counts
 - [ ] UPX packaging step for final submission
 - [x] Final size check against the 1,474,560 byte cap + submission
-- [ ] Full interactive run verification
-- [ ] On-screen bomb count indicator in the HUD (currently no visible
-      counter for `player.bombCount`)
+- [ ] Full interactive run verification with all content additions
 
 ## Known shortcuts taken
 - Rooms are generated as a graph and shown in the mini-map, but the playfield

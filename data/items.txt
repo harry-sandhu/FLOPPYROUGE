@@ -258,11 +258,142 @@ desc=Fortune favors the bold
 type=stat_mod
 stat=fireRate
 mode=multiply
-value=1.3
-stat2=projectileCount
+value=1.18
+stat2=damage
 mode2=add
-value2=1
-desc=Rapid twin shots, hard to resist
+value2=-4
+desc=Fires faster, but each shot hits a little lighter
+
+[CopperLatch]
+type=stat_mod
+stat=luck
+mode=add
+value=1
+desc=A tiny bit of extra fortune
+
+[RustySprinter]
+type=stat_mod
+stat=moveSpeed
+mode=add
+value=12
+desc=Shoes that still know how to run
+
+[NeedleTip]
+type=stat_mod
+stat=range
+mode=add
+value=24
+stat2=shotSpeed
+mode2=add
+value2=18
+desc=Sharper shots that travel farther and faster
+
+[PaperClip]
+type=stat_mod
+stat=fireRate
+mode=multiply
+value=1.08
+desc=Small speed-up to your firing rhythm
+
+[WarmSoup]
+type=stat_mod
+stat=heal
+mode=add
+value=2
+desc=Heals a little and keeps you going
+
+[BlackCatEye]
+type=stat_mod
+stat=critChance
+mode=add
+value=0.18
+desc=Better odds of landing a critical shot
+
+[BloodTithe]
+type=stat_mod
+stat=damage
+mode=add
+value=4
+stat2=lifestealChance
+mode2=add
+value2=0.18
+desc=More damage with a little self-repair on hit
+
+[FrostBit]
+type=stat_mod
+stat=freezeChance
+mode=add
+value=0.32
+desc=Shots can slow enemies into the cold
+
+[ChainCapacitor]
+type=stat_mod
+stat=chainChance
+mode=add
+value=0.35
+desc=Bullets can jump between enemies
+
+[GravityWell]
+type=stat_mod
+stat=gravityChance
+mode=add
+value=0.30
+desc=Shots tug foes toward the impact point
+
+[RicochetChip]
+type=stat_mod
+stat=wallBounceChance
+mode=add
+value=0.45
+desc=Shots bounce off walls more often
+
+[MirrorShard]
+type=stat_mod
+stat=enemyBounceChance
+mode=add
+value=0.45
+desc=Bullets can ricochet off enemies
+
+[SplitterLens]
+type=stat_mod
+stat=splitChance
+mode=add
+value=0.30
+desc=Shots may split into more shots
+
+[BoomSeed]
+type=stat_mod
+stat=explosiveChance
+mode=add
+value=0.28
+desc=Explosive shots become much more common
+
+[MagnetCore]
+type=stat_mod
+stat=magnetChance
+mode=add
+value=0.45
+desc=Shots curve toward nearby foes
+
+[CursedLedger]
+type=stat_mod
+stat=damage
+mode=add
+value=12
+stat2=fireRate
+mode2=multiply
+value2=0.82
+desc=Huge damage, but your firing slows down
+
+[GlassHeart]
+type=stat_mod
+stat=maxHp
+mode=add
+value=-4
+stat2=damage
+mode2=add
+value2=10
+desc=Fragile health with a dangerous payoff
 
 
 [VenomLoad]

@@ -110,6 +110,12 @@ struct Player {
 
     std::vector<int> ownedItemIds;
     int bombCount = 0;
+    int nickelCoins = 0;
+    int silverCoins = 0;
+    int goldCoins = 0;
+    int keyCount = 0;
+
+    int CoinValue() const { return nickelCoins + silverCoins * 5 + goldCoins * 10; }
 
     Vec2 facingDir = { 0.0f, -1.0f };
     Vec2 dashDir = { 0.0f, 0.0f };

@@ -8,7 +8,8 @@ enum class RoomType {
     NORMAL,
     BOSS,
     TREASURE,
-    CURSE
+    CURSE,
+    SHOP
 };
 
 enum class RoomPickupType {
@@ -16,12 +17,29 @@ enum class RoomPickupType {
     EXIT,
     TROPHY,
     HEART,
-    BOMB
+    BOMB,
+    COIN,
+    KEY,
+    CHEST
+};
+
+enum class ChestType {
+    WOODEN,
+    IRON,
+    STONE,
+    GOLDEN,
+    DEVIL,
+    ANGEL,
+    GAMBLE
 };
 
 struct RoomPickup {
     RoomPickupType type = RoomPickupType::ITEM;
     int itemId = -1;
+    int amount = 0;
+    int cost = 0;
+    ChestType chestType = ChestType::WOODEN;
+    int chestAttempts = 0;
     Vec2 pos = { 0.0f, 0.0f };
     bool collected = false;
 };

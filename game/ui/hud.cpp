@@ -32,6 +32,7 @@ namespace {
             case RoomType::BOSS:     color = 0xFFBB55FF; break;
             case RoomType::TREASURE: color = 0xFFFFC84D; break;
             case RoomType::CURSE:    color = 0xFFFF5555; break;
+            case RoomType::SHOP:     color = 0xFF55DDEE; break;
         }
 
         if (room.cleared && room.type == RoomType::NORMAL) {
@@ -59,6 +60,7 @@ namespace {
             case RoomType::BOSS:     return "BOSS";
             case RoomType::TREASURE: return "TREASURE";
             case RoomType::CURSE:    return "CURSE";
+            case RoomType::SHOP:     return "SHOP";
         }
         return "?";
     }
@@ -106,6 +108,9 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
     std::snprintf(line, sizeof(line), "ITEMS %d", (int)player.ownedItemIds.size());
     Text::DrawString(line, 5, 60, 0xFFEAEAEA, 1);
 
+    std::snprintf(line, sizeof(line), "COINS %d K %d B %d", player.CoinValue(), player.keyCount, player.bombCount);
+    Text::DrawString(line, 5, 69, 0xFFEAEAEA, 1);
+
     bool hasAnyFx = player.hasHomingShots || player.poisonChance > 0.0f || player.stickyChance > 0.0f ||
         player.piercingChance > 0.0f || player.explosiveChance > 0.0f || player.burnChance > 0.0f ||
         player.freezeChance > 0.0f || player.magnetChance > 0.0f || player.boomerangChance > 0.0f ||
@@ -141,12 +146,12 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
                       (player.hasParasiteCore || player.hasLastShot || player.hasDevastator ||
                        player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites ||
                        player.hasChargedShots) ? " +" : "");
-        Text::DrawString(fx, 5, 69, 0xFFBBBBFF, 1);
+        Text::DrawString(fx, 5, 78, 0xFFBBBBFF, 1);
     }
 
     if (player.pickupMessageTimer > 0.0f && player.pickupName[0] != '\0') {
         std::snprintf(line, sizeof(line), "PICKUP %s", player.pickupName);
-        Text::DrawString(line, 5, 78, 0xFFFFFF88, 1);
+        Text::DrawString(line, 5, 87, 0xFFFFFF88, 1);
     }
 
     if (boss && boss->alive) {
@@ -241,48 +246,56 @@ void DrawBossHealthBar(const Boss& boss) {
 }
 
 void DrawFloorMap(const Dungeon& dungeon, const Player& player) {
-    if (!player.hasCompass) return;
-
     const std::vector<Room>& rooms = dungeon.Rooms();
     if (rooms.empty()) return;
+
     int currentIndex = dungeon.CurrentRoomIndex();
     if (currentIndex < 0 || currentIndex >= (int)rooms.size()) return;
 
     std::vector<bool> revealed(rooms.size(), false);
-    std::queue<int> q;
-
-    auto Reveal = [&](int index) {
-        if (index < 0 || index >= (int)rooms.size()) return;
-        if (revealed[index]) return;
-        revealed[index] = true;
-        q.push(index);
-    };
-
-    Reveal(currentIndex);
-    while (!q.empty()) {
-        int index = q.front();
-        q.pop();
-        const Room& room = rooms[index];
-
-        const int neighbors[4] = { room.north, room.south, room.east, room.west };
-        for (int next : neighbors) {
-            if (next < 0 || next >= (int)rooms.size()) continue;
-            if (revealed[next]) continue;
-            if (!rooms[next].cleared) continue;
-            revealed[next] = true;
-            q.push(next);
-        }
-    }
-
     std::vector<bool> outlined(rooms.size(), false);
-    for (int i = 0; i < (int)rooms.size(); ++i) {
-        if (!revealed[i]) continue;
-        const Room& room = rooms[i];
-        const int neighbors[4] = { room.north, room.south, room.east, room.west };
-        for (int next : neighbors) {
-            if (next < 0 || next >= (int)rooms.size()) continue;
-            if (revealed[next]) continue;
-            outlined[next] = true;
+
+    if (player.hasCompass) {
+        std::fill(revealed.begin(), revealed.end(), true);
+    } else {
+        std::queue<int> q;
+
+        auto Reveal = [&](int index) {
+            if (index < 0 || index >= (int)rooms.size()) return;
+            if (revealed[index]) return;
+            revealed[index] = true;
+            q.push(index);
+        };
+
+        Reveal(currentIndex);
+        for (int i = 0; i < (int)rooms.size(); ++i) {
+            if (rooms[i].cleared) Reveal(i);
+        }
+
+        while (!q.empty()) {
+            int index = q.front();
+            q.pop();
+            const Room& room = rooms[index];
+
+            const int neighbors[4] = { room.north, room.south, room.east, room.west };
+            for (int next : neighbors) {
+                if (next < 0 || next >= (int)rooms.size()) continue;
+                if (revealed[next]) continue;
+                if (!rooms[next].cleared) continue;
+                revealed[next] = true;
+                q.push(next);
+            }
+        }
+
+        for (int i = 0; i < (int)rooms.size(); ++i) {
+            if (!revealed[i]) continue;
+            const Room& room = rooms[i];
+            const int neighbors[4] = { room.north, room.south, room.east, room.west };
+            for (int next : neighbors) {
+                if (next < 0 || next >= (int)rooms.size()) continue;
+                if (revealed[next]) continue;
+                outlined[next] = true;
+            }
         }
     }
 
@@ -349,20 +362,22 @@ void DrawFloorMap(const Dungeon& dungeon, const Player& player) {
         }
     }
 
-    for (int i = 0; i < (int)rooms.size(); ++i) {
-        if (!outlined[i] || revealed[i]) continue;
-        const Room& room = rooms[i];
-        Vec2 origin = CellOrigin(room);
-        int x = (int)origin.x;
-        int y = (int)origin.y;
+    if (!player.hasCompass) {
+        for (int i = 0; i < (int)rooms.size(); ++i) {
+            if (!outlined[i] || revealed[i]) continue;
+            const Room& room = rooms[i];
+            Vec2 origin = CellOrigin(room);
+            int x = (int)origin.x;
+            int y = (int)origin.y;
 
-        uint32_t outlineColor = 0xFF666666;
-        if (room.type == RoomType::START) outlineColor = 0xFF4B7F5A;
-        else if (room.type == RoomType::BOSS) outlineColor = 0xFF7A4A9E;
-        else if (room.type == RoomType::TREASURE) outlineColor = 0xFF8A7330;
-        else if (room.type == RoomType::CURSE) outlineColor = 0xFF8A4040;
+            uint32_t outlineColor = 0xFF666666;
+            if (room.type == RoomType::START) outlineColor = 0xFF4B7F5A;
+            else if (room.type == RoomType::BOSS) outlineColor = 0xFF7A4A9E;
+            else if (room.type == RoomType::TREASURE) outlineColor = 0xFF8A7330;
+            else if (room.type == RoomType::CURSE) outlineColor = 0xFF8A4040;
 
-        DrawOutline(x, y, cellSize, cellSize, outlineColor);
+            DrawOutline(x, y, cellSize, cellSize, outlineColor);
+        }
     }
 
     const int legendX = mapX - 1;
@@ -379,7 +394,8 @@ void DrawFloorMap(const Dungeon& dungeon, const Player& player) {
         { "N Normal", 0xFF77CC77 },
         { "B Boss", 0xFFBB55FF },
         { "T Treasure", 0xFFFFC84D },
-        { "C Curse", 0xFFFF5555 }
+        { "C Curse", 0xFFFF5555 },
+        { "Shop", 0xFF55DDEE }
     };
 
     int lineY = legendY + 9;
