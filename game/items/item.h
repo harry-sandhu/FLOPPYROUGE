@@ -8,9 +8,11 @@ enum class ItemType {
 
 enum class ItemStat {
     DAMAGE,
+    DAMAGE_MULTIPLIER,
     SHOT_SPEED,
     RANGE,
     FIRE_RATE,
+    FIRE_RATE_MULTIPLIER,
     PROJECTILE_COUNT,
     MOVE_SPEED,
     LUCK,
@@ -40,6 +42,7 @@ enum class ItemStat {
     ENEMY_BOUNCE_CHANCE,
     SPLIT_CHANCE,
     DODGE_CHANCE,
+    DAMAGE_REDUCTION,
     UNKNOWN
 };
 
@@ -72,6 +75,16 @@ enum class ItemFlag {
     OVERCLOCK,
     HOLLOW_CORE,
     SECOND_SUN,
+    BURST_SHOTS,
+    ROCKET_ROUNDS,
+    LASER_LENS,
+    CRIMSON_RAY,
+    BLADE_ARC,
+    BULWARK_CORE,
+    THORN_MANTLE,
+    REGEN_CHARM,
+    MIRROR_WARD,
+    PHOENIX_FEATHER,
     UNKNOWN
 };
 
@@ -88,4 +101,7 @@ struct ItemTemplate {
     ItemMode mode2 = ItemMode::ADD;
     float value2 = 0.0f;
     float perProcValue = 0.0f;
+    
+    int tier = 1;  // 1-5, with 5 being strongest
+    char pools[64] = {};  // comma-separated: TREASURE,BOSS,CURSE,SHOP,CHEST
 };

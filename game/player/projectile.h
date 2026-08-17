@@ -1,7 +1,16 @@
 #pragma once
 #include "../../engine/core/types.h"
 
+enum class ProjectileKind {
+    BULLET,
+    ROCKET,
+    LASER,
+    CRIMSON_RAY,
+    SLASH
+};
+
 struct ProjectileMods {
+    ProjectileKind kind = ProjectileKind::BULLET;
     bool homing = false;
     bool poison = false;
     bool sticky = false;
@@ -32,6 +41,7 @@ struct Projectile {
     float remainingRange = 999999.0f;
     float maxRange = 999999.0f;
     float lifeRemaining = 0.0f;
+    ProjectileKind kind = ProjectileKind::BULLET;
 
     bool homing = false;
     bool poison = false;
@@ -65,5 +75,9 @@ struct Projectile {
 
     bool alive = true;
 
-    Rect GetRect(float size) const { return { pos.x, pos.y, size, size }; }
+    Rect GetRect(float size) const {
+        float scaled = size * sizeScale;
+        if (scaled < 1.0f) scaled = 1.0f;
+        return { pos.x, pos.y, scaled, scaled };
+    }
 };

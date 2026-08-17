@@ -33,6 +33,41 @@ enum class ChestType {
     GAMBLE
 };
 
+enum class RoomRockType {
+    BOMBABLE_COIN,
+    BOMBABLE_HEART,
+    INDESTRUCTIBLE
+};
+
+enum class RoomTrapType {
+    POISON,
+    TELEPORT,
+    SUMMON,
+    SPIKE
+};
+
+struct RoomRock {
+    Vec2 pos = { 0.0f, 0.0f };
+    float w = 10.0f;
+    float h = 10.0f;
+    RoomRockType type = RoomRockType::BOMBABLE_COIN;
+    int rewardAmount = 1;
+    bool broken = false;
+
+    Rect GetRect() const { return { pos.x, pos.y, w, h }; }
+    bool IsBombable() const { return type != RoomRockType::INDESTRUCTIBLE; }
+};
+
+struct RoomTrap {
+    Vec2 pos = { 0.0f, 0.0f };
+    float w = 10.0f;
+    float h = 10.0f;
+    RoomTrapType type = RoomTrapType::POISON;
+    bool triggered = false;
+
+    Rect GetRect() const { return { pos.x, pos.y, w, h }; }
+};
+
 struct RoomPickup {
     RoomPickupType type = RoomPickupType::ITEM;
     int itemId = -1;
@@ -42,6 +77,7 @@ struct RoomPickup {
     int chestAttempts = 0;
     Vec2 pos = { 0.0f, 0.0f };
     bool collected = false;
+    bool isMimic = false;
 };
 
 struct Room {
@@ -68,6 +104,8 @@ struct Room {
     std::vector<int> enemySpawnList;
     std::vector<int> itemSpawnList;
     std::vector<RoomPickup> pickups;
+    std::vector<RoomRock> rocks;
+    std::vector<RoomTrap> traps;
 
     bool IsEnemyCurseRoom() const {
         return type == RoomType::CURSE && !enemySpawnList.empty();

@@ -1,110 +1,306 @@
-[Variant0]
-hp=320
-drift_speed=16
-attack_cd_phase1=2.1
-attack_cd_phase2=1.35
+[Runt]
+hp=260
+drift_speed=18
+attack_cd_phase1=2.10
+attack_cd_phase2=1.40
 charge_speed=225
 contact_damage=1
 charge_contact_damage=2
-max_adds=4
-attack_cycle_phase1=SPREAD_SHOT RADIAL_BURST CHARGE
+max_adds=3
+phase2_hp_ratio=0.0
+attack_cycle_phase1=SPREAD_SHOT CHARGE
 
-[Variant1]
-hp=280
-drift_speed=18
+[Pinwheel]
+hp=290
+drift_speed=17
 attack_cd_phase1=1.95
+attack_cd_phase2=1.30
+charge_speed=230
+contact_damage=1
+charge_contact_damage=2
+max_adds=3
+phase2_hp_ratio=0.0
+attack_cycle_phase1=CARDINAL_BURST TRIPLE_SPREAD
+
+[Spinner]
+hp=320
+drift_speed=15
+attack_cd_phase1=1.85
 attack_cd_phase2=1.20
 charge_speed=235
 contact_damage=1
 charge_contact_damage=2
 max_adds=4
-attack_cycle_phase1=CARDINAL_BURST TRIPLE_SPREAD CHARGE
+phase2_hp_ratio=0.0
+attack_cycle_phase1=SPIRAL_BURST RADIAL_BURST
 
-[Variant2]
+[Hexcaller]
+hp=300
+drift_speed=16
+attack_cd_phase1=2.05
+attack_cd_phase2=1.35
+charge_speed=220
+contact_damage=1
+charge_contact_damage=2
+max_adds=5
+phase2_hp_ratio=0.0
+attack_cycle_phase1=SUMMON_WAVE SPREAD_SHOT
+
+[Bulwark]
+hp=380
+drift_speed=14
+attack_cd_phase1=1.75
+attack_cd_phase2=1.15
+charge_speed=245
+contact_damage=1
+charge_contact_damage=2
+max_adds=4
+phase2_hp_ratio=0.0
+attack_cycle_phase1=DENSE_RING CHARGE
+
+[Grief]
 hp=360
 drift_speed=13
-attack_cd_phase1=1.85
-attack_cd_phase2=1.10
-charge_speed=245
-contact_damage=2
+attack_cd_phase1=2.15
+attack_cd_phase2=1.05
+charge_speed=235
+contact_damage=1
 charge_contact_damage=2
-max_adds=4
-attack_cycle_phase1=SPIRAL_BURST RADIAL_BURST TRIPLE_SPREAD
+max_adds=5
+phase2_hp_ratio=0.58
+attack_cycle_phase1=SUMMON_WAVE RADIAL_BURST
+attack_cycle_phase2=SUMMON_WAVE SPREAD_SHOT RADIAL_BURST
 
-[Variant3]
-hp=420
+[Ravager]
+hp=430
 drift_speed=15
 attack_cd_phase1=1.75
-attack_cd_phase2=1.00
+attack_cd_phase2=0.95
 charge_speed=250
 contact_damage=2
+charge_contact_damage=3
+max_adds=4
+phase2_hp_ratio=0.55
+attack_cycle_phase1=FLOOR_HAZARD CHARGE
+attack_cycle_phase2=FLOOR_HAZARD LASER_SWEEP CHARGE
+
+[Stormeye]
+hp=390
+drift_speed=13
+attack_cd_phase1=1.70
+attack_cd_phase2=0.90
+charge_speed=220
+contact_damage=1
 charge_contact_damage=2
 max_adds=4
-attack_cycle_phase1=SPIRAL_BURST CARDINAL_BURST SPIRAL_BURST CHARGE
+phase2_hp_ratio=0.50
+attack_cycle_phase1=LASER_SWEEP RADIAL_BURST
+attack_cycle_phase2=LASER_SWEEP SUMMON_WAVE FLOOR_HAZARD
 
-[Variant4]
-hp=520
+[Mirrorfiend]
+hp=410
 drift_speed=16
 attack_cd_phase1=1.55
 attack_cd_phase2=0.90
-charge_speed=260
+charge_speed=235
+contact_damage=1
+charge_contact_damage=2
+max_adds=4
+phase2_hp_ratio=0.50
+attack_cycle_phase1=MIRROR_SHOT SPREAD_SHOT
+attack_cycle_phase2=MIRROR_SHOT TRIPLE_SPREAD CHARGE
+
+[Siren]
+hp=450
+drift_speed=14
+attack_cd_phase1=1.60
+attack_cd_phase2=0.85
+charge_speed=245
+contact_damage=2
+charge_contact_damage=3
+max_adds=4
+phase2_hp_ratio=0.45
+attack_cycle_phase1=SPIRAL_BURST CARDINAL_BURST
+attack_cycle_phase2=SPIRAL_BURST DENSE_RING MIRROR_SHOT
+
+[Burrower]
+hp=430
+drift_speed=17
+attack_cd_phase1=1.55
+attack_cd_phase2=0.80
+charge_speed=255
+contact_damage=2
+charge_contact_damage=3
+max_adds=4
+phase2_hp_ratio=0.45
+attack_cycle_phase1=TELEPORT_BURST SPREAD_SHOT
+attack_cycle_phase2=TELEPORT_BURST CHARGE RADIAL_BURST
+
+[Railwing]
+hp=470
+drift_speed=12
+attack_cd_phase1=1.45
+attack_cd_phase2=0.78
+charge_speed=210
 contact_damage=2
 charge_contact_damage=3
 max_adds=5
-attack_cycle_phase1=TRIPLE_SPREAD DENSE_RING CHARGE SPIRAL_BURST CARDINAL_BURST
+phase2_hp_ratio=0.45
+attack_cycle_phase1=TELEPORT_BURST LASER_SWEEP
+attack_cycle_phase2=TELEPORT_BURST LASER_SWEEP TRIPLE_SPREAD
 
-[Variant5]
-hp=340
+[Riftmother]
+hp=520
 drift_speed=11
-attack_cd_phase1=2.35
-attack_cd_phase2=1.45
-charge_speed=190
+attack_cd_phase1=1.70
+attack_cd_phase2=0.90
+charge_speed=200
 contact_damage=2
-charge_contact_damage=2
+charge_contact_damage=3
 max_adds=6
-attack_cycle_phase1=SUMMON_WAVE RADIAL_BURST
-attack_cycle_phase2=SUMMON_WAVE RADIAL_BURST SPREAD_SHOT
+phase2_hp_ratio=0.40
+attack_cycle_phase1=TELEPORT_BURST SUMMON_WAVE
+attack_cycle_phase2=TELEPORT_BURST SUMMON_WAVE FLOOR_HAZARD
 
-[Variant6]
-hp=460
-drift_speed=14
+[Harvester]
+hp=500
+drift_speed=15
+attack_cd_phase1=1.55
+attack_cd_phase2=0.85
+charge_speed=235
+contact_damage=2
+charge_contact_damage=3
+max_adds=6
+phase2_hp_ratio=0.45
+attack_cycle_phase1=SUMMON_WAVE SPIRAL_BURST
+attack_cycle_phase2=SUMMON_WAVE SPIRAL_BURST RADIAL_BURST
+
+[Titan]
+hp=650
+drift_speed=16
+attack_cd_phase1=1.40
+attack_cd_phase2=0.75
+charge_speed=265
+contact_damage=3
+charge_contact_damage=4
+max_adds=5
+phase2_hp_ratio=0.35
+attack_cycle_phase1=DENSE_RING CHARGE
+attack_cycle_phase2=DENSE_RING MIRROR_SHOT CHARGE FLOOR_HAZARD
+
+[Eclipse]
+hp=720
+drift_speed=15
+attack_cd_phase1=1.25
+attack_cd_phase2=0.70
+charge_speed=270
+contact_damage=3
+charge_contact_damage=4
+max_adds=6
+phase2_hp_ratio=0.30
+attack_cycle_phase1=MIRROR_SHOT FLOOR_HAZARD LASER_SWEEP
+attack_cycle_phase2=TELEPORT_BURST SUMMON_WAVE LASER_SWEEP DENSE_RING SPIRAL_BURST
+
+[GlassKing]
+hp=340
+drift_speed=18
 attack_cd_phase1=1.90
 attack_cd_phase2=1.10
+charge_speed=225
+contact_damage=1
+charge_contact_damage=2
+max_adds=3
+phase2_hp_ratio=0.55
+attack_cycle_phase1=SPREAD_SHOT TRIPLE_SPREAD
+attack_cycle_phase2=MIRROR_SHOT DENSE_RING CHARGE
+
+[Spite]
+hp=420
+drift_speed=13
+attack_cd_phase1=1.75
+attack_cd_phase2=0.92
 charge_speed=240
 contact_damage=2
 charge_contact_damage=3
 max_adds=4
-attack_cycle_phase1=FLOOR_HAZARD CHARGE RADIAL_BURST
+phase2_hp_ratio=0.50
+attack_cycle_phase1=FLOOR_HAZARD LASER_SWEEP
+attack_cycle_phase2=FLOOR_HAZARD TELEPORT_BURST CHARGE
 
-[Variant7]
-hp=480
+[WebMother]
+hp=460
 drift_speed=12
-attack_cd_phase1=2.05
-attack_cd_phase2=1.15
-charge_speed=205
-contact_damage=2
-charge_contact_damage=2
-max_adds=6
-attack_cycle_phase1=LASER_SWEEP SUMMON_WAVE LASER_SWEEP
-
-[Variant8]
-hp=400
-drift_speed=15
-attack_cd_phase1=1.75
+attack_cd_phase1=1.95
 attack_cd_phase2=1.00
-charge_speed=225
+charge_speed=210
 contact_damage=2
-charge_contact_damage=2
-max_adds=4
-attack_cycle_phase1=MIRROR_SHOT SPREAD_SHOT
+charge_contact_damage=3
+max_adds=6
+phase2_hp_ratio=0.48
+attack_cycle_phase1=SUMMON_WAVE RADIAL_BURST
+attack_cycle_phase2=SUMMON_WAVE SPIRAL_BURST DENSE_RING
 
-[Variant9]
+[IronSaint]
+hp=540
+drift_speed=15
+attack_cd_phase1=1.55
+attack_cd_phase2=0.85
+charge_speed=255
+contact_damage=2
+charge_contact_damage=4
+max_adds=4
+phase2_hp_ratio=0.42
+attack_cycle_phase1=CHARGE CARDINAL_BURST
+attack_cycle_phase2=CHARGE LASER_SWEEP FLOOR_HAZARD
+
+[Mire]
+hp=500
+drift_speed=14
+attack_cd_phase1=1.80
+attack_cd_phase2=0.95
+charge_speed=235
+contact_damage=2
+charge_contact_damage=3
+max_adds=5
+phase2_hp_ratio=0.45
+attack_cycle_phase1=GAPPED_RING SPREAD_SHOT
+attack_cycle_phase2=GAPPED_RING SUMMON_WAVE CHARGE
+
+[Chorus]
+hp=560
+drift_speed=16
+attack_cd_phase1=1.50
+attack_cd_phase2=0.82
+charge_speed=245
+contact_damage=2
+charge_contact_damage=4
+max_adds=4
+phase2_hp_ratio=0.38
+attack_cycle_phase1=SPIRAL_BURST MIRROR_SHOT
+attack_cycle_phase2=SPIRAL_BURST DENSE_RING TRIPLE_SPREAD
+
+[RedWarden]
 hp=620
 drift_speed=14
 attack_cd_phase1=1.45
-attack_cd_phase2=0.82
-charge_speed=255
+attack_cd_phase2=0.78
+charge_speed=250
 contact_damage=3
 charge_contact_damage=4
 max_adds=5
-attack_cycle_phase1=MIRROR_SHOT FLOOR_HAZARD LASER_SWEEP CHARGE SUMMON_WAVE SPIRAL_BURST
+phase2_hp_ratio=0.36
+attack_cycle_phase1=LASER_SWEEP CARDINAL_BURST
+attack_cycle_phase2=LASER_SWEEP TELEPORT_BURST CHARGE
+
+[Nullsire]
+hp=700
+drift_speed=15
+attack_cd_phase1=1.30
+attack_cd_phase2=0.72
+charge_speed=270
+contact_damage=3
+charge_contact_damage=4
+max_adds=6
+phase2_hp_ratio=0.32
+attack_cycle_phase1=TELEPORT_BURST FLOOR_HAZARD
+attack_cycle_phase2=TELEPORT_BURST SUMMON_WAVE MIRROR_SHOT SPIRAL_BURST

@@ -1,7 +1,7 @@
 [Dungeon]
 grid_size_per_floor=10
 grid_size_max=30
-total_floors=3
+total_floors=5
 normal_room_base=8
 normal_room_per_floor=6
 normal_enemy_base=1

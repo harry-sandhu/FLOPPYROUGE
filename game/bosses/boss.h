@@ -16,7 +16,8 @@ enum class BossAttackType {
     SPIRAL_BURST,      // 8
     TRIPLE_SPREAD,     // 9
     DENSE_RING,        // 10
-    GAPPED_RING        // 11
+    GAPPED_RING,       // 11
+    TELEPORT_BURST     // 12
 };
 
 

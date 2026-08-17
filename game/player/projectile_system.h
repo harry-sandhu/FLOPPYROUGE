@@ -5,6 +5,7 @@
 #include "player.h"
 #include "../bosses/boss.h"
 #include "../enemies/enemy.h"
+#include "../rooms/room.h"
 
 namespace ProjectileSystem {
     void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage = 0,
@@ -17,6 +18,7 @@ namespace ProjectileSystem {
 
     void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<Enemy>& roomEnemies, Enemy& enemy,
                                  float projectileSize, std::vector<Enemy>& spawnedEnemies,
+                                 std::vector<RoomPickup>& spawnedPickups,
                                  std::vector<Projectile>& enemyProjectiles, float dt, Player* player = nullptr);
 
     void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, float projectileSize, float dt,

@@ -21,6 +21,7 @@ namespace {
         if (std::strcmp(name, "TRIPLE_SPREAD") == 0) return BossAttackType::TRIPLE_SPREAD;
         if (std::strcmp(name, "DENSE_RING") == 0) return BossAttackType::DENSE_RING;
         if (std::strcmp(name, "GAPPED_RING") == 0) return BossAttackType::GAPPED_RING;
+        if (std::strcmp(name, "TELEPORT_BURST") == 0) return BossAttackType::TELEPORT_BURST;
         return BossAttackType::SPREAD_SHOT; // default
     }
 
@@ -56,6 +57,7 @@ bool Load(const char* path) {
         boss.attackCooldownPhase1 = std::max(0.1f, block.GetFloat("attack_cd_phase1", boss.attackCooldownPhase1));
         boss.attackCooldownPhase2 = std::max(0.1f, block.GetFloat("attack_cd_phase2", boss.attackCooldownPhase2));
         boss.chargeSpeed = block.GetFloat("charge_speed", boss.chargeSpeed);
+        boss.phase2HpRatio = std::clamp(block.GetFloat("phase2_hp_ratio", boss.phase2HpRatio), 0.0f, 0.90f);
         boss.contactDamage = std::max(1, block.GetInt("contact_damage", boss.contactDamage));
         boss.chargeContactDamage = std::max(1, block.GetInt("charge_contact_damage", boss.chargeContactDamage));
         boss.maxAdds = std::max(0, block.GetInt("max_adds", boss.maxAdds));

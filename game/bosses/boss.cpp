@@ -151,6 +151,28 @@ namespace {
         }
     }
 
+    void FireTeleportBurst(Boss& boss, Vec2 playerPos, std::vector<Projectile>& out) {
+        const Vec2 pads[] = {
+            { 44.0f, 28.0f }, { 224.0f, 28.0f }, { 44.0f, 104.0f }, { 224.0f, 104.0f }
+        };
+        int bestIndex = 0;
+        float bestDist = -1.0f;
+        for (int i = 0; i < 4; ++i) {
+            float dx = pads[i].x - playerPos.x;
+            float dy = pads[i].y - playerPos.y;
+            float dist = dx * dx + dy * dy;
+            if (dist > bestDist) {
+                bestDist = dist;
+                bestIndex = i;
+            }
+        }
+
+        boss.pos = pads[bestIndex];
+        boss.isCharging = false;
+        boss.chargeTimeRemaining = 0.0f;
+        FireRadialBurst(boss, out);
+    }
+
     // FLOOR_HAZARD: drops a persistent damage zone at the player's
     // current position (telegraphed - get off the spot you're
     // standing on). Capped so a boss can't blanket the room.
@@ -203,6 +225,7 @@ namespace {
             case BossAttackType::TRIPLE_SPREAD:   FireTripleSpread(boss, playerPos, bossProjectiles); break;
             case BossAttackType::DENSE_RING:      FireDenseRing(boss, bossProjectiles); break;
             case BossAttackType::GAPPED_RING:     FireGappedRing(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::TELEPORT_BURST:  FireTeleportBurst(boss, playerPos, bossProjectiles); break;
             default: break;
         }
     }
@@ -545,7 +568,10 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
         else ++it;
     }
 
-    if (boss.phase == 1 && boss.hp <= boss.maxHp / 2) {
+    const BossTemplate* templateData = BossDatabase::Get(boss.variant % std::max(1, BossDatabase::Count()));
+    float phase2Ratio = templateData ? templateData->phase2HpRatio : 0.5f;
+
+    if (boss.phase == 1 && boss.hp <= (int)std::lround((float)boss.maxHp * phase2Ratio)) {
         boss.phase = 2;
     }
 
@@ -566,7 +592,6 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
     boss.pos.y += dir.y * boss.driftSpeed * slowScale * dt;
 
     // Try to use data-driven attack cycles if available
-    const BossTemplate* templateData = BossDatabase::Get(boss.variant % std::max(1, BossDatabase::Count()));
     if (templateData && templateData->attackCyclePhase1Length > 0 && boss.attackDelayRemaining <= 0.0f) {
         UpdateBossWithDataDrivenCycle(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds, templateData);
     } else if (boss.attackDelayRemaining <= 0.0f) {
@@ -603,18 +628,5 @@ Boss SpawnBoss9() { return MakeBoss(8); }
 Boss SpawnBoss10() { return MakeBoss(9); }
 
 Boss SpawnBossVariant(int variant) {
-    switch (variant % 10) {
-        case 1: return SpawnBoss2();
-        case 2: return SpawnBoss3();
-        case 3: return SpawnBoss4();
-        case 4: return SpawnBoss5();
-        case 5: return SpawnBoss6();
-        case 6: return SpawnBoss7();
-        case 7: return SpawnBoss8();
-        case 8: return SpawnBoss9();
-        case 9: return SpawnBoss10();
-        case 0:
-        default:
-            return SpawnBoss1();
-    }
+    return MakeBoss(variant % std::max(1, BossDatabase::Count()));
 }

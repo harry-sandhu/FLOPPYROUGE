@@ -27,9 +27,11 @@ namespace {
 
         switch (stat) {
             case ItemStat::DAMAGE: applyInt(player.damage); break;
+            case ItemStat::DAMAGE_MULTIPLIER: applyFloat(player.damageMultiplier); break;
             case ItemStat::SHOT_SPEED: applyFloat(player.shotSpeed); break;
             case ItemStat::RANGE: applyFloat(player.range); break;
             case ItemStat::FIRE_RATE: applyFloat(player.fireRate); break;
+            case ItemStat::FIRE_RATE_MULTIPLIER: applyFloat(player.fireRateMultiplier); break;
             case ItemStat::PROJECTILE_COUNT: applyInt(player.projectileCount); break;
             case ItemStat::MOVE_SPEED: applyFloat(player.moveSpeed); break;
             case ItemStat::LUCK: {
@@ -70,6 +72,7 @@ namespace {
             case ItemStat::ENEMY_BOUNCE_CHANCE: applyFloat(player.enemyBounceChance); break;
             case ItemStat::SPLIT_CHANCE: applyFloat(player.splitChance); break;
             case ItemStat::DODGE_CHANCE: applyFloat(player.dodgeChance); break;
+            case ItemStat::DAMAGE_REDUCTION: applyFloat(player.damageReduction); break;
             case ItemStat::UNKNOWN:
             default:
                 break;
@@ -129,8 +132,25 @@ namespace {
                 player.hasShieldCharm = true;
                 player.shieldCharges = std::max(player.shieldCharges, 1);
                 break;
+            case ItemFlag::BULWARK_CORE:
+                player.hasShieldCharm = true;
+                player.hasBulwarkCore = true;
+                player.shieldCharges = std::max(player.shieldCharges, 2);
+                break;
+            case ItemFlag::MIRROR_WARD:
+                player.hasMirrorWard = true;
+                player.mirrorWardCharges = std::max(player.mirrorWardCharges, 1);
+                break;
             case ItemFlag::GUARDIAN_ANGEL: player.hasGuardianAngel = true; break;
+            case ItemFlag::PHOENIX_FEATHER: player.hasPhoenixFeather = true; break;
             case ItemFlag::SPIKED_ARMOR: player.hasSpikedArmor = true; break;
+            case ItemFlag::THORN_MANTLE:
+                player.hasSpikedArmor = true;
+                player.hasThornMantle = true;
+                break;
+            case ItemFlag::REGEN_CHARM:
+                player.hasRegenCharm = true;
+                break;
             case ItemFlag::SECOND_WIND: player.hasSecondWind = true; break;
             case ItemFlag::IRON_WILL: player.hasIronWill = true; break;
             case ItemFlag::COMPASS: player.hasCompass = true; break;
@@ -147,6 +167,17 @@ namespace {
                 ApplyHollowCoreBurst(player);
                 break;
             case ItemFlag::SECOND_SUN: player.hasSecondSun = true; break;
+            case ItemFlag::BURST_SHOTS: player.hasBurstShots = true; break;
+            case ItemFlag::ROCKET_ROUNDS: player.hasRocketShots = true; break;
+            case ItemFlag::LASER_LENS: player.hasLaserShots = true; break;
+            case ItemFlag::CRIMSON_RAY:
+                player.hasCrimsonRay = true;
+                player.hasChargedShots = true;
+                break;
+            case ItemFlag::BLADE_ARC:
+                player.hasBladeArc = true;
+                player.hasChargedShots = true;
+                break;
             case ItemFlag::UNKNOWN:
             default:
                 break;

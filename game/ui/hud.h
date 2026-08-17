@@ -12,7 +12,7 @@ namespace HUD {
     void DrawFloorTransition(int floor, int maxFloors, const char* treasureLine, bool canContinue);
     void DrawGameOverBanner();
     void DrawRoomClearedBanner();
-    void DrawBossHealthBar(const Boss& boss);
+    void DrawBossHealthBar(const Boss& boss, const char* bossName);
     void DrawFloorMap(const Dungeon& dungeon, const Player& player);
     void DrawItemPreview(const char* name, const char* desc);
 }

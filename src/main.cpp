@@ -23,10 +23,10 @@
 #include "../engine/collision.h"
 
 namespace {
-    void ResolvePlayerSolidCollision(Player& player, const Rect& obstacleRect) {
-        Rect pr = player.GetRect();
-        float pLeft = pr.x, pRight = pr.x + pr.w;
-        float pTop = pr.y, pBottom = pr.y + pr.h;
+    void ResolveEntitySolidCollision(Vec2& pos, float entityW, float entityH, const Rect& obstacleRect) {
+        Rect entityRect = { pos.x, pos.y, entityW, entityH };
+        float pLeft = entityRect.x, pRight = entityRect.x + entityRect.w;
+        float pTop = entityRect.y, pBottom = entityRect.y + entityRect.h;
         float oLeft = obstacleRect.x, oRight = obstacleRect.x + obstacleRect.w;
         float oTop = obstacleRect.y, oBottom = obstacleRect.y + obstacleRect.h;
 
@@ -35,14 +35,18 @@ namespace {
         if (overlapX <= 0.0f || overlapY <= 0.0f) return;
 
         if (overlapX < overlapY) {
-            float playerCenterX = pLeft + pr.w * 0.5f;
+            float entityCenterX = pLeft + entityRect.w * 0.5f;
             float obstacleCenterX = oLeft + obstacleRect.w * 0.5f;
-            player.pos.x += (playerCenterX < obstacleCenterX) ? -overlapX : overlapX;
+            pos.x += (entityCenterX < obstacleCenterX) ? -overlapX : overlapX;
         } else {
-            float playerCenterY = pTop + pr.h * 0.5f;
+            float entityCenterY = pTop + entityRect.h * 0.5f;
             float obstacleCenterY = oTop + obstacleRect.h * 0.5f;
-            player.pos.y += (playerCenterY < obstacleCenterY) ? -overlapY : overlapY;
+            pos.y += (entityCenterY < obstacleCenterY) ? -overlapY : overlapY;
         }
+    }
+
+    void ResolvePlayerSolidCollision(Player& player, const Rect& obstacleRect) {
+        ResolveEntitySolidCollision(player.pos, (float)player.size, (float)player.size, obstacleRect);
     }
 
     void BuildTreasureSenseLine(const Dungeon& dungeon, const Player& player, char* out, size_t outSize) {
@@ -162,6 +166,7 @@ namespace {
     int ShopPriceForItem(const ItemTemplate* item, int floor) {
         if (!item) return 0;
         int base = 8 + floor * 2;
+        base += (item->tier - 1) * 4;
         switch (item->type) {
             case ItemType::UNLOCK: base += 8; break;
             case ItemType::PROC_SYNERGY: base += 6; break;
@@ -174,6 +179,10 @@ namespace {
         }
         if (base < 1) base = 1;
         return base;
+    }
+
+    int PickItemForPools(const char* pools, int minTier, int maxTier) {
+        return ItemDatabase::Pick(pools, minTier, maxTier);
     }
 }
 
@@ -206,6 +215,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     std::vector<Bomb> bombs;
     float screenShakeTimer = 0.0f;
     float screenShakeStrength = 0.0f;
+    float worldTime = 0.0f;
 
     const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
@@ -261,6 +271,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     auto SpawnTreasurePickups = [&](Room& room) {
         room.pickups.clear();
+        constexpr float ITEM_MIMIC_CHANCE = 0.10f;
 
         const Vec2 center = {
             room.x + room.width * 0.5f - 4.0f,
@@ -283,6 +294,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 center.x + offsets[i % 5].x + (float)(i / 5) * 8.0f,
                 center.y + offsets[i % 5].y
             };
+            pickup.isMimic = RNG::Chance(ITEM_MIMIC_CHANCE);
             room.pickups.push_back(pickup);
         }
     };
@@ -298,6 +310,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         RoomPickup pickup;
         pickup.type = RoomPickupType::CHEST;
         pickup.chestType = ChestType::DEVIL;
+        pickup.itemId = PickItemForPools("CURSE,BOSS,CHEST", 3, 5);
         pickup.pos = { center.x, center.y };
         room.pickups.push_back(pickup);
     };
@@ -335,8 +348,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         int itemCount = ItemDatabase::Count();
         if (itemCount > 0) {
             int shopItems = std::min(2, itemCount);
+            int maxTier = std::clamp(2 + dungeon.CurrentFloor(), 2, 5);
             for (int i = 0; i < shopItems; ++i) {
-                int itemId = RNG::Range(0, itemCount - 1);
+                int itemId = PickItemForPools("SHOP,TREASURE,CHEST", 1, maxTier);
+                if (itemId < 0) itemId = RNG::Range(0, itemCount - 1);
                 const ItemTemplate* item = ItemDatabase::Get(itemId);
                 AddShopPickup(RoomPickupType::ITEM, itemId, ShopPriceForItem(item, dungeon.CurrentFloor()));
             }
@@ -489,6 +504,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         boss = Boss{};
         boss.alive = false;
 
+        if (player.hasShieldCharm) {
+            player.shieldCharges = std::max(player.shieldCharges, player.hasBulwarkCore ? 2 : 1);
+        }
+        if (player.hasMirrorWard) {
+            player.mirrorWardCharges = 1;
+        }
+        if (player.hasRegenCharm && player.hp < player.maxHp) {
+            player.hp = std::min(player.maxHp, player.hp + 1);
+            player.actionFlashTimer = std::max(player.actionFlashTimer, 0.05f);
+        }
+
         if ((room.type == RoomType::NORMAL || room.IsEnemyCurseRoom()) && !room.cleared) {
             if (!room.enemySpawnList.empty()) {
                 for (int i = 0; i < (int)room.enemySpawnList.size(); ++i) {
@@ -573,7 +599,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             return RNG::Range(0, itemCount - 1);
         };
 
+        auto SpawnMimicAmbush = [&](const RoomPickup& pickup) -> bool {
+            if (!EnemyDatabase::Exists("Mimic")) return false;
+            Enemy mimic = EnemyDatabase::Spawn("Mimic", { pickup.pos.x - 1.0f, pickup.pos.y - 1.0f });
+            ScaleEnemyForFloor(mimic);
+            mimic.spawnDelayRemaining = 0.10f;
+            mimic.attackDelayRemaining = 0.35f;
+            enemies.push_back(mimic);
+            AddScreenShake(0.10f, 1.2f);
+            return true;
+        };
+
+        auto SpawnItemMimicAmbush = [&](const RoomPickup& pickup) -> bool {
+            if (!EnemyDatabase::Exists("ItemMimic")) return SpawnMimicAmbush(pickup);
+            Enemy mimic = EnemyDatabase::Spawn("ItemMimic", { pickup.pos.x - 1.0f, pickup.pos.y - 1.0f });
+            ScaleEnemyForFloor(mimic);
+            mimic.spawnDelayRemaining = 0.10f;
+            mimic.attackDelayRemaining = 0.35f;
+            mimic.mimicsItemPickup = true;
+            mimic.mimicItemId = pickup.itemId;
+            enemies.push_back(mimic);
+            AddScreenShake(0.10f, 1.2f);
+            return true;
+        };
+
         auto OpenChest = [&](RoomPickup& pickup) -> bool {
+            if (RNG::Chance(0.12f)) {
+                return SpawnMimicAmbush(pickup);
+            }
+
             int rewardItemId = (pickup.itemId >= 0) ? pickup.itemId : PickFallbackItemId();
 
             switch (pickup.chestType) {
@@ -697,6 +751,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     if (pickup.cost > 0 && !SpendCoins(player, pickup.cost)) {
                         continue;
                     }
+                    if (pickup.isMimic) {
+                        if (!SpawnItemMimicAmbush(pickup)) continue;
+                        pickup.collected = true;
+                        break;
+                    }
                     if (pickup.itemId >= 0) {
                         GrantItemById(pickup.itemId);
                     }
@@ -780,7 +839,158 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         return false;
     };
-    
+
+    auto SpawnRockReward = [&](Room& room, const RoomRock& rock) {
+        RoomPickup pickup;
+        pickup.pos = { rock.pos.x + rock.w * 0.5f - 4.0f, rock.pos.y + rock.h * 0.5f - 4.0f };
+        if (rock.type == RoomRockType::BOMBABLE_HEART) {
+            pickup.type = RoomPickupType::HEART;
+        } else {
+            pickup.type = RoomPickupType::COIN;
+            pickup.amount = std::max(1, rock.rewardAmount);
+        }
+        room.pickups.push_back(pickup);
+    };
+
+    auto BreakRoomRock = [&](Room& room, RoomRock& rock, bool fromExplosion) {
+        if (rock.broken || !rock.IsBombable()) return false;
+        rock.broken = true;
+        SpawnRockReward(room, rock);
+        AddScreenShake(fromExplosion ? 0.10f : 0.06f, fromExplosion ? 0.9f : 0.6f);
+        return true;
+    };
+
+    auto ResolveAgainstRoomRocks = [&](Room& room, Vec2& pos, float entityW, float entityH) {
+        for (int pass = 0; pass < 2; ++pass) {
+            bool moved = false;
+            for (const auto& rock : room.rocks) {
+                if (rock.broken) continue;
+                Rect rockRect = rock.GetRect();
+                Vec2 before = pos;
+                ResolveEntitySolidCollision(pos, entityW, entityH, rockRect);
+                if (before.x != pos.x || before.y != pos.y) moved = true;
+            }
+            if (!moved) break;
+        }
+    };
+
+    auto FindSafeTeleportPos = [&](const Room& room) -> Vec2 {
+        static const Vec2 candidates[] = {
+            { 46.0f, 40.0f }, { 274.0f, 40.0f },
+            { 46.0f, 120.0f }, { 274.0f, 120.0f },
+            { 120.0f, 52.0f }, { 200.0f, 52.0f },
+            { 120.0f, 116.0f }, { 200.0f, 116.0f }
+        };
+
+        std::vector<int> options;
+        for (int i = 0; i < (int)(sizeof(candidates) / sizeof(candidates[0])); ++i) {
+            Rect test = { candidates[i].x, candidates[i].y, (float)player.size, (float)player.size };
+            bool blocked = false;
+            for (const auto& rock : room.rocks) {
+                if (rock.broken) continue;
+                if (Collision::CheckAABB(test, rock.GetRect())) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) {
+                for (const auto& trap : room.traps) {
+                    if (trap.triggered) continue;
+                    if (Collision::CheckAABB(test, trap.GetRect())) {
+                        blocked = true;
+                        break;
+                    }
+                }
+            }
+            if (!blocked) options.push_back(i);
+        }
+
+        if (options.empty()) {
+            return { room.x + room.width * 0.5f, room.y + room.height * 0.5f };
+        }
+
+        int choice = options[RNG::Range(0, (int)options.size() - 1)];
+        return candidates[choice];
+    };
+
+    auto PickEligibleEnemyIndexForFloor = [&]() -> int {
+        const int enemyCount = EnemyDatabase::Count();
+        if (enemyCount <= 0) return -1;
+
+        std::vector<int> eligible;
+        for (int i = 0; i < enemyCount; ++i) {
+            if (EnemyDatabase::Tier(i) <= dungeon.CurrentFloor()) eligible.push_back(i);
+        }
+        if (eligible.empty()) {
+            for (int i = 0; i < enemyCount; ++i) eligible.push_back(i);
+        }
+        if (eligible.empty()) return -1;
+        return eligible[RNG::Range(0, (int)eligible.size() - 1)];
+    };
+
+    auto SpawnTrapWave = [&](Room& room, const Vec2& center, int count) {
+        int enemyIndex = PickEligibleEnemyIndexForFloor();
+        if (enemyIndex < 0) return;
+
+        room.cleared = false;
+        room.gateOpen = false;
+
+        static const Vec2 offsets[] = {
+            { -14.0f, 0.0f }, { 14.0f, 0.0f }, { 0.0f, -14.0f }, { 0.0f, 14.0f }
+        };
+
+        for (int i = 0; i < count; ++i) {
+            Vec2 spawnPos = {
+                center.x + offsets[i % 4].x,
+                center.y + offsets[i % 4].y
+            };
+            Enemy enemy = EnemyDatabase::Spawn(enemyIndex, spawnPos);
+            ScaleEnemyForFloor(enemy);
+            MakeSpecialEnemy(enemy);
+            enemies.push_back(enemy);
+            enemyIndex = PickEligibleEnemyIndexForFloor();
+            if (enemyIndex < 0) break;
+        }
+
+        AddScreenShake(0.12f, 1.0f);
+    };
+
+    auto TriggerTrap = [&](Room& room, RoomTrap& trap) {
+        if (trap.triggered) return;
+        trap.triggered = true;
+
+        Vec2 trapCenter = { trap.pos.x + trap.w * 0.5f, trap.pos.y + trap.h * 0.5f };
+
+        switch (trap.type) {
+            case RoomTrapType::POISON:
+                player.poisonTimer = std::max(player.poisonTimer, 3.0f);
+                player.poisonTickTimer = 0.5f;
+                player.poisonDamage = std::max(player.poisonDamage, (dungeon.CurrentFloor() >= 4) ? 2 : 1);
+                AddScreenShake(0.08f, 0.8f);
+                break;
+            case RoomTrapType::TELEPORT: {
+                float safeChance = std::clamp(0.35f + 0.08f * (float)player.luck, 0.15f, 0.90f);
+                Vec2 target = (RNG::Chance(safeChance)) ? FindSafeTeleportPos(room) : Vec2{
+                    room.x + 18.0f + RNG::Range(0, 8) * 28.0f,
+                    room.y + 18.0f + RNG::Range(0, 4) * 28.0f
+                };
+                player.pos = room.ClampPlayerToRoom(target, (float)player.size, (float)player.size);
+                ResolveAgainstRoomRocks(room, player.pos, (float)player.size, (float)player.size);
+                AddScreenShake(0.10f, 1.0f);
+                break;
+            }
+            case RoomTrapType::SUMMON: {
+                int spawnCount = 2 + std::min(2, dungeon.CurrentFloor() / 2);
+                SpawnTrapWave(room, trapCenter, spawnCount);
+                break;
+            }
+            case RoomTrapType::SPIKE:
+            default:
+                DamagePlayer((dungeon.CurrentFloor() >= 3) ? 2 : 1);
+                break;
+        }
+    };
+
     const float itemPreviewRadius = 20.0f;
 
     auto FindNearbyPreview = [&](const Room& room, const char*& outName, const char*& outDesc) -> bool {
@@ -882,6 +1092,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             activeRoom = &dungeon.CurrentRoom();
             Room* room = activeRoom;
 
+            worldTime += dt;
             PlayerLogic::UpdateTimers(player, dt);
             ProjectileSystem::Advance(playerShots, dt, &enemies, (room->type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
             ProjectileSystem::Advance(enemyShots, dt, nullptr, nullptr, &player.pos);
@@ -899,9 +1110,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             activeRoom = &dungeon.CurrentRoom();
             room = activeRoom;
             player.pos = room->ClampPlayerToRoom(player.pos, (float)player.size, (float)player.size);
+            ResolveAgainstRoomRocks(*room, player.pos, (float)player.size, (float)player.size);
             PlayerLogic::HandleShooting(player, dt, playerShots);
 
-            if (Input::IsPressed('B') && player.bombCount > 0) {
+            if ((Input::IsPressed('B') || Input::IsPressed('E')) && player.bombCount > 0) {
                 player.bombCount--;
             
                 Bomb bomb;
@@ -910,8 +1122,52 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     player.pos.y + player.size * 0.5f - 3.0f
                 };
                 bomb.fuseTimer = bombFuseDuration;
-            
+
                 bombs.push_back(bomb);
+            }
+
+            auto ApplyExplosiveShotsToRocks = [&](std::vector<Projectile>& shots) {
+                for (auto& shot : shots) {
+                    if (!shot.alive || !shot.explosive) continue;
+                    Rect shotRect = shot.GetRect(projectileSize);
+                    for (auto& rock : room->rocks) {
+                        if (rock.broken) continue;
+                        if (!Collision::CheckAABB(shotRect, rock.GetRect())) continue;
+                        if (rock.IsBombable()) {
+                            BreakRoomRock(*room, rock, true);
+                        }
+                        shot.alive = false;
+                        break;
+                    }
+                }
+
+                shots.erase(
+                    std::remove_if(
+                        shots.begin(),
+                        shots.end(),
+                        [](const Projectile& p) { return !p.alive; }),
+                    shots.end()
+                );
+            };
+
+            ApplyExplosiveShotsToRocks(playerShots);
+            ApplyExplosiveShotsToRocks(enemyShots);
+
+            for (auto& trap : room->traps) {
+                if (trap.triggered) continue;
+                if (!Collision::CheckAABB(player.GetRect(), trap.GetRect())) continue;
+                trap.triggered = true;
+
+                if (trap.type == RoomTrapType::POISON) {
+                    DamagePlayer(1);
+                    AddScreenShake(0.08f, 0.8f);
+                } else {
+                    player.pos = FindSafeTeleportPos(*room);
+                    player.pos = room->ClampPlayerToRoom(player.pos, (float)player.size, (float)player.size);
+                    ResolveAgainstRoomRocks(*room, player.pos, (float)player.size, (float)player.size);
+                    AddScreenShake(0.10f, 1.0f);
+                }
+                break;
             }
             
             for (auto& bomb : bombs) {
@@ -953,6 +1209,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                 enemy.alive = false;
                         }
                     }
+
+                    for (auto& rock : room->rocks) {
+                        if (rock.broken || !rock.IsBombable()) continue;
+                        Vec2 rockCenter = {
+                            rock.pos.x + rock.w * 0.5f,
+                            rock.pos.y + rock.h * 0.5f
+                        };
+                        float dx = rockCenter.x - bombCenter.x;
+                        float dy = rockCenter.y - bombCenter.y;
+                        if (dx * dx + dy * dy <= bombExplosionRadius * bombExplosionRadius) {
+                            BreakRoomRock(*room, rock, true);
+                        }
+                    }
             
                     if (room->type == RoomType::BOSS && boss.alive) {
                         Vec2 bossCenter = {
@@ -991,17 +1260,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if ((room->type == RoomType::NORMAL || room->IsEnemyCurseRoom()) && !room->cleared) {
                     bool anyAlive = false;
                     std::vector<Enemy> spawnedEnemies;
-                   for (auto& enemy : enemies) {
+                  for (auto& enemy : enemies) {
                         EnemyAI::Update(enemy, player.pos, dt, enemies, spawnedEnemies, enemyShots);
                         Vec2 preClampPos = enemy.pos;
                         enemy.pos = room->ClampToRoom(enemy.pos, enemy.w, enemy.h);
+                        ResolveAgainstRoomRocks(*room, enemy.pos, enemy.w, enemy.h);
                         if (enemy.bouncesOffWalls && enemy.isCharging) {
                             if (enemy.pos.x != preClampPos.x) enemy.chargeDir.x = -enemy.chargeDir.x;
                             if (enemy.pos.y != preClampPos.y) enemy.chargeDir.y = -enemy.chargeDir.y;
                         }
 
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, enemy, projectileSize,
-                                                                  spawnedEnemies, enemyShots, dt, &player);
+                                                                  spawnedEnemies, room->pickups, enemyShots, dt, &player);
 
                         if (enemy.alive && Collision::CheckAABB(player.GetRect(), enemy.GetRect())) {
                             ResolvePlayerSolidCollision(player, enemy.GetRect());
@@ -1009,8 +1279,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                 DamagePlayer(ContactDamageFor(enemy));
                             }
                             if (player.hasSpikedArmor && player.spikedArmorTickTimer <= 0.0f) {
-                                player.spikedArmorTickTimer = 0.4f;
-                                enemy.hp -= 1;
+                                float thornCooldown = player.hasThornMantle ? 0.25f : 0.4f;
+                                int thornDamage = player.hasThornMantle ? 2 : 1;
+                                player.spikedArmorTickTimer = thornCooldown;
+                                enemy.hp -= thornDamage;
                                 if (enemy.hp <= 0) enemy.alive = false;
                             }
                         }
@@ -1053,13 +1325,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         EnemyAI::Update(add, player.pos, dt, enemies, scratchSpawned, enemyShots);
                         Vec2 preClampPos = add.pos;
                         add.pos = room->ClampToRoom(add.pos, add.w, add.h);
+                        ResolveAgainstRoomRocks(*room, add.pos, add.w, add.h);
                         if (add.bouncesOffWalls && add.isCharging) {
                             if (add.pos.x != preClampPos.x) add.chargeDir.x = -add.chargeDir.x;
                             if (add.pos.y != preClampPos.y) add.chargeDir.y = -add.chargeDir.y;
                         }
 
                         ProjectileSystem::UpdateAndCollideVsEnemy(playerShots, enemies, add, projectileSize,
-                                                                  scratchSpawned, enemyShots, dt, &player);
+                                                                  scratchSpawned, room->pickups, enemyShots, dt, &player);
 
                         if (add.alive && Collision::CheckAABB(player.GetRect(), add.GetRect())) {
                             ResolvePlayerSolidCollision(player, add.GetRect());
@@ -1067,15 +1340,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                 DamagePlayer(ContactDamageFor(add));
                             }
                             if (player.hasSpikedArmor && player.spikedArmorTickTimer <= 0.0f) {
-                                player.spikedArmorTickTimer = 0.4f;
-                                add.hp -= 1;
+                                float thornCooldown = player.hasThornMantle ? 0.25f : 0.4f;
+                                int thornDamage = player.hasThornMantle ? 2 : 1;
+                                player.spikedArmorTickTimer = thornCooldown;
+                                add.hp -= thornDamage;
                                 if (add.hp <= 0) add.alive = false;
                             }
                         }
                     }
-                                        enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-                                                 [](const Enemy& e) { return !e.alive; }),
-                                 enemies.end());
+                    enemies.erase(
+                        std::remove_if(
+                            enemies.begin(),
+                            enemies.end(),
+                            [](const Enemy& e) { return !e.alive; }),
+                        enemies.end()
+                    );
 
                     ProjectileSystem::UpdateOrbiters(player, dt, &enemies, &boss);
 
@@ -1092,10 +1371,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                             DamagePlayer(dmg);
                         }
                         if (player.hasSpikedArmor && player.spikedArmorTickTimer <= 0.0f) {
-                            player.spikedArmorTickTimer = 0.4f;
-                            boss.hp -= 1;
+                            float thornCooldown = player.hasThornMantle ? 0.25f : 0.4f;
+                            int thornDamage = player.hasThornMantle ? 2 : 1;
+                            player.spikedArmorTickTimer = thornCooldown;
+                            boss.hp -= thornDamage;
                             if (boss.hp <= 0) { boss.hp = 0; boss.alive = false; }
                         }
+                    }
+
+                    if (boss.alive) {
+                        boss.pos = room->ClampToRoom(boss.pos, boss.w, boss.h);
+                        ResolveAgainstRoomRocks(*room, boss.pos, boss.w, boss.h);
                     }
 
                     for (auto& hazard : boss.hazards) {
@@ -1213,6 +1499,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             } else {
                 Renderer::DrawRect(ex, ry, (int)wt, rh, wallColor);
             }
+
+            for (const auto& rock : wr.rocks) {
+                if (rock.broken) continue;
+                uint32_t rockColor = 0xFF777777;
+                if (rock.type == RoomRockType::BOMBABLE_COIN) rockColor = 0xFF8B6B3E;
+                if (rock.type == RoomRockType::BOMBABLE_HEART) rockColor = 0xFF9E4B5F;
+                Renderer::DrawRect((int)(rock.pos.x + shakeOffset.x), (int)(rock.pos.y + shakeOffset.y),
+                                   (int)rock.w, (int)rock.h, rockColor);
+                if (rock.type != RoomRockType::INDESTRUCTIBLE) {
+                    Renderer::DrawRect((int)(rock.pos.x + shakeOffset.x) + 3,
+                                       (int)(rock.pos.y + shakeOffset.y) + 3,
+                                       (int)rock.w - 6, (int)rock.h - 6, 0xFF2A1D14);
+                }
+            }
+
+            for (const auto& trap : wr.traps) {
+                if (trap.triggered) continue;
+                uint32_t trapColor = (trap.type == RoomTrapType::POISON) ? 0xFF5FD15F : 0xFF7A63FF;
+                Renderer::DrawRect((int)(trap.pos.x + shakeOffset.x), (int)(trap.pos.y + shakeOffset.y),
+                                   (int)trap.w, (int)trap.h, trapColor);
+                Renderer::DrawRect((int)(trap.pos.x + shakeOffset.x) + 3,
+                                   (int)(trap.pos.y + shakeOffset.y) + 3,
+                                   (int)trap.w - 6, (int)trap.h - 6,
+                                   (trap.type == RoomTrapType::POISON) ? 0xFF174B17 : 0xFF26155A);
+            }
         }
 
         uint32_t playerColor = player.IsInvincible() ? 0xFFFF8888 : 0xFF00FF88;
@@ -1223,6 +1534,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         Renderer::DrawRect((int)(player.pos.x + shakeOffset.x), (int)(player.pos.y + shakeOffset.y),
                            player.size, player.size, playerColor);
 
+        if (player.hasSecondSun) {
+            Vec2 playerCenter = { player.pos.x + player.size / 2.0f, player.pos.y + player.size / 2.0f };
+            Vec2 sunPos = {
+                playerCenter.x + std::cos(player.secondSunAngle) * 28.0f,
+                playerCenter.y + std::sin(player.secondSunAngle) * 28.0f
+            };
+            int sunX = (int)std::lround(sunPos.x + shakeOffset.x);
+            int sunY = (int)std::lround(sunPos.y + shakeOffset.y);
+            Renderer::DrawRect(sunX - 3, sunY - 3, 6, 6, 0xFFFFFF99);
+            Renderer::DrawRect(sunX - 1, sunY - 1, 2, 2, 0xFFFFFFFF);
+        }
+
         if (roomPtr) {
             for (const auto& pickup : roomPtr->pickups) {
                 if (pickup.collected) continue;
@@ -1230,7 +1553,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 uint32_t color = 0xFFFFC84D;
                 int size = 8;
                 switch (pickup.type) {
-                    case RoomPickupType::ITEM:  color = 0xFFFFC84D; size = 8; break;
+                    case RoomPickupType::ITEM:  color = pickup.isMimic ? 0xFFB04A4A : 0xFFFFC84D; size = 8; break;
                     case RoomPickupType::HEART: color = 0xFFFF4D77; size = 8; break;
                     case RoomPickupType::BOMB:  color = 0xFF333333; size = 9; break;
                     case RoomPickupType::KEY:   color = 0xFF66FFFF; size = 8; break;
@@ -1242,6 +1565,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                 Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x), (int)(pickup.pos.y + shakeOffset.y),
                                    size, size, color);
+                if (pickup.type == RoomPickupType::ITEM && pickup.isMimic) {
+                    float pulse = 0.5f + 0.5f * std::sin(worldTime * 12.0f + pickup.pos.x * 0.27f + pickup.pos.y * 0.11f);
+                    int x = (int)(pickup.pos.x + shakeOffset.x);
+                    int y = (int)(pickup.pos.y + shakeOffset.y);
+                    uint32_t outline = (pulse > 0.5f) ? 0xFF3B0A0A : 0xFF6A1515;
+                    Renderer::DrawRect(x - 1, y - 1, size + 2, size + 2, outline);
+                    Renderer::DrawRect(x + 1, y + 1, size - 2, size - 2, 0xFF1D0505);
+                    Renderer::DrawRect(x + 2, y + 2, 2, 2, 0xFF000000);
+                    Renderer::DrawRect(x + size - 4, y + 2, 2, 2, 0xFF000000);
+                    Renderer::DrawRect(x + 2, y + size - 3, size - 4, 1, 0xFF000000);
+                }
                 if (pickup.type == RoomPickupType::EXIT) {
                     Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x) + 2, (int)(pickup.pos.y + shakeOffset.y) + 2,
                                        size - 4, size - 4, 0xFF332211);
@@ -1310,7 +1644,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     case AIType::SHOOTER:  color = 0xFFFF9933; break;
                     case AIType::CHARGER:  color = 0xFFFFCC33; break;
                     case AIType::SUMMONER: color = 0xFFCC66FF; break;
+                    case AIType::SPAWNER:  color = 0xFF66CCCC; break;
                     case AIType::EXPLODER: color = 0xFF33DD66; break;
+                    case AIType::MIMIC:    color = 0xFF8B5A2B; break;
                     case AIType::CHASER:
                     default:                color = 0xFFFF3333; break;
                 }
@@ -1329,19 +1665,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x) - 1, (int)(enemy.pos.y + shakeOffset.y) - 1,
                                        (int)enemy.w + 2, (int)enemy.h + 2, 0xFFAADDFF);
                 }
-                Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
-                                   (int)enemy.w, (int)enemy.h, color);
+                if (enemy.aiType == AIType::MIMIC) {
+                    Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
+                                       (int)enemy.w, (int)enemy.h, color);
+                    Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
+                                       (int)enemy.w, 4, 0xFFC78A4A);
+                    Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x) + 3,
+                                       (int)(enemy.pos.y + shakeOffset.y) + 5,
+                                       (int)enemy.w - 6, 2, 0xFF2B1608);
+                } else {
+                    Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
+                                       (int)enemy.w, (int)enemy.h, color);
+                }
             }
         }
 
         if (roomPtr && roomPtr->type == RoomType::BOSS && boss.alive) {
+            const BossTemplate* bossTemplate = BossDatabase::Get(boss.variant % std::max(1, BossDatabase::Count()));
             uint32_t baseColor = 0xFFAA33FF;
             if (boss.variant == 1) baseColor = 0xFFFF9933;
             if (boss.variant == 2) baseColor = 0xFF33FFCC;
+            if (boss.variant >= 10) baseColor = 0xFFFF77AA;
             uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : baseColor;
             Renderer::DrawRect((int)(boss.pos.x + shakeOffset.x), (int)(boss.pos.y + shakeOffset.y),
                                (int)boss.w, (int)boss.h, bossColor);
-            HUD::DrawBossHealthBar(boss);
+            HUD::DrawBossHealthBar(boss, bossTemplate ? bossTemplate->name : nullptr);
         }
 
         ProjectileSystem::Draw(playerShots, (int)projectileSize, 0xFFFFFF00, shakeOffset);

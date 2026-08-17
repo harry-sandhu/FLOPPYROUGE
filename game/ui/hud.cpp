@@ -3,6 +3,7 @@
 #include "../../engine/text.h"
 #include "../dungeon/dungeon.h"
 #include <cstdio>
+#include <cstring>
 #include <climits>
 #include <queue>
 
@@ -64,6 +65,30 @@ namespace {
         }
         return "?";
     }
+
+    void ShotModeText(const Player& player, char* out, size_t size) {
+        out[0] = '\0';
+
+        auto append = [&](const char* mode) {
+            if (out[0] == '\0') {
+                std::snprintf(out, size, "%s", mode);
+                return;
+            }
+            size_t len = std::strlen(out);
+            if (len + 1 >= size) return;
+            std::snprintf(out + len, size - len, "+%s", mode);
+        };
+
+        if (player.hasRocketShots) append("ROCKET");
+        if (player.hasBurstShots) append("BURST");
+        if (player.hasLaserShots) append("LASER");
+        if (player.hasCrimsonRay) append("RAY");
+        if (player.hasBladeArc) append("BLADE");
+
+        if (out[0] == '\0') {
+            std::snprintf(out, size, "BULLET");
+        }
+    }
 }
 
 void DrawHealthBar(const Player& player) {
@@ -82,8 +107,11 @@ void DrawHealthBar(const Player& player) {
 void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& room, const Boss* boss) {
     char line[64];
 
-    std::snprintf(line, sizeof(line), "DMG %d FIRE %.1f SPD %d RNG %.0f",
-                  player.damage, player.fireRate, (int)player.moveSpeed, player.range);
+    std::snprintf(line, sizeof(line), "DMG %d x%.2f FIRE %.1f x%.2f SPD %d RNG %.0f DEF %.0f%%",
+                  player.damage, player.damageMultiplier,
+                  player.fireRate, player.fireRateMultiplier,
+                  (int)player.moveSpeed, player.range,
+                  player.damageReduction * 100.0f);
     Text::DrawString(line, 5, 24, 0xFFEAEAEA, 1);
 
     std::snprintf(line, sizeof(line), "LCK %d FLOOR %d/%d", player.luck, dungeon.CurrentFloor(), dungeon.MaxFloors());
@@ -108,8 +136,13 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
     std::snprintf(line, sizeof(line), "ITEMS %d", (int)player.ownedItemIds.size());
     Text::DrawString(line, 5, 60, 0xFFEAEAEA, 1);
 
-    std::snprintf(line, sizeof(line), "COINS %d K %d B %d", player.CoinValue(), player.keyCount, player.bombCount);
+    char shotLine[64];
+    ShotModeText(player, shotLine, sizeof(shotLine));
+    std::snprintf(line, sizeof(line), "SHOT %s", shotLine);
     Text::DrawString(line, 5, 69, 0xFFEAEAEA, 1);
+
+    std::snprintf(line, sizeof(line), "COINS %d K %d B %d", player.CoinValue(), player.keyCount, player.bombCount);
+    Text::DrawString(line, 5, 78, 0xFFEAEAEA, 1);
 
     bool hasAnyFx = player.hasHomingShots || player.poisonChance > 0.0f || player.stickyChance > 0.0f ||
         player.piercingChance > 0.0f || player.explosiveChance > 0.0f || player.burnChance > 0.0f ||
@@ -119,7 +152,8 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
         player.lifestealChance > 0.0f || player.markChance > 0.0f || player.wallBounceChance > 0.0f ||
         player.enemyBounceChance > 0.0f || player.splitChance > 0.0f || player.hasVoidHeart ||
         player.hasTwinSoul || player.hasParasiteCore || player.hasLastShot || player.hasDevastator ||
-        player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites || player.hasChargedShots;
+        player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites || player.hasChargedShots ||
+        player.hasBurstShots || player.hasMirrorWard || player.hasPhoenixFeather;
 
     if (hasAnyFx) {
         char fx[160] = {};
@@ -143,15 +177,17 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
                       player.splitChance > 0.0f ? " SPL" : "",
                       player.hasVoidHeart ? " VOID" : "",
                       player.hasTwinSoul ? " TWIN" : "",
+                      player.hasMirrorWard ? " WARD" : "",
+                      player.hasPhoenixFeather ? " 1UP" : "",
                       (player.hasParasiteCore || player.hasLastShot || player.hasDevastator ||
                        player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites ||
-                       player.hasChargedShots) ? " +" : "");
-        Text::DrawString(fx, 5, 78, 0xFFBBBBFF, 1);
+                       player.hasChargedShots || player.hasBurstShots) ? " +" : "");
+        Text::DrawString(fx, 5, 87, 0xFFBBBBFF, 1);
     }
 
     if (player.pickupMessageTimer > 0.0f && player.pickupName[0] != '\0') {
         std::snprintf(line, sizeof(line), "PICKUP %s", player.pickupName);
-        Text::DrawString(line, 5, 87, 0xFFFFFF88, 1);
+        Text::DrawString(line, 5, 96, 0xFFFFFF88, 1);
     }
 
     if (boss && boss->alive) {
@@ -237,7 +273,13 @@ void DrawRoomClearedBanner() {
     Text::DrawString(msg, (320 - w) / 2, 85, 0xFF44FF88, 1);
 }
 
-void DrawBossHealthBar(const Boss& boss) {
+void DrawBossHealthBar(const Boss& boss, const char* bossName) {
+    const char* name = (bossName && bossName[0] != '\0') ? bossName : "BOSS";
+    char line[64];
+    std::snprintf(line, sizeof(line), "%s  PHASE %d%s", name, boss.phase, boss.isCharging ? " CHARGE" : "");
+    int w = Text::MeasureWidth(line, 1);
+    Text::DrawString(line, (320 - w) / 2, 0, 0xFFFFFFFF, 1);
+
     int barWidth = 200;
     int fillWidth = (int)(barWidth * (boss.hp / (float)boss.maxHp));
     int barX = (320 - barWidth) / 2;

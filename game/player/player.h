@@ -17,9 +17,11 @@ struct Player {
     int size = 10;
 
     int damage = 10;
+    float damageMultiplier = 1.0f;
     float shotSpeed = 140.0f;
     float range = 150.0f;
     float fireRate = 3.0f;
+    float fireRateMultiplier = 1.0f;
     int projectileCount = 1;
     float moveSpeed = 60.0f;
     int luck = 0;
@@ -50,6 +52,7 @@ struct Player {
     float wallBounceChance = 0.0f;
     float enemyBounceChance = 0.0f;
     float splitChance = 0.0f;
+    float damageReduction = 0.0f;
 
     static constexpr float CRIT_MULTIPLIER = 2.0f;
 
@@ -58,6 +61,9 @@ struct Player {
     float dashCooldownRemaining = 0.0f;
     float dashTimeRemaining = 0.0f;
     float actionFlashTimer = 0.0f;
+    float poisonTimer = 0.0f;
+    float poisonTickTimer = 0.0f;
+    int poisonDamage = 0;
     float pickupMessageTimer = 0.0f;
     char pickupName[32] = {};
 
@@ -75,12 +81,24 @@ struct Player {
     bool hasChaosEngine = false;
     bool hasSatellites = false;
     bool hasChargedShots = false;
+    bool hasBurstShots = false;
+    bool hasRocketShots = false;
+    bool hasLaserShots = false;
+    bool hasCrimsonRay = false;
+    bool hasBladeArc = false;
 
     bool hasShieldCharm = false;
+    bool hasBulwarkCore = false;
     int shieldCharges = 0;
+    bool hasMirrorWard = false;
+    int mirrorWardCharges = 0;
     bool hasGuardianAngel = false;
     bool guardianAngelUsed = false;
+    bool hasPhoenixFeather = false;
+    bool phoenixFeatherUsed = false;
     bool hasSpikedArmor = false;
+    bool hasThornMantle = false;
+    bool hasRegenCharm = false;
     float spikedArmorTickTimer = 0.0f;
     bool hasSecondWind = false;
     bool secondWindUsed = false;

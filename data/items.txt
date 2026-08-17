@@ -4,6 +4,8 @@ stat=damage
 mode=add
 value=5
 desc=A bit more punch behind every shot
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [FireRateUp]
 type=stat_mod
@@ -11,6 +13,8 @@ stat=fireRate
 mode=multiply
 value=1.2
 desc=Shoot noticeably faster
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [RangeUp]
 type=stat_mod
@@ -18,6 +22,8 @@ stat=range
 mode=add
 value=30
 desc=Shots travel farther before fading
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MoveBoots]
 type=stat_mod
@@ -25,6 +31,8 @@ stat=moveSpeed
 mode=add
 value=15
 desc=Quicker feet, quicker dodges
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MultiShot]
 type=stat_mod
@@ -32,16 +40,22 @@ stat=projectileCount
 mode=add
 value=1
 desc=Fires an extra projectile per shot
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [DiagonalFire]
 type=unlock
 flag=diagonal_fire
 desc=Unlocks diagonal shooting
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Dash]
 type=unlock
 flag=dash
 desc=Unlocks a short burst dash
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [VitalityUp]
 type=stat_mod
@@ -49,6 +63,8 @@ stat=maxHp
 mode=add
 value=20
 desc=Raises your maximum health
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SwiftShot]
 type=stat_mod
@@ -56,6 +72,8 @@ stat=shotSpeed
 mode=add
 value=25
 desc=Projectiles fly faster
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [QuickFire]
 type=stat_mod
@@ -63,6 +81,8 @@ stat=fireRate
 mode=multiply
 value=1.15
 desc=A modest boost to fire rate
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Barrage]
 type=stat_mod
@@ -70,6 +90,8 @@ stat=projectileCount
 mode=add
 value=1
 desc=Another projectile joins the volley
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [LongStride]
 type=stat_mod
@@ -77,6 +99,8 @@ stat=moveSpeed
 mode=add
 value=10
 desc=A little extra speed underfoot
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [LongSight]
 type=stat_mod
@@ -84,6 +108,8 @@ stat=range
 mode=add
 value=45
 desc=Shots reach much farther
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [GlassCannon]
 type=stat_mod
@@ -94,6 +120,8 @@ stat2=moveSpeed
 mode2=add
 value2=-12
 desc=Big damage, but you move slower
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [CursedVigor]
 type=stat_mod
@@ -104,6 +132,8 @@ stat2=fireRate
 mode2=multiply
 value2=0.9
 desc=Tons of HP, but shots come slower
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [PiercingRounds]
 type=stat_mod
@@ -111,6 +141,8 @@ stat=piercingChance
 mode=add
 value=0.5
 desc=Shots have a chance to pierce foes
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Explosivo]
 type=stat_mod
@@ -118,11 +150,15 @@ stat=explosiveChance
 mode=add
 value=0.45
 desc=Shots may detonate on impact
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [HomingCore]
 type=unlock
 flag=homing
 desc=Unlocks gentle shot homing
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [HomingBoost]
 type=stat_mod
@@ -130,6 +166,8 @@ stat=homingChance
 mode=add
 value=0.4
 desc=Shots home in more reliably
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [StickyShot]
 type=stat_mod
@@ -137,6 +175,8 @@ stat=stickyChance
 mode=add
 value=0.5
 desc=Shots may stick and linger on foes
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ToxinGland]
 type=stat_mod
@@ -144,6 +184,8 @@ stat=poisonChance
 mode=add
 value=0.5
 desc=Shots may poison enemies over time
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [HeavyRounds]
 type=stat_mod
@@ -154,6 +196,8 @@ stat2=fireRate
 mode2=multiply
 value2=0.85
 desc=Hits harder, fires a bit slower
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [AdrenalRush]
 type=stat_mod
@@ -164,6 +208,8 @@ stat2=maxHp
 mode2=add
 value2=-10
 desc=Much faster, but frailer
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [WeepingShallot]
 type=stat_mod
@@ -171,6 +217,8 @@ stat=fireRate
 mode=multiply
 value=1.25
 desc=Tears fall faster than ever
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ThirdEye]
 type=stat_mod
@@ -178,6 +226,8 @@ stat=projectileCount
 mode=add
 value=1
 desc=An extra eye, an extra shot
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [CricketsLeg]
 type=stat_mod
@@ -185,6 +235,8 @@ stat=damage
 mode=add
 value=6
 desc=A sharper, deadlier bite
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [PolyphemusScowl]
 type=stat_mod
@@ -195,6 +247,8 @@ stat2=fireRate
 mode2=multiply
 value2=0.7
 desc=Massive damage, much slower tears
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [GuppysBlessing]
 type=stat_mod
@@ -205,6 +259,8 @@ stat2=luck
 mode2=add
 value2=1
 desc=Heals you and blesses your luck
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MomsOldSpoon]
 type=stat_mod
@@ -212,6 +268,8 @@ stat=magnetChance
 mode=add
 value=0.5
 desc=Shots gently bend toward nearby enemies
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [IpecacVial]
 type=stat_mod
@@ -219,6 +277,8 @@ stat=explosiveChance
 mode=add
 value=0.5
 desc=Every shot risks a small explosion
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [NumberTwo]
 type=stat_mod
@@ -229,6 +289,8 @@ stat2=moveSpeed
 mode2=add
 value2=-5
 desc=Toxic shots, but it slows you down
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [TechLens]
 type=stat_mod
@@ -236,6 +298,8 @@ stat=piercingChance
 mode=add
 value=0.5
 desc=A focusing lens - shots pierce true
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BrokenGlasses]
 type=stat_mod
@@ -246,6 +310,8 @@ stat2=moveSpeed
 mode2=add
 value2=-8
 desc=See farther, but stumble slower
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [RustyKeyring]
 type=stat_mod
@@ -253,6 +319,8 @@ stat=luck
 mode=add
 value=2
 desc=Fortune favors the bold
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [TwistedPacifier]
 type=stat_mod
@@ -263,6 +331,8 @@ stat2=damage
 mode2=add
 value2=-4
 desc=Fires faster, but each shot hits a little lighter
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [CopperLatch]
 type=stat_mod
@@ -270,6 +340,8 @@ stat=luck
 mode=add
 value=1
 desc=A tiny bit of extra fortune
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [RustySprinter]
 type=stat_mod
@@ -277,6 +349,8 @@ stat=moveSpeed
 mode=add
 value=12
 desc=Shoes that still know how to run
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [NeedleTip]
 type=stat_mod
@@ -287,6 +361,8 @@ stat2=shotSpeed
 mode2=add
 value2=18
 desc=Sharper shots that travel farther and faster
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [PaperClip]
 type=stat_mod
@@ -294,6 +370,8 @@ stat=fireRate
 mode=multiply
 value=1.08
 desc=Small speed-up to your firing rhythm
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [WarmSoup]
 type=stat_mod
@@ -301,6 +379,8 @@ stat=heal
 mode=add
 value=2
 desc=Heals a little and keeps you going
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BlackCatEye]
 type=stat_mod
@@ -308,6 +388,8 @@ stat=critChance
 mode=add
 value=0.18
 desc=Better odds of landing a critical shot
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BloodTithe]
 type=stat_mod
@@ -318,6 +400,8 @@ stat2=lifestealChance
 mode2=add
 value2=0.18
 desc=More damage with a little self-repair on hit
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [FrostBit]
 type=stat_mod
@@ -325,6 +409,8 @@ stat=freezeChance
 mode=add
 value=0.32
 desc=Shots can slow enemies into the cold
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ChainCapacitor]
 type=stat_mod
@@ -332,6 +418,8 @@ stat=chainChance
 mode=add
 value=0.35
 desc=Bullets can jump between enemies
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [GravityWell]
 type=stat_mod
@@ -339,6 +427,8 @@ stat=gravityChance
 mode=add
 value=0.30
 desc=Shots tug foes toward the impact point
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [RicochetChip]
 type=stat_mod
@@ -346,6 +436,8 @@ stat=wallBounceChance
 mode=add
 value=0.45
 desc=Shots bounce off walls more often
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MirrorShard]
 type=stat_mod
@@ -353,6 +445,8 @@ stat=enemyBounceChance
 mode=add
 value=0.45
 desc=Bullets can ricochet off enemies
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SplitterLens]
 type=stat_mod
@@ -360,6 +454,8 @@ stat=splitChance
 mode=add
 value=0.30
 desc=Shots may split into more shots
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BoomSeed]
 type=stat_mod
@@ -367,6 +463,8 @@ stat=explosiveChance
 mode=add
 value=0.28
 desc=Explosive shots become much more common
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MagnetCore]
 type=stat_mod
@@ -374,6 +472,8 @@ stat=magnetChance
 mode=add
 value=0.45
 desc=Shots curve toward nearby foes
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [CursedLedger]
 type=stat_mod
@@ -384,6 +484,8 @@ stat2=fireRate
 mode2=multiply
 value2=0.82
 desc=Huge damage, but your firing slows down
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [GlassHeart]
 type=stat_mod
@@ -394,7 +496,8 @@ stat2=damage
 mode2=add
 value2=10
 desc=Fragile health with a dangerous payoff
-
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [VenomLoad]
 type=stat_mod
@@ -405,6 +508,8 @@ stat2=piercingChance
 mode2=add
 value2=0.3
 desc=Toxic, piercing shots that reward stacking procs
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [StickyVenom]
 type=stat_mod
@@ -415,6 +520,8 @@ stat2=stickyChance
 mode2=add
 value2=0.25
 desc=Shots cling and poison on contact
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Overclock]
 type=stat_mod
@@ -425,6 +532,8 @@ stat2=maxHp
 mode2=add
 value2=-15
 desc=Blistering fire rate, thinner skin
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [GildedHeart]
 type=stat_mod
@@ -435,6 +544,8 @@ stat2=heal
 mode2=add
 value2=2
 desc=A sturdier, self-mending heart
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SecondWind]
 type=stat_mod
@@ -445,6 +556,8 @@ stat2=luck
 mode2=add
 value2=2
 desc=Fortune smiles on the wounded
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BunkerStance]
 type=stat_mod
@@ -455,6 +568,8 @@ stat2=moveSpeed
 mode2=add
 value2=-10
 desc=Dig in - more health, less speed
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [TwinBarrel]
 type=stat_mod
@@ -465,6 +580,8 @@ stat2=range
 mode2=add
 value2=20
 desc=An extra barrel with a bit more reach
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ScatterCore]
 type=stat_mod
@@ -475,6 +592,8 @@ stat2=damage
 mode2=add
 value2=-4
 desc=Wide volleys, each shot a little weaker
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [EmberRounds]
 type=stat_mod
@@ -485,6 +604,8 @@ stat2=homingChance
 mode2=add
 value2=0.2
 desc=Seeking shots that occasionally detonate
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Featherweight]
 type=stat_mod
@@ -495,12 +616,15 @@ stat2=range
 mode2=add
 value2=-15
 desc=Fast on your feet, shorter reach
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SynergyCore]
 type=proc_synergy
 per_proc_value=4
 desc=Damage rises with each proc effect you already carry
-
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [FractureCell]
 type=stat_mod
@@ -508,6 +632,8 @@ stat=splitChance
 mode=add
 value=0.35
 desc=Shots split into two on impact
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [RicochetCore]
 type=stat_mod
@@ -515,6 +641,8 @@ stat=wallBounceChance
 mode=add
 value=0.5
 desc=Shots bounce off walls
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Hellfire]
 type=stat_mod
@@ -522,6 +650,8 @@ stat=burnChance
 mode=add
 value=1.0
 desc=Every shot can set enemies ablaze
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Frostbite]
 type=stat_mod
@@ -529,6 +659,8 @@ stat=freezeChance
 mode=add
 value=0.35
 desc=Chance to freeze enemies solid
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ReturnTicket]
 type=stat_mod
@@ -536,6 +668,8 @@ stat=boomerangChance
 mode=add
 value=0.6
 desc=Shots return to you after max range
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [GravityCore]
 type=stat_mod
@@ -543,6 +677,8 @@ stat=gravityChance
 mode=add
 value=0.4
 desc=Impacts pull nearby enemies inward
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ArcBattery]
 type=stat_mod
@@ -550,11 +686,15 @@ stat=chainChance
 mode=add
 value=0.35
 desc=Damage arcs to nearby enemies
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Capacitor]
 type=unlock
 flag=charged_shots
 desc=Hold a direction to charge stronger shots
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MutantCore]
 type=stat_mod
@@ -565,6 +705,8 @@ stat2=damage
 mode2=multiply
 value2=0.65
 desc=Fires three weaker shots at once
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [HeavyDroplet]
 type=stat_mod
@@ -575,6 +717,8 @@ stat2=shotSpeed
 mode2=multiply
 value2=0.85
 desc=Larger, slower shots that hit harder at range
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [NeedleStorm]
 type=stat_mod
@@ -585,6 +729,8 @@ stat2=shrinkingChance
 mode2=add
 value2=0.5
 desc=Very fast, lighter shots
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [RubberTear]
 type=stat_mod
@@ -592,21 +738,29 @@ stat=enemyBounceChance
 mode=add
 value=0.4
 desc=Shots can bounce off enemies to hit again
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [LastShot]
 type=unlock
 flag=last_shot
 desc=Consecutive hits make your next shots hit harder
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ParasiteCore]
 type=unlock
 flag=parasite_core
 desc=Enemy deaths spawn extra shots outward
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [VoidHeart]
 type=unlock
 flag=void_heart
 desc=Shots ignore the edges of the room
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [LuckyChamber]
 type=stat_mod
@@ -614,6 +768,8 @@ stat=critChance
 mode=add
 value=0.15
 desc=Chance for a shot to land a critical hit
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BloodBattery]
 type=stat_mod
@@ -621,6 +777,8 @@ stat=lifestealChance
 mode=add
 value=0.25
 desc=Small chance to heal on a killing blow
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ReapersMark]
 type=stat_mod
@@ -628,6 +786,8 @@ stat=markChance
 mode=add
 value=0.5
 desc=Marked enemies take a burst of damage after enough hits
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [BlackHoleCore]
 type=stat_mod
@@ -635,31 +795,43 @@ stat=vortexChance
 mode=add
 value=0.3
 desc=Impacts pull enemies in with much greater force
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [TwinSoul]
 type=unlock
 flag=twin_soul
 desc=Every shot fires a mirrored twin
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Devastator]
 type=unlock
 flag=devastator
 desc=Every 20th shot becomes a giant, powerful blast
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [InfiniteLoop]
 type=unlock
 flag=infinite_loop
 desc=Every 10th shot deals bonus damage
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ChaosEngine]
 type=unlock
 flag=chaos_engine
 desc=Every shot randomly gains a modifier
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Satellites]
 type=unlock
 flag=satellites
 desc=Every 5th shot summons an orbiting shard
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [NeedleCore]
 type=stat_mod
@@ -667,6 +839,8 @@ stat=shrinkingChance
 mode=add
 value=0.5
 desc=Shots start strong and weaken over distance
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [MagnetShard]
 type=stat_mod
@@ -674,32 +848,126 @@ stat=magnetChance
 mode=add
 value=0.4
 desc=Shots gently curve toward nearby enemies
-
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [ShieldCharm]
 type=unlock
 flag=shield_charm
 desc=Absorbs one hit per room, no HP lost
+tier=1
+pools=TREASURE,SHOP,CHEST
+
+[AegisShell]
+type=stat_mod
+stat=damageReduction
+mode=add
+value=0.20
+stat2=moveSpeed
+mode2=add
+value2=-4
+desc=A sturdy shell that softens incoming blows
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[TurtleMail]
+type=stat_mod
+stat=damageReduction
+mode=add
+value=0.12
+stat2=maxHp
+mode2=add
+value2=8
+desc=Slower movement, but a lot more staying power
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[MenderCharm]
+type=unlock
+flag=regen_charm
+desc=Heals 1 HP when you enter a new room
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[MirrorWard]
+type=unlock
+flag=mirror_ward
+desc=Each room, one enemy shot is nullified on contact
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[PhoenixFeather]
+type=unlock
+flag=phoenix_feather
+desc=Once per run, survive a fatal hit and return to full health
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[ArmorPlating]
+type=stat_mod
+stat=maxHp
+mode=add
+value=12
+stat2=moveSpeed
+mode2=add
+value2=-6
+desc=Heavy armor that keeps you alive, but slows you down
+tier=1
+pools=TREASURE,SHOP,CHEST
+
+[StoneGuard]
+type=stat_mod
+stat=maxHp
+mode=add
+value=8
+stat2=dodgeChance
+mode2=add
+value2=0.08
+desc=Rugged protection with a little lucky footing
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[BulwarkCore]
+type=unlock
+flag=bulwark_core
+desc=Starts each room with two shield charges
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[ThornMantle]
+type=unlock
+flag=thorn_mantle
+desc=Touch damage hits harder and faster back
+tier=2
+pools=TREASURE,SHOP,CHEST
 
 [GuardianAngel]
 type=unlock
 flag=guardian_angel
 desc=Survive one fatal hit per run at 1 HP
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SpikedArmor]
 type=unlock
 flag=spiked_armor
 desc=Enemies that touch you take damage back
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SecondWind]
 type=unlock
 flag=second_wind
 desc=First time you drop to your last HP, gain a shield
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [IronWill]
 type=unlock
 flag=iron_will
 desc=Invincibility after being hit lasts 50% longer
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [LuckyFoot]
 type=stat_mod
@@ -707,33 +975,577 @@ stat=dodgeChance
 mode=add
 value=0.12
 desc=Small chance to dodge a hit entirely
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Compass]
 type=unlock
 flag=compass
 desc=Reveals cleared rooms connected to where you are
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [TreasureSense]
 type=unlock
 flag=treasure_sense
 desc=Shows what's in the treasure room before each floor
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Martyrdom]
 type=unlock
 flag=martyrdom
 desc=All incoming damage is doubled. No going back.
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [Overclock]
 type=unlock
 flag=overclock
 desc=Much faster and quicker, but bleeds HP over time
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [HollowCore]
 type=unlock
 flag=hollow_core
 desc=A surge of random power floods your shots
+tier=1
+pools=TREASURE,SHOP,CHEST
 
 [SecondSun]
 type=unlock
 flag=second_sun
 desc=A second light orbits you, always
+tier=1
+pools=TREASURE,SHOP,CHEST
+
+[SteelNail]
+type=stat_mod
+stat=damage
+mode=add
+value=4
+desc=Sharper shots cut harder
+tier=1
+pools=TREASURE,SHOP,CHEST
+
+[LuckyFuse]
+type=stat_mod
+stat=luck
+mode=add
+value=2
+desc=Luckier rooms and better rolls
+tier=1
+pools=TREASURE,SHOP,CHEST
+
+[MercyVoucher]
+type=stat_mod
+stat=heal
+mode=add
+value=2
+desc=Cheap recovery for rough shops
+tier=2
+pools=SHOP,TREASURE,CHEST
+
+[RazorMirror]
+type=stat_mod
+stat=piercingChance
+mode=add
+value=0.4
+desc=Shots slice through lines of enemies
+tier=2
+pools=TREASURE,BOSS,CHEST
+
+[BloodSpark]
+type=stat_mod
+stat=burnChance
+mode=add
+value=0.35
+desc=Burns linger on hit
+tier=2
+pools=TREASURE,BOSS,CHEST
+
+[ChainRelay]
+type=stat_mod
+stat=chainChance
+mode=add
+value=0.35
+desc=Shots can jump to another target
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[GreedMark]
+type=stat_mod
+stat=luck
+mode=add
+value=3
+stat2=moveSpeed
+mode2=add
+value2=-4
+desc=More fortune, slightly slower steps
+tier=3
+pools=SHOP,TREASURE,CHEST
+
+[GravLens]
+type=stat_mod
+stat=gravityChance
+mode=add
+value=0.35
+desc=Shots pull enemies off course
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[VoidTalisman]
+type=stat_mod
+stat=vortexChance
+mode=add
+value=0.35
+desc=Pulls the room together around your shots
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[CursedRelic]
+type=stat_mod
+stat=damage
+mode=add
+value=16
+stat2=fireRate
+mode2=multiply
+value2=0.88
+desc=Massive power with a slow sting
+tier=4
+pools=CURSE,BOSS,CHEST
+
+[ExecutionersCoin]
+type=stat_mod
+stat=critChance
+mode=add
+value=0.35
+stat2=luck
+mode2=add
+value2=2
+desc=Expensive odds that hit harder
+tier=5
+pools=SHOP,BOSS,CHEST
+
+[BlackSun]
+type=stat_mod
+stat=damage
+mode=add
+value=24
+stat2=moveSpeed
+mode2=add
+value2=-10
+desc=Huge damage at a heavy pace cost
+tier=5
+pools=BOSS,CURSE,CHEST
+
+[SharpenedCrown]
+type=stat_mod
+stat=damageMultiplier
+mode=add
+value=0.25
+desc=Your hits land harder
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[RustyTrigger]
+type=stat_mod
+stat=fireRateMultiplier
+mode=add
+value=0.30
+stat2=damageMultiplier
+mode2=add
+value2=-0.10
+desc=Fires faster, but each shot bites a little less
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[BerserkerRelic]
+type=stat_mod
+stat=damageMultiplier
+mode=multiply
+value=1.30
+stat2=fireRateMultiplier
+mode2=multiply
+value2=0.85
+desc=Stronger shots with a slower rhythm
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[SniperLens]
+type=stat_mod
+stat=fireRateMultiplier
+mode=add
+value=-0.15
+stat2=damageMultiplier
+mode2=add
+value2=0.30
+desc=Slower shots, but every hit counts
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[RazorCharm]
+type=stat_mod
+stat=critChance
+mode=add
+value=0.15
+desc=Sharper shots with a better bite
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[LeechVial]
+type=stat_mod
+stat=lifestealChance
+mode=add
+value=0.20
+desc=Your shots sometimes steal back life
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[EmberNeedle]
+type=stat_mod
+stat=burnChance
+mode=add
+value=0.30
+desc=Projectiles may set foes on fire
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[IceNeedle]
+type=stat_mod
+stat=freezeChance
+mode=add
+value=0.25
+desc=Some shots freeze enemies in place
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[RicochetCore]
+type=stat_mod
+stat=wallBounceChance
+mode=add
+value=0.35
+desc=Shots rebound off the room walls
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[SplitSpark]
+type=stat_mod
+stat=splitChance
+mode=add
+value=0.30
+desc=Impact can split into more shots
+tier=4
+pools=BOSS,CHEST
+
+[ChainPrayer]
+type=stat_mod
+stat=chainChance
+mode=add
+value=0.30
+desc=Hits can jump from enemy to enemy
+tier=4
+pools=BOSS,CHEST
+
+[GravitySeed]
+type=stat_mod
+stat=gravityChance
+mode=add
+value=0.30
+desc=Shots drag targets toward them
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[VortexSeed]
+type=stat_mod
+stat=vortexChance
+mode=add
+value=0.25
+desc=Projectiles pull in a small vortex
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[MarkCharm]
+type=stat_mod
+stat=markChance
+mode=add
+value=0.35
+desc=Marked enemies take better follow-up damage
+tier=4
+pools=BOSS,CHEST
+
+[BounceGlass]
+type=stat_mod
+stat=enemyBounceChance
+mode=add
+value=0.35
+desc=Shots ricochet through the enemy line
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[BoomerTwig]
+type=stat_mod
+stat=boomerangChance
+mode=add
+value=0.40
+desc=Your shots come back to you
+tier=3
+pools=TREASURE,SHOP,CHEST
+
+[LuckyClover]
+type=stat_mod
+stat=dodgeChance
+mode=add
+value=0.10
+desc=A small chance to slip past danger
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[BloodPact]
+type=stat_mod
+stat=damageMultiplier
+mode=add
+value=0.25
+stat2=maxHp
+mode2=add
+value2=-10
+desc=More power, less room for mistakes
+tier=4
+pools=CURSE,BOSS,CHEST
+
+[HasteRelic]
+type=stat_mod
+stat=fireRateMultiplier
+mode=add
+value=0.15
+desc=You recover between shots faster
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[PulseTonic]
+type=stat_mod
+stat=shotSpeed
+mode=add
+value=40
+desc=Projectiles rush out much faster
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[OlympianFavor]
+type=stat_mod
+stat=damageMultiplier
+mode=add
+value=0.18
+desc=A clean blessing that sharpens every hit
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[UnderworldDash]
+type=unlock
+flag=dash
+desc=Unlocks a burst dash with extra control
+tier=3
+pools=TREASURE,SHOP,CHEST
+
+[BlankCharge]
+type=stat_mod
+stat=dodgeChance
+mode=add
+value=0.12
+stat2=moveSpeed
+mode2=add
+value2=6
+desc=A panic button that also keeps you moving
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[BloodSword]
+type=stat_mod
+stat=damage
+mode=add
+value=10
+stat2=lifestealChance
+mode2=add
+value2=0.10
+desc=Deadlier strikes with a little self-repair
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[SpartanSpear]
+type=stat_mod
+stat=range
+mode=add
+value=55
+stat2=shotSpeed
+mode2=add
+value2=24
+desc=Long reach and a faster throw
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[GunpowderIdol]
+type=stat_mod
+stat=explosiveChance
+mode=add
+value=0.32
+desc=Explosive shots become part of your kit
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[BulletBender]
+type=stat_mod
+stat=homingChance
+mode=add
+value=0.32
+stat2=piercingChance
+mode2=add
+value2=0.18
+desc=Shots track and slip through enemies
+tier=4
+pools=BOSS,CHEST
+
+[CerberusCharm]
+type=stat_mod
+stat=burnChance
+mode=add
+value=0.30
+stat2=maxHp
+mode2=add
+value2=10
+desc=Fiery offense with a sturdier frame
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[HunterGrenade]
+type=stat_mod
+stat=enemyBounceChance
+mode=add
+value=0.22
+stat2=critChance
+mode2=add
+value2=0.10
+desc=Hits can leap and strike true
+tier=3
+pools=TREASURE,BOSS,CHEST
+
+[TonicVial]
+type=stat_mod
+stat=heal
+mode=add
+value=4
+stat2=fireRateMultiplier
+mode2=add
+value2=0.08
+desc=Heals you and keeps your pace up
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[MutagenicCore]
+type=stat_mod
+stat=damageMultiplier
+mode=add
+value=0.22
+stat2=poisonChance
+mode2=add
+value2=0.18
+desc=Mutable power that leans toxic
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[GlassKnife]
+type=stat_mod
+stat=critChance
+mode=add
+value=0.22
+stat2=maxHp
+mode2=add
+value2=-6
+desc=Sharper hits with a glass-like downside
+tier=3
+pools=CURSE,BOSS,CHEST
+
+[StormSigil]
+type=stat_mod
+stat=shotSpeed
+mode=add
+value=30
+stat2=fireRateMultiplier
+mode2=add
+value2=0.10
+desc=Fast, violent shots like a storm front
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[DroneChip]
+type=unlock
+flag=satellites
+desc=Unlocks orbiting support drones
+tier=4
+pools=TREASURE,BOSS,CHEST
+
+[RewindCharm]
+type=unlock
+flag=last_shot
+desc=Your last shot gets a second chance
+tier=4
+pools=BOSS,CHEST
+
+[VoidBulb]
+type=stat_mod
+stat=gravityChance
+mode=add
+value=0.20
+stat2=vortexChance
+mode2=add
+value2=0.15
+desc=Pulls enemies inward like a vacuum
+tier=4
+pools=BOSS,CURSE,CHEST
+
+[BossSigil]
+type=stat_mod
+stat=markChance
+mode=add
+value=0.28
+stat2=critChance
+mode2=add
+value2=0.08
+desc=Marks targets for a brutal finish
+tier=4
+pools=BOSS,CHEST
+
+[RocketRounds]
+type=unlock
+flag=rocket_rounds
+desc=Your shots become little rockets
+tier=3
+pools=TREASURE,SHOP,CHEST
+
+[LaserLens]
+type=unlock
+flag=laser_lens
+desc=Your shots become room-sweeping lasers
+tier=4
+pools=TREASURE,BOSS,CHEST
+
+[CrimsonRay]
+type=unlock
+flag=crimson_ray
+desc=Unlocks a charged crimson beam
+tier=5
+pools=BOSS,CURSE,CHEST
+
+[BladeArc]
+type=unlock
+flag=blade_arc
+desc=Unlocks a close-range sword slash
+tier=4
+pools=TREASURE,BOSS,CHEST
+
+[BurstCannon]
+type=unlock
+flag=burst_shots
+desc=Unlocks a rapid burst volley like a monster lung
+tier=3
+pools=TREASURE,SHOP,CHEST

@@ -10,7 +10,12 @@ namespace {
         if (std::strcmp(s, "SHOOTER") == 0) return AIType::SHOOTER;
         if (std::strcmp(s, "CHARGER") == 0) return AIType::CHARGER;
         if (std::strcmp(s, "SUMMONER") == 0) return AIType::SUMMONER;
+        if (std::strcmp(s, "SPAWNER") == 0) return AIType::SPAWNER;
         if (std::strcmp(s, "EXPLODER") == 0) return AIType::EXPLODER;
+        if (std::strcmp(s, "MIMIC") == 0) return AIType::MIMIC;
+        if (std::strcmp(s, "STRAFER") == 0) return AIType::STRAFER;
+        if (std::strcmp(s, "DASHER") == 0) return AIType::DASHER;
+        if (std::strcmp(s, "LURKER") == 0) return AIType::LURKER;
         return AIType::CHASER;
     }
 
@@ -51,6 +56,13 @@ namespace {
         e.explodesOnTimer = t.explodesOnTimer;
         e.splitsOnDeath = t.splitsOnDeath;
         e.fuseDuration = t.fuseDuration;
+        e.mimicsItemPickup = false;
+        e.mimicItemId = -1;
+        std::strncpy(e.spawnEnemy, t.spawnEnemy, sizeof(e.spawnEnemy) - 1);
+        e.spawnCount = t.spawnCount;
+        e.spawnLimit = t.spawnLimit;
+        e.spawnTimer = 0.0f;
+        e.spawnedChildren = 0;
     }
 }
 
@@ -84,6 +96,9 @@ bool Load(const char* path) {
         t.explodesOnTimer = block.GetBool("explodes_on_timer", false);
         t.splitsOnDeath = block.GetBool("splits_on_death", false);
         t.fuseDuration = block.GetFloat("fuse_duration", 1.2f);
+        std::strncpy(t.spawnEnemy, block.GetString("spawn_enemy", ""), sizeof(t.spawnEnemy) - 1);
+        t.spawnCount = std::max(1, block.GetInt("spawn_count", 1));
+        t.spawnLimit = std::max(1, block.GetInt("spawn_limit", 6));
         t.tier = std::max(1, block.GetInt("tier", 1));
     }
 

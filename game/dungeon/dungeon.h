@@ -8,7 +8,7 @@
 struct DungeonSettings {
     int gridSizePerFloor = 10;
     int gridSizeMax = 30;
-    int totalFloors = 3;
+    int totalFloors = 5;
     int normalRoomBase = 8;
     int normalRoomPerFloor = 6;
     int normalEnemyBase = 2;
@@ -57,7 +57,7 @@ private:
     int startRoomIndex = -1;
     int bossRoomIndex = -1;
     int currentFloor = 1;
-    int totalFloors = 3;
+    int totalFloors = 5;
 
     int CellIndex(int x, int y) const;
     bool InBounds(int x, int y) const;

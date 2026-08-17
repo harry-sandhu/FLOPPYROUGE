@@ -8,6 +8,15 @@
 #include "../items/item_system.h"
 
 namespace {
+    enum class ShotStyle {
+        BULLET,
+        ROCKET,
+        BURST,
+        LASER,
+        CRIMSON_RAY,
+        SLASH
+    };
+
     Vec2 Normalize(Vec2 v) {
         float lenSq = v.x * v.x + v.y * v.y;
         if (lenSq > 0.0001f) {
@@ -16,6 +25,35 @@ namespace {
             v.y /= len;
         }
         return v;
+    }
+
+    int CollectShotStyles(const Player& player, ShotStyle* outStyles, int maxStyles) {
+        int count = 0;
+        auto add = [&](ShotStyle style) {
+            if (count < maxStyles) outStyles[count++] = style;
+        };
+
+        if (player.hasRocketShots) add(ShotStyle::ROCKET);
+        if (player.hasBurstShots) add(ShotStyle::BURST);
+        if (player.hasLaserShots) add(ShotStyle::LASER);
+        if (player.hasCrimsonRay) add(ShotStyle::CRIMSON_RAY);
+        if (player.hasBladeArc) add(ShotStyle::SLASH);
+
+        if (count == 0) add(ShotStyle::BULLET);
+        return count;
+    }
+
+    ProjectileKind ShotKind(ShotStyle style) {
+        switch (style) {
+            case ShotStyle::ROCKET: return ProjectileKind::ROCKET;
+            case ShotStyle::BURST: return ProjectileKind::BULLET;
+            case ShotStyle::LASER: return ProjectileKind::LASER;
+            case ShotStyle::CRIMSON_RAY: return ProjectileKind::CRIMSON_RAY;
+            case ShotStyle::SLASH: return ProjectileKind::SLASH;
+            case ShotStyle::BULLET:
+            default:
+                return ProjectileKind::BULLET;
+        }
     }
 
     bool BuildShootDirection(const Player& player, Vec2& outDir) {
@@ -48,6 +86,17 @@ namespace {
         return chance;
     }
 
+    void ApplyPoisonTick(Player& player) {
+        int damage = std::max(1, player.poisonDamage);
+        if (player.hasMartyrdom) damage *= 2;
+        player.hp -= damage;
+        if (player.hp < 0) player.hp = 0;
+        if (player.hp <= 0 && player.hasGuardianAngel && !player.guardianAngelUsed) {
+            player.guardianAngelUsed = true;
+            player.hp = 1;
+        }
+    }
+
     void BeginDash(Player& player, Vec2 dashDir) {
         player.isDashing = true;
         player.dashDir = dashDir;
@@ -55,6 +104,125 @@ namespace {
         player.dashCooldownRemaining = player.dashCooldown;
         player.invincibleTimer = std::max(player.invincibleTimer, player.dashDuration);
         player.actionFlashTimer = std::max(player.actionFlashTimer, 0.10f);
+    }
+
+    void SpawnBeamLine(std::vector<Projectile>& playerProjectiles, const Player& player, Vec2 center, Vec2 dir,
+                       int baseDamage, float range, ShotStyle style, const ProjectileMods& baseMods) {
+        const int segmentCount = (style == ShotStyle::CRIMSON_RAY) ? 7 : 6;
+        const float segmentSpacing = 11.0f;
+        const float startOffset = 10.0f;
+        const float segmentSize = (style == ShotStyle::CRIMSON_RAY) ? 10.0f : 8.0f;
+        const float life = (style == ShotStyle::CRIMSON_RAY) ? 0.10f : 0.08f;
+        const int beamDamage = (style == ShotStyle::CRIMSON_RAY)
+            ? std::max(1, (int)std::lround((float)baseDamage * 0.35f))
+            : std::max(1, (int)std::lround((float)baseDamage * 0.22f));
+
+        ProjectileMods mods = baseMods;
+        mods.kind = ShotKind(style);
+        mods.piercing = true;
+        mods.ignoreBounds = true;
+
+        for (int i = 0; i < segmentCount; ++i) {
+            float dist = startOffset + (float)i * segmentSpacing;
+            Vec2 segCenter = { center.x + dir.x * dist, center.y + dir.y * dist };
+            Vec2 segPos = { segCenter.x - segmentSize * 0.5f, segCenter.y - segmentSize * 0.5f };
+            ProjectileSystem::Spawn(playerProjectiles, segPos, { 0.0f, 0.0f }, beamDamage, range, life, mods);
+            if (!playerProjectiles.empty()) {
+                playerProjectiles.back().sizeScale = (style == ShotStyle::CRIMSON_RAY) ? 1.35f : 1.15f;
+            }
+        }
+    }
+
+    void SpawnSlashWave(std::vector<Projectile>& playerProjectiles, const Player& player, Vec2 center, Vec2 dir,
+                        int baseDamage, float range, const ProjectileMods& baseMods) {
+        Vec2 perp = { -dir.y, dir.x };
+        const float forward = 14.0f;
+        const float side = 8.0f;
+        const float slashLife = 0.10f;
+        const int slashDamage = std::max(1, baseDamage + 3);
+
+        ProjectileMods mods = baseMods;
+        mods.kind = ProjectileKind::SLASH;
+        mods.ignoreBounds = true;
+
+        Vec2 offsets[] = {
+            { dir.x * forward, dir.y * forward },
+            { dir.x * forward + perp.x * side, dir.y * forward + perp.y * side },
+            { dir.x * forward - perp.x * side, dir.y * forward - perp.y * side }
+        };
+
+        for (const Vec2& offset : offsets) {
+            Vec2 pos = { center.x + offset.x - 5.0f, center.y + offset.y - 5.0f };
+            ProjectileSystem::Spawn(playerProjectiles, pos, { 0.0f, 0.0f }, slashDamage, range, slashLife, mods);
+            if (!playerProjectiles.empty()) {
+                playerProjectiles.back().sizeScale = 1.4f;
+            }
+        }
+    }
+
+    void SpawnShotStyle(ShotStyle style, std::vector<Projectile>& playerProjectiles, const Player& player,
+                        Vec2 playerCenter, Vec2 shootDir, int baseDamage, float range,
+                        const ProjectileMods& baseMods, int projectileCount, float shotSizeScale) {
+        if (style == ShotStyle::ROCKET) {
+            for (int i = 0; i < projectileCount; ++i) {
+                ProjectileMods rocketMods = baseMods;
+                rocketMods.kind = ProjectileKind::ROCKET;
+                rocketMods.explosive = true;
+                Vec2 vel = { shootDir.x * (player.shotSpeed * 0.80f), shootDir.y * (player.shotSpeed * 0.80f) };
+                ProjectileSystem::Spawn(
+                    playerProjectiles,
+                    playerCenter,
+                    vel,
+                    std::max(1, (int)std::lround(baseDamage * 1.15f)),
+                    range * 1.15f,
+                    0.0f,
+                    rocketMods
+                );
+                if (!playerProjectiles.empty()) {
+                    playerProjectiles.back().sizeScale = std::max(1.25f, shotSizeScale * 1.15f);
+                }
+            }
+            return;
+        }
+
+        if (style == ShotStyle::BURST) {
+            const int pelletCount = 5;
+            const float spread = 0.56f;
+            const float speed = 0.92f;
+            ProjectileMods mods = baseMods;
+            mods.kind = ProjectileKind::BULLET;
+            float baseAngle = std::atan2(shootDir.y, shootDir.x);
+            for (int i = 0; i < pelletCount; ++i) {
+                float t = (pelletCount == 1) ? 0.0f : ((float)i / (pelletCount - 1)) - 0.5f;
+                float angle = baseAngle + t * spread;
+                Vec2 vel = { std::cos(angle) * speed * 110.0f, std::sin(angle) * speed * 110.0f };
+                ProjectileSystem::Spawn(playerProjectiles, playerCenter, vel, baseDamage, range * 0.9f, 0.0f, mods);
+                if (!playerProjectiles.empty()) {
+                    playerProjectiles.back().sizeScale = 0.92f;
+                }
+            }
+            return;
+        }
+
+        if (style == ShotStyle::LASER || style == ShotStyle::CRIMSON_RAY) {
+            SpawnBeamLine(playerProjectiles, player, playerCenter, shootDir, baseDamage, range, style, baseMods);
+            return;
+        }
+
+        if (style == ShotStyle::SLASH) {
+            SpawnSlashWave(playerProjectiles, player, playerCenter, shootDir, baseDamage, range, baseMods);
+            return;
+        }
+
+        ProjectileMods mods = baseMods;
+        mods.kind = ProjectileKind::BULLET;
+        for (int i = 0; i < projectileCount; ++i) {
+            Vec2 vel = { shootDir.x * player.shotSpeed, shootDir.y * player.shotSpeed };
+            ProjectileSystem::Spawn(playerProjectiles, playerCenter, vel, baseDamage, range, 0.0f, mods);
+            if (shotSizeScale != 1.0f && !playerProjectiles.empty()) {
+                playerProjectiles.back().sizeScale = shotSizeScale;
+            }
+        }
     }
 }
 
@@ -112,10 +280,12 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
     if (player.fireCooldownRemaining > 0.0f) return;
 
     int projectileCount = std::max(1, player.projectileCount);
-    Vec2 spawnPos = {
+    Vec2 playerCenter = {
         player.pos.x + player.size / 2.0f,
         player.pos.y + player.size / 2.0f
     };
+    ShotStyle shotStyles[5];
+    int shotStyleCount = CollectShotStyles(player, shotStyles, 5);
 
     ProjectileMods mods;
     mods.homing = player.hasHomingShots;
@@ -155,7 +325,9 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
 
     // Base damage: flat streak bonus from Last Shot, then a multiplier from
     // charge/devastator/infinite-loop stacked on via sizeScale at spawn time.
-    int baseDamage = player.damage + ItemSystem::ComputeSynergyBonus(player);
+    float effectiveDamage = ((float)player.damage + (float)ItemSystem::ComputeSynergyBonus(player)) * player.damageMultiplier;
+    if (effectiveDamage < 1.0f) effectiveDamage = 1.0f;
+    int baseDamage = (int)std::lround(effectiveDamage);
     if (player.hasLastShot) {
         baseDamage += std::min(player.lastShotStreak, 10) * 2;
     }
@@ -186,34 +358,36 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
         }
     }
 
-    for (int i = 0; i < projectileCount; ++i) {
-        Vec2 vel = { shootDir.x * player.shotSpeed, shootDir.y * player.shotSpeed };
-        
-        
-
-        ProjectileSystem::Spawn(
-            playerProjectiles,
-            spawnPos,
-            vel,
-            baseDamage,
-            player.range,
-            0.0f,
-            mods
-        );
-        // sizeScale is applied post-spawn since Spawn() doesn't take it directly.
-        if (shotSizeScale != 1.0f && !playerProjectiles.empty()) {
-            playerProjectiles.back().sizeScale = shotSizeScale;
+    if (shotStyleCount > 0) {
+        for (int i = 0; i < shotStyleCount; ++i) {
+            ShotStyle style = shotStyles[i];
+            ProjectileMods styleMods = mods;
+            styleMods.kind = ShotKind(style);
+            if (style == ShotStyle::LASER || style == ShotStyle::CRIMSON_RAY || style == ShotStyle::SLASH) {
+                styleMods.ignoreBounds = true;
+                styleMods.piercing = true;
+            }
+            SpawnShotStyle(style, playerProjectiles, player, playerCenter, shootDir, baseDamage, player.range,
+                           styleMods, projectileCount, shotSizeScale);
         }
     }
 
     // Twin Soul: mirrored shot from the opposite side of the player.
     if (player.hasTwinSoul) {
-        Vec2 playerCenter = { player.pos.x + player.size / 2.0f, player.pos.y + player.size / 2.0f };
-        Vec2 mirroredPos = { playerCenter.x - (spawnPos.x - playerCenter.x), playerCenter.y - (spawnPos.y - playerCenter.y) };
-        Vec2 vel = { shootDir.x * player.shotSpeed, shootDir.y * player.shotSpeed };
-        ProjectileSystem::Spawn(playerProjectiles, mirroredPos, vel, baseDamage, player.range, 0.0f, mods);
-        if (shotSizeScale != 1.0f && !playerProjectiles.empty()) {
-            playerProjectiles.back().sizeScale = shotSizeScale;
+        Vec2 mirroredPos = {
+            playerCenter.x - shootDir.x * 8.0f - 4.0f,
+            playerCenter.y - shootDir.y * 8.0f - 4.0f
+        };
+        for (int i = 0; i < shotStyleCount; ++i) {
+            ShotStyle style = shotStyles[i];
+            ProjectileMods twinMods = mods;
+            twinMods.kind = ShotKind(style);
+            if (style == ShotStyle::LASER || style == ShotStyle::CRIMSON_RAY || style == ShotStyle::SLASH) {
+                twinMods.ignoreBounds = true;
+                twinMods.piercing = true;
+            }
+            SpawnShotStyle(style, playerProjectiles, player, mirroredPos, shootDir, baseDamage, player.range,
+                           twinMods, projectileCount, shotSizeScale);
         }
     }
 
@@ -224,13 +398,37 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
         if (player.satelliteShotCounter >= 5 && player.orbiterCount < Player::MAX_ORBITERS) {
             player.satelliteShotCounter = 0;
             Orbiter& o = player.orbiters[player.orbiterCount++];
-            o.angle = 0.0f;
+            o.angle = 6.2831853f * ((float)(player.orbiterCount - 1) / (float)Player::MAX_ORBITERS);
             o.timeRemaining = 3.0f;
             o.damage = std::max(1, player.damage / 2);
         }
     }
 
-    float fireInterval = (player.fireRate > 0.0f) ? (1.0f / player.fireRate) : 0.0f;
+    float effectiveFireRate = player.fireRate * player.fireRateMultiplier;
+    if (effectiveFireRate < 0.1f) effectiveFireRate = 0.1f;
+    float fireInterval = 1.0f / effectiveFireRate;
+    bool hasLaserStyle = false;
+    bool hasBurstStyle = false;
+    bool hasRocketStyle = false;
+    bool hasSlashStyle = false;
+    bool hasRayStyle = false;
+    for (int i = 0; i < shotStyleCount; ++i) {
+        switch (shotStyles[i]) {
+            case ShotStyle::ROCKET: hasRocketStyle = true; break;
+            case ShotStyle::BURST: hasBurstStyle = true; break;
+            case ShotStyle::LASER: hasLaserStyle = true; break;
+            case ShotStyle::CRIMSON_RAY: hasRayStyle = true; break;
+            case ShotStyle::SLASH: hasSlashStyle = true; break;
+            case ShotStyle::BULLET:
+            default:
+                break;
+        }
+    }
+    if (hasBurstStyle) fireInterval = std::min(fireInterval, 0.22f);
+    if (hasLaserStyle) fireInterval = std::min(fireInterval, 0.05f);
+    if (hasRayStyle) fireInterval = std::min(fireInterval, 0.08f);
+    if (hasSlashStyle) fireInterval = std::min(fireInterval, 0.12f);
+    if (hasRocketStyle) fireInterval = std::min(fireInterval, 0.24f);
     if (player.hasChargedShots) {
         player.chargeHeldTime = 0.0f; // consumed on fire
     }
@@ -248,6 +446,20 @@ bool TakeDamage(Player& player, int amount, float invincibleDuration) {
     int finalAmount = amount;
     if (player.hasMartyrdom) {
         finalAmount *= 2; // Martyrdom: all incoming damage doubled
+    }
+
+    if (player.damageReduction > 0.0f) {
+        float reduction = std::clamp(player.damageReduction, 0.0f, 0.75f);
+        finalAmount = std::max(1, (int)std::lround((float)finalAmount * (1.0f - reduction)));
+    }
+
+    if (player.hasPhoenixFeather && !player.phoenixFeatherUsed && finalAmount >= player.hp) {
+        player.phoenixFeatherUsed = true;
+        player.hp = player.maxHp;
+        float duration = invincibleDuration;
+        if (duration < 1.0f) duration = 1.0f;
+        player.invincibleTimer = duration;
+        return true;
     }
 
     if (player.hasShieldCharm && player.shieldCharges > 0) {
@@ -304,6 +516,15 @@ void UpdateTimers(Player& player, float dt) {
     if (player.actionFlashTimer > 0.0f) {
         player.actionFlashTimer -= dt;
         if (player.actionFlashTimer < 0.0f) player.actionFlashTimer = 0.0f;
+    }
+
+    if (player.poisonTimer > 0.0f) {
+        player.poisonTimer -= dt;
+        player.poisonTickTimer -= dt;
+        if (player.poisonTickTimer <= 0.0f) {
+            player.poisonTickTimer = 0.5f;
+            ApplyPoisonTick(player);
+        }
     }
 
     if (player.pickupMessageTimer > 0.0f) {

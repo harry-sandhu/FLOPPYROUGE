@@ -9,7 +9,13 @@
 
 namespace {
     constexpr int MAX_GENERATION_ATTEMPTS = 64;
-    constexpr int BOSS_VARIANT_TIER[10] = { 1, 1, 2, 2, 3, 2, 2, 3, 2, 3 };
+    constexpr int BOSS_VARIANT_TIER[32] = {
+        1, 1, 1, 1, 1, 1,
+        2, 2, 2, 2, 2, 2,
+        3, 3, 3, 3, 3, 3, 3, 3,
+        4, 4, 4, 4, 4, 4,
+        5, 5, 5, 5, 5, 5
+    };
 
     ChestType RollChestTypeForFloor(int floor) {
         int roll = RNG::Range(0, 99);
@@ -40,6 +46,156 @@ namespace {
         if (roll < 60) return 2;   // +50% -> 60
         if (roll < 90) return 3;   // +30% -> 90
         return 4;                  // remaining 10%
+    }
+
+    int PickItemForRoom(const char* pools, int minTier, int maxTier) {
+        int cappedMin = std::clamp(minTier, 1, 5);
+        int cappedMax = std::clamp(maxTier, cappedMin, 5);
+        int itemId = ItemDatabase::Pick(pools, cappedMin, cappedMax);
+        if (itemId >= 0) return itemId;
+        return ItemDatabase::Pick(nullptr, cappedMin, cappedMax);
+    }
+
+    int PickChestItem(ChestType chestType, int floor) {
+        switch (chestType) {
+            case ChestType::WOODEN:
+                return PickItemForRoom("TREASURE,SHOP,CHEST", 1, std::min(3, 1 + floor));
+            case ChestType::IRON:
+                return PickItemForRoom("TREASURE,SHOP,CHEST", 1, std::min(4, 2 + floor));
+            case ChestType::STONE:
+                return PickItemForRoom("TREASURE,BOSS,CHEST", 2, std::min(4, 2 + floor));
+            case ChestType::GOLDEN:
+                return PickItemForRoom("BOSS,SHOP,CHEST", 3, std::min(5, 3 + floor));
+            case ChestType::DEVIL:
+                return PickItemForRoom("CURSE,BOSS,CHEST", 3, 5);
+            case ChestType::ANGEL:
+                return PickItemForRoom("BOSS,CHEST", 4, 5);
+            case ChestType::GAMBLE:
+                return PickItemForRoom("TREASURE,BOSS,SHOP,CHEST", 1, 5);
+        }
+        return ItemDatabase::Pick(nullptr, 1, 5);
+    }
+
+    bool RectsOverlap(const Rect& a, const Rect& b) {
+        return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+    }
+
+    void PopulateRoomHazards(Room& room, int floor) {
+        room.rocks.clear();
+        room.traps.clear();
+
+        if (room.type == RoomType::START || room.type == RoomType::TREASURE || room.type == RoomType::SHOP) {
+            return;
+        }
+
+        static const Vec2 ROCK_CLUSTERS[][4] = {
+            { { 34.0f, 30.0f }, { 46.0f, 30.0f }, { 34.0f, 42.0f }, { 46.0f, 42.0f } },
+            { { 238.0f, 30.0f }, { 250.0f, 30.0f }, { 238.0f, 42.0f }, { 250.0f, 42.0f } },
+            { { 34.0f, 126.0f }, { 46.0f, 126.0f }, { 34.0f, 138.0f }, { 46.0f, 138.0f } },
+            { { 238.0f, 126.0f }, { 250.0f, 126.0f }, { 238.0f, 138.0f }, { 250.0f, 138.0f } },
+            { { 84.0f, 66.0f }, { 96.0f, 66.0f }, { 84.0f, 78.0f }, { 96.0f, 78.0f } },
+            { { 220.0f, 66.0f }, { 232.0f, 66.0f }, { 220.0f, 78.0f }, { 232.0f, 78.0f } },
+            { { 84.0f, 100.0f }, { 96.0f, 100.0f }, { 84.0f, 112.0f }, { 96.0f, 112.0f } },
+            { { 220.0f, 100.0f }, { 232.0f, 100.0f }, { 220.0f, 112.0f }, { 232.0f, 112.0f } }
+        };
+
+        static const Vec2 TRAP_SPOTS[] = {
+            { 70.0f, 48.0f }, { 158.0f, 48.0f }, { 246.0f, 48.0f },
+            { 70.0f, 116.0f }, { 158.0f, 116.0f }, { 246.0f, 116.0f },
+            { 122.0f, 82.0f }, { 196.0f, 82.0f }
+        };
+
+        const Rect playerCore = { room.width * 0.5f - 18.0f, room.height * 0.5f - 18.0f, 36.0f, 36.0f };
+
+        int clusterCount = (room.type == RoomType::BOSS) ? 4 : 3;
+        clusterCount += std::min(2, floor / 2);
+        if (room.type == RoomType::CURSE) clusterCount++;
+        clusterCount = std::clamp(clusterCount, 2, 7);
+
+        std::vector<int> clusterIndices;
+        for (int i = 0; i < (int)(sizeof(ROCK_CLUSTERS) / sizeof(ROCK_CLUSTERS[0])); ++i) {
+            bool overlapsPlayer = false;
+            for (int j = 0; j < 4; ++j) {
+                Rect rockRect = { ROCK_CLUSTERS[i][j].x, ROCK_CLUSTERS[i][j].y, 12.0f, 12.0f };
+                if (RectsOverlap(rockRect, playerCore)) {
+                    overlapsPlayer = true;
+                    break;
+                }
+            }
+            if (!overlapsPlayer) clusterIndices.push_back(i);
+        }
+
+        for (int i = 0; i < clusterCount && !clusterIndices.empty(); ++i) {
+            int choiceIndex = RNG::Range(0, (int)clusterIndices.size() - 1);
+            int cluster = clusterIndices[choiceIndex];
+            clusterIndices.erase(clusterIndices.begin() + choiceIndex);
+
+            int rocksInCluster = RNG::Chance(0.35f) ? 4 : 3;
+            if (room.type == RoomType::BOSS) rocksInCluster = 4;
+            if (room.type == RoomType::CURSE && RNG::Chance(0.35f)) rocksInCluster = 2;
+
+            for (int j = 0; j < rocksInCluster; ++j) {
+                RoomRock rock;
+                rock.pos = ROCK_CLUSTERS[cluster][j];
+                rock.w = 12.0f;
+                rock.h = 12.0f;
+                float indestructibleChance = 0.18f + 0.04f * (float)floor;
+                if (room.type == RoomType::BOSS) indestructibleChance += 0.10f;
+                if (room.type == RoomType::CURSE) indestructibleChance += 0.05f;
+                if (RNG::Chance(std::clamp(indestructibleChance, 0.18f, 0.45f))) {
+                    rock.type = RoomRockType::INDESTRUCTIBLE;
+                } else if (RNG::Chance(0.62f)) {
+                    rock.type = RoomRockType::BOMBABLE_COIN;
+                    rock.rewardAmount = RNG::Chance(0.22f) ? 5 : 1;
+                } else {
+                    rock.type = RoomRockType::BOMBABLE_HEART;
+                    rock.rewardAmount = 1;
+                }
+                room.rocks.push_back(rock);
+            }
+        }
+
+        int trapTarget = 0;
+        if (room.type == RoomType::BOSS) {
+            trapTarget = (floor >= 2 && RNG::Chance(0.70f)) ? 2 : 1;
+        } else if (room.type == RoomType::NORMAL || room.IsEnemyCurseRoom()) {
+            if (RNG::Chance(std::clamp(0.20f + 0.08f * (float)floor, 0.20f, 0.55f))) {
+                trapTarget = 1;
+                if (floor >= 3 && RNG::Chance(0.30f)) trapTarget = 2;
+            }
+        }
+        trapTarget = std::min(trapTarget, 3);
+
+        std::vector<int> trapIndices;
+        for (int i = 0; i < (int)(sizeof(TRAP_SPOTS) / sizeof(TRAP_SPOTS[0])); ++i) {
+            Rect trapRect = { TRAP_SPOTS[i].x, TRAP_SPOTS[i].y, 12.0f, 12.0f };
+            if (RectsOverlap(trapRect, playerCore)) continue;
+            bool blocked = false;
+            for (const RoomRock& rock : room.rocks) {
+                if (RectsOverlap(trapRect, rock.GetRect())) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) trapIndices.push_back(i);
+        }
+
+        for (int i = 0; i < trapTarget && !trapIndices.empty(); ++i) {
+            int choiceIndex = RNG::Range(0, (int)trapIndices.size() - 1);
+            int spotIndex = trapIndices[choiceIndex];
+            trapIndices.erase(trapIndices.begin() + choiceIndex);
+
+            RoomTrap trap;
+            trap.pos = TRAP_SPOTS[spotIndex];
+            trap.w = 12.0f;
+            trap.h = 12.0f;
+            int roll = RNG::Range(0, 99);
+            if (roll < 35) trap.type = RoomTrapType::POISON;
+            else if (roll < 62) trap.type = RoomTrapType::TELEPORT;
+            else if (roll < 84) trap.type = RoomTrapType::SUMMON;
+            else trap.type = RoomTrapType::SPIKE;
+            room.traps.push_back(trap);
+        }
     }
 
     // ... existing DoorDir, TransitionCandidate, ComputeDistances stay as-is
@@ -350,7 +506,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         rooms[bossRoomIndex].type = RoomType::BOSS;
 
         std::vector<int> eligibleBossVariants;
-        for (int v = 0; v < 10; ++v) {
+        for (int v = 0; v < 32; ++v) {
             if (BOSS_VARIANT_TIER[v] <= currentFloor) {
                 eligibleBossVariants.push_back(v);
             }
@@ -419,11 +575,16 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                 }
             } else if (rooms[i].type == RoomType::TREASURE && itemCount > 0) {
                 int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);
+                int maxTier = std::clamp(1 + currentFloor, 1, 5);
                 for (int j = 0; j < itemDrops; ++j) {
-                    rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
+                    int itemId = PickItemForRoom("TREASURE,SHOP,CHEST", 1, maxTier);
+                    if (itemId < 0) itemId = RNG::Range(0, itemCount - 1);
+                    rooms[i].itemSpawnList.push_back(itemId);
                 }
             } else if (rooms[i].type == RoomType::BOSS && itemCount > 0 && currentFloor < totalFloors) {
-                rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
+                int itemId = PickItemForRoom("BOSS,TREASURE,CHEST", 2, std::clamp(2 + currentFloor, 2, 5));
+                if (itemId < 0) itemId = RNG::Range(0, itemCount - 1);
+                rooms[i].itemSpawnList.push_back(itemId);
             } else if (rooms[i].type == RoomType::CURSE) {
                 bool enemyVariant = enemyCount > 0 && RNG::Chance(settings.curseEnemyChance);
                 if (enemyVariant) {
@@ -436,8 +597,11 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                     }
                 } else if (itemCount > 0) {
                     int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);
+                    int maxTier = std::clamp(3 + currentFloor / 2, 3, 5);
                     for (int j = 0; j < itemDrops; ++j) {
-                        rooms[i].itemSpawnList.push_back(RNG::Range(0, itemCount - 1));
+                        int itemId = PickItemForRoom("CURSE,BOSS,CHEST", 3, maxTier);
+                        if (itemId < 0) itemId = RNG::Range(0, itemCount - 1);
+                        rooms[i].itemSpawnList.push_back(itemId);
                     }
                 }
             } else if (rooms[i].type == RoomType::SHOP) {
@@ -446,6 +610,9 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         }
 
         ApplyRoomDefaults();
+        for (auto& room : rooms) {
+            PopulateRoomHazards(room, currentFloor);
+        }
         currentRoomIndex = startRoomIndex;
         return true;
     }
@@ -578,7 +745,7 @@ void Dungeon::MarkCurrentRoomCleared(bool rollCurseReward) {
         RoomPickup pickup;
         pickup.type = RoomPickupType::CHEST;
         pickup.chestType = RollChestTypeForFloor(currentFloor);
-        pickup.itemId = (ItemDatabase::Count() > 0) ? RNG::Range(0, ItemDatabase::Count() - 1) : -1;
+        pickup.itemId = PickChestItem(pickup.chestType, currentFloor);
         pickup.pos = { room.x + room.width * 0.5f - 4.0f, room.y + room.height * 0.5f - 4.0f };
         room.pickups.push_back(pickup);
     } else if (roll < 0.10f + settings.heartDropChance) {

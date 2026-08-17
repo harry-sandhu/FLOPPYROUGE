@@ -8,7 +8,12 @@ enum class AIType {
     SHOOTER,
     CHARGER,
     SUMMONER,
-    EXPLODER
+    SPAWNER,
+    EXPLODER,
+    MIMIC,
+    STRAFER,
+    DASHER,
+    LURKER
 };
 
 enum class AttackPattern {
@@ -42,6 +47,7 @@ struct Enemy {
     float preferredDistance = 70.0f;
     float shotSpeed = 80.0f;
     float spawnDelayRemaining = 0.0f;
+    float spawnTimer = 0.0f;
     // Counts down in parallel with spawnDelayRemaining. The enemy is fully
     // inert while spawnDelayRemaining > 0 (still "spawning"); once that
     // expires it can move, but can't deal any damage (contact or shots)
@@ -68,6 +74,11 @@ struct Enemy {
     bool explodesOnTimer = false;
     bool splitsOnDeath = false;
     bool isSplitChild = false;   // guards against split-children re-splitting
+    bool mimicsItemPickup = false;
+    int mimicItemId = -1;
+    char spawnEnemy[32] = {};
+    int spawnCount = 1;
+    int spawnLimit = 6;
 
     float fuseTimer = 0.0f;
     float fuseDuration = 1.2f;
@@ -75,6 +86,7 @@ struct Enemy {
     bool isCharging = false;      // used only when bouncesOffWalls is true
     Vec2 chargeDir = { 0.0f, 0.0f };
     float chargeTimeRemaining = 0.0f;
+    int spawnedChildren = 0;
 
     EnemySpecialType specialType = EnemySpecialType::NONE;
 

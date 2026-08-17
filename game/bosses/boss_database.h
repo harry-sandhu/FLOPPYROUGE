@@ -1,7 +1,7 @@
 #pragma once
 #include "boss.h"
 
-constexpr int MAX_BOSS_TEMPLATES = 16;
+constexpr int MAX_BOSS_TEMPLATES = 32;
 constexpr int MAX_ATTACK_CYCLE_LENGTH = 16;
 
 struct BossTemplate {
@@ -11,6 +11,8 @@ struct BossTemplate {
     float attackCooldownPhase1 = 2.5f;
     float attackCooldownPhase2 = 1.5f;
     float chargeSpeed = 220.0f;
+    // Set to 0 to disable phase 2 entirely.
+    float phase2HpRatio = 0.5f;
     int contactDamage = 1;
     int chargeContactDamage = 2;
     int maxAdds = 4;

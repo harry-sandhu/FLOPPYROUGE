@@ -1,6 +1,7 @@
 #include "enemy.h"
 #include "enemy_database.h"
 #include "../player/projectile_system.h"
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -195,6 +196,45 @@ namespace {
         }
     }
 
+    void UpdateSpawner(Enemy& enemy, Vec2 playerPos, float dt,
+                       std::vector<Enemy>& spawnedEnemies, bool attackReady) {
+        float dist;
+        Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
+
+        const float buffer = 18.0f;
+        const float preferred = std::max(56.0f, enemy.preferredDistance);
+        float slowScale = FrozenSlowScale(enemy);
+        if (dist < preferred - buffer) {
+            enemy.pos.x -= dir.x * enemy.speed * 0.65f * slowScale * dt;
+            enemy.pos.y -= dir.y * enemy.speed * 0.65f * slowScale * dt;
+        } else if (dist > preferred + buffer) {
+            enemy.pos.x += dir.x * enemy.speed * 0.45f * slowScale * dt;
+            enemy.pos.y += dir.y * enemy.speed * 0.45f * slowScale * dt;
+        } else {
+            enemy.pos.x += -dir.y * enemy.speed * 0.18f * slowScale * dt;
+            enemy.pos.y += dir.x * enemy.speed * 0.18f * slowScale * dt;
+        }
+
+        enemy.spawnTimer -= dt;
+        if (!attackReady || enemy.IsFrozen() || enemy.spawnTimer > 0.0f) return;
+        if (enemy.spawnedChildren >= enemy.spawnLimit) return;
+
+        const char* spawnName = (enemy.spawnEnemy[0] != '\0') ? enemy.spawnEnemy : "Zombie";
+        int burst = std::min(enemy.spawnCount, enemy.spawnLimit - enemy.spawnedChildren);
+        const float radius = std::max(10.0f, std::min(enemy.w, enemy.h) * 0.65f);
+        for (int i = 0; i < burst; ++i) {
+            float angle = (2.0f * PI) * ((float)i / std::max(1, burst));
+            Vec2 spawnPos = {
+                enemy.pos.x + std::cos(angle) * radius,
+                enemy.pos.y + std::sin(angle) * radius
+            };
+            spawnedEnemies.push_back(EnemyDatabase::Spawn(spawnName, spawnPos));
+        }
+
+        enemy.spawnedChildren += burst;
+        enemy.spawnTimer = enemy.shootCooldown;
+    }
+
     void UpdateExploder(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles,
                         bool attackReady) {
         float dist;
@@ -229,6 +269,132 @@ namespace {
             enemy.alive = false;
         }
     }
+
+    void UpdateMimic(Enemy& enemy, Vec2 playerPos, float dt, bool attackReady) {
+        float dist;
+        Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
+        float slowScale = FrozenSlowScale(enemy);
+
+        const float wakeRadius = 60.0f;
+        const float lungeRadius = 22.0f;
+        const float chestRevealRadius = 36.0f;
+
+        // Mimics pretend to be scenery until the player gets close, then
+        // they snap open and pursue hard.
+        if (dist > wakeRadius) {
+            return;
+        }
+
+        float moveSpeed = enemy.speed;
+        if (dist <= chestRevealRadius) {
+            moveSpeed *= 2.2f;
+        } else {
+            moveSpeed *= 1.15f;
+        }
+
+        enemy.pos.x += dir.x * moveSpeed * slowScale * dt;
+        enemy.pos.y += dir.y * moveSpeed * slowScale * dt;
+
+        if (dist <= lungeRadius && attackReady) {
+            enemy.shootTimer = std::max(enemy.shootCooldown, 0.35f);
+        }
+    }
+
+    void UpdateStrafer(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles,
+                       bool attackReady) {
+        float dist;
+        Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
+        Vec2 perp = { -dir.y, dir.x };
+        float slowScale = FrozenSlowScale(enemy);
+
+        const float preferred = std::max(40.0f, enemy.preferredDistance);
+        const float buffer = 18.0f;
+        float orbitPhase = std::sin(enemy.spiralOffset);
+        float orbitDir = (orbitPhase >= 0.0f) ? 1.0f : -1.0f;
+        float radial = 0.0f;
+        if (dist > preferred + buffer) radial = 1.0f;
+        else if (dist < preferred - buffer) radial = -1.0f;
+
+        enemy.pos.x += (dir.x * radial + perp.x * orbitDir * 0.85f) * enemy.speed * slowScale * dt;
+        enemy.pos.y += (dir.y * radial + perp.y * orbitDir * 0.85f) * enemy.speed * slowScale * dt;
+        enemy.spiralOffset += dt * 3.0f;
+
+        enemy.shootTimer -= dt;
+        if (attackReady && !enemy.IsFrozen() && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange) {
+            FireByPattern(enemy, dir, enemyProjectiles);
+            enemy.shootTimer = enemy.shootCooldown;
+        }
+    }
+
+    void UpdateDasher(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles,
+                      bool attackReady) {
+        if (enemy.IsFrozen()) return;
+
+        float dist;
+        Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
+        float slowScale = FrozenSlowScale(enemy);
+
+        if (enemy.isCharging) {
+            enemy.pos.x += enemy.chargeDir.x * enemy.speed * 6.0f * slowScale * dt;
+            enemy.pos.y += enemy.chargeDir.y * enemy.speed * 6.0f * slowScale * dt;
+            enemy.chargeTimeRemaining -= dt;
+            if (enemy.chargeTimeRemaining <= 0.0f) {
+                enemy.isCharging = false;
+                enemy.shootTimer = enemy.shootCooldown;
+            }
+            return;
+        }
+
+        Vec2 perp = { -dir.y, dir.x };
+        const float preferred = std::max(48.0f, enemy.preferredDistance);
+        const float buffer = 16.0f;
+        if (dist < preferred - buffer) {
+            enemy.pos.x -= dir.x * enemy.speed * 1.10f * slowScale * dt;
+            enemy.pos.y -= dir.y * enemy.speed * 1.10f * slowScale * dt;
+        } else if (dist > preferred + buffer) {
+            enemy.pos.x += dir.x * enemy.speed * 0.55f * slowScale * dt;
+            enemy.pos.y += dir.y * enemy.speed * 0.55f * slowScale * dt;
+        } else {
+            float orbitDir = (std::sin(enemy.spiralOffset) >= 0.0f) ? 1.0f : -1.0f;
+            enemy.pos.x += perp.x * orbitDir * enemy.speed * 0.75f * slowScale * dt;
+            enemy.pos.y += perp.y * orbitDir * enemy.speed * 0.75f * slowScale * dt;
+            enemy.spiralOffset += dt * 4.0f;
+        }
+
+        enemy.shootTimer -= dt;
+        if (attackReady && enemy.shootTimer <= 0.0f && dist <= enemy.shootRange + 28.0f) {
+            enemy.isCharging = true;
+            enemy.chargeDir = dir;
+            enemy.chargeTimeRemaining = 0.22f;
+            FireByPattern(enemy, dir, enemyProjectiles);
+            enemy.shootTimer = enemy.shootCooldown;
+        }
+    }
+
+    void UpdateLurker(Enemy& enemy, Vec2 playerPos, float dt, std::vector<Projectile>& enemyProjectiles,
+                      bool attackReady) {
+        float dist;
+        Vec2 dir = DirectionTo(enemy.pos, playerPos, dist);
+        float slowScale = FrozenSlowScale(enemy);
+
+        const float wakeRadius = std::max(48.0f, enemy.preferredDistance);
+        if (dist > wakeRadius) {
+            enemy.shootTimer -= dt * 0.35f;
+            if (enemy.shootTimer < 0.0f) enemy.shootTimer = 0.0f;
+            return;
+        }
+
+        float surgeSpeed = enemy.speed * ((dist < 24.0f) ? 2.4f : 1.4f);
+        enemy.pos.x += dir.x * surgeSpeed * slowScale * dt;
+        enemy.pos.y += dir.y * surgeSpeed * slowScale * dt;
+
+        enemy.shootTimer -= dt;
+        if (attackReady && !enemy.IsFrozen() && enemy.shootTimer <= 0.0f) {
+            FireByPattern(enemy, dir, enemyProjectiles);
+            enemy.shootTimer = enemy.shootCooldown * 0.85f;
+        }
+    }
+
     void MaybeDropCreep(Enemy& enemy, Vec2 beforePos, float dt, std::vector<Projectile>& enemyProjectiles) {
         if (enemy.specialType != EnemySpecialType::CREEPER) return;
 
@@ -316,8 +482,23 @@ void Update(Enemy& enemy, Vec2 playerPos, float dt, const std::vector<Enemy>& ro
         case AIType::SUMMONER:
             UpdateSummoner(enemy, playerPos, dt, roomEnemies, spawnedEnemies, attackReady);
             break;
+        case AIType::SPAWNER:
+            UpdateSpawner(enemy, playerPos, dt, spawnedEnemies, attackReady);
+            break;
         case AIType::EXPLODER:
             UpdateExploder(enemy, playerPos, dt, enemyProjectiles, attackReady);
+            break;
+        case AIType::MIMIC:
+            UpdateMimic(enemy, playerPos, dt, attackReady);
+            break;
+        case AIType::STRAFER:
+            UpdateStrafer(enemy, playerPos, dt, enemyProjectiles, attackReady);
+            break;
+        case AIType::DASHER:
+            UpdateDasher(enemy, playerPos, dt, enemyProjectiles, attackReady);
+            break;
+        case AIType::LURKER:
+            UpdateLurker(enemy, playerPos, dt, enemyProjectiles, attackReady);
             break;
     }
 

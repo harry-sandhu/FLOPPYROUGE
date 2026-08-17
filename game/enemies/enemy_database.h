@@ -1,7 +1,7 @@
 #pragma once
 #include "enemy.h"
 
-constexpr int MAX_ENEMY_TEMPLATES = 48;
+constexpr int MAX_ENEMY_TEMPLATES = 96;
 
 struct EnemyTemplate {
     char name[32] = {};
@@ -20,6 +20,9 @@ struct EnemyTemplate {
     bool explodesOnTimer = false;
     bool splitsOnDeath = false;
     float fuseDuration = 1.2f;
+    char spawnEnemy[32] = {};
+    int spawnCount = 1;
+    int spawnLimit = 6;
     int tier = 1;
 };
 

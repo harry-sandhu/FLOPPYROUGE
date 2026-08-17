@@ -1,9 +1,10 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: post-phase-10 — dungeon generation rewritten to a proper
-dead-end algorithm with per-floor grid scaling, plus a new curse-room
-risk/reward system and placeable bombs. Still comfortably under the
-contest limit.
+Last updated: post-dungeon-hazards — boss roster expanded to 16 variants
+with floor 1 no-phase openers, later-floor phase bosses, a new teleport
+burst attack, tier/pool-aware item rewards, a harder tier 3 enemy tuning
+pass, and a dungeon-hazard pass with rocks, traps, mimic ambushes, and
+`E`-key bombs. Still comfortably under the contest limit.
 
 ## Contest constraints (don't lose sight of these)
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
@@ -34,7 +35,7 @@ contest limit.
 - [x] Remaining enemy AI types: CHARGER, SUMMONER, EXPLODER
 - [x] Enemy database — enemies spawn from `data/enemies.txt` by name
       (`game/enemies/enemy_database`)
-- [x] Boss system with 3 variants / 3 attack pattern sets
+- [x] Boss system with 16 variants / data-driven attack pattern sets
 - [x] Contact damage, HP bar, game over + restart
 - [x] Room boundaries — player/enemy/boss clamped to 320x180 play area
       (`game/rooms/room`)
@@ -50,6 +51,8 @@ contest limit.
 - [x] Custom data file parser — key=value blocks, no STL string, no JSON
       dependency (`engine/data_parser`)
 - [x] Item database + apply/grant logic (`game/items`)
+- [x] Item rewards now filter by tier and room pool
+      (`game/items/item_database`, `game/dungeon`, `src/main.cpp`)
 - [x] Treasure rooms grant item rewards, curse rooms can also award loot
 - [x] HUD module: player HP bar, boss HP bar, game-over/room-cleared
       banners, floor map (`game/ui/hud`)
@@ -83,14 +86,24 @@ contest limit.
       fuse, and it deals AoE damage to enemies/boss in radius on
       detonation, with fuse-glow and explosion-flash rendering
       (`src/main.cpp`)
+- [x] Dungeon hazard pass: bombable/unbreakable rocks, one-shot traps,
+      mimic chest ambushes, and `E` as an alternate bomb-drop key
+      (`game/rooms/room`, `game/dungeon`, `game/enemies`, `src/main.cpp`)
 - [x] Tier 3 enemies added: Warlord, VenomEye, SplitterLord, BombKnight,
       HexMatron, JuggernautPrime, SnareTurret, BlightGrub
       (`data/enemies.txt`)
+- [x] Tier 3 enemy tuning pass: higher HP/speed/cooldown pressure on the
+      late-floor pool (`data/enemies.txt`)
 - [x] Item pool expansion: 80+ items with common, strong, weird, and build-defining
       categories (`data/items.txt`)
 - [x] Boss attack patterns data-driven: attack cycles now loaded from
       `data/bosses.txt` with support for phase-specific rotations
       (`game/bosses/boss.cpp`, `game/bosses/boss_database.cpp`)
+- [x] Boss tuning pass: stronger HP/cooldown values plus per-boss phase-2
+      thresholds (`data/bosses.txt`, `game/bosses/boss.cpp`)
+- [x] Boss roster expansion: floor 1 no-phase opener bosses, later-floor
+      phase bosses, and a teleport-burst attack for ambush-style fights
+      (`data/bosses.txt`, `game/bosses/boss.cpp`)
 - [x] Chest system implementation: Wooden, Iron, Stone, Golden, Devil, Angel
       with distinct reward tables and requirements (`src/main.cpp`)
 - [x] Coin/key/bomb pickup system with drop chances per room type
@@ -116,6 +129,7 @@ contest limit.
 - [ ] Juice/polish pass: hit-stop, particles, screen shake refinement
 - [ ] Difficulty tuning / playtesting pass with new tier 3 enemies and expanded
       item pools, including the new bigger floor 2/3 grids and higher room counts
+      and the boss/enemy rebalance from this pass
 - [ ] UPX packaging step for final submission
 - [x] Final size check against the 1,474,560 byte cap + submission
 - [ ] Full interactive run verification with all content additions

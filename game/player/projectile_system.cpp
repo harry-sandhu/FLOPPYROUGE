@@ -4,6 +4,7 @@
 #include "../../engine/collision.h"
 #include "../../engine/renderer.h"
 #include "../enemies/enemy_database.h"
+#include "../rooms/room.h"
 
 namespace {
     // Generous off-room bounds check — internal resolution is 320x180.
@@ -27,6 +28,18 @@ namespace {
             v.y /= len;
         }
         return v;
+    }
+
+    uint32_t ProjectileColor(const Projectile& p, uint32_t baseColor) {
+        switch (p.kind) {
+            case ProjectileKind::ROCKET: return 0xFFFFA14A;
+            case ProjectileKind::LASER: return 0xFF7DEBFF;
+            case ProjectileKind::CRIMSON_RAY: return 0xFFFF5F78;
+            case ProjectileKind::SLASH: return 0xFFFFF2B0;
+            case ProjectileKind::BULLET:
+            default:
+                return baseColor;
+        }
     }
 
     Vec2 FindHomingTarget(const std::vector<Enemy>* roomEnemies, const Boss* boss, const Vec2* playerPos,
@@ -114,6 +127,15 @@ namespace {
 
     void AdvanceProjectile(Projectile& p, float dt, const std::vector<Enemy>* roomEnemies, const Boss* boss,
                            const Vec2* playerPos) {
+        if (p.kind == ProjectileKind::ROCKET) {
+            float speed = std::sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
+            if (speed > 0.01f) {
+                Vec2 dir = Normalize(p.vel);
+                speed = std::min(speed + 40.0f * dt, 165.0f);
+                p.vel = { dir.x * speed, dir.y * speed };
+            }
+        }
+
         if (p.homing) {
             bool found = false;
             Vec2 target = FindHomingTarget(roomEnemies, boss, playerPos, p.pos, found);
@@ -271,6 +293,7 @@ namespace {
             child.damage = childDamage;
             child.remainingRange = parent.remainingRange * 0.6f;
             child.maxRange = child.remainingRange;
+            child.kind = parent.kind;
             child.piercing = parent.piercing;
             child.splitGeneration = 1;
             projectiles.push_back(child);
@@ -291,6 +314,7 @@ void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage,
     p.lifeRemaining = lifeRemaining;
 
     p.homing = mods.homing;
+    p.kind = mods.kind;
     p.poison = mods.poison;
     p.sticky = mods.sticky;
     p.piercing = mods.piercing;
@@ -316,6 +340,13 @@ void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage,
     p.wallBounceCount = mods.wallBounce ? 2 : 0;
     p.enemyBounceCount = mods.enemyBounce ? 2 : 0;
 
+    if (p.kind == ProjectileKind::LASER || p.kind == ProjectileKind::CRIMSON_RAY || p.kind == ProjectileKind::SLASH) {
+        p.ignoreBounds = true;
+    }
+    if (p.kind == ProjectileKind::ROCKET) {
+        p.sizeScale = 1.25f;
+    }
+
     projectiles.push_back(p);
 }
 
@@ -335,6 +366,7 @@ void Advance(std::vector<Projectile>& projectiles, float dt, const std::vector<E
 
 void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<Enemy>& roomEnemies, Enemy& enemy,
                              float projectileSize, std::vector<Enemy>& spawnedEnemies,
+                             std::vector<RoomPickup>& spawnedPickups,
                              std::vector<Projectile>& enemyProjectiles, float dt, Player* player) {
     bool wasAlive = enemy.alive;
     std::vector<Projectile> splitSpawns;
@@ -366,7 +398,9 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
             }
 
             if (p.explosive) {
-                const float splashRadiusSq = 18.0f * 18.0f;
+                float splashRadius = 18.0f;
+                if (p.kind == ProjectileKind::ROCKET) splashRadius = 28.0f;
+                const float splashRadiusSq = splashRadius * splashRadius;
                 const Vec2 center = { enemy.pos.x + enemy.w * 0.5f, enemy.pos.y + enemy.h * 0.5f };
                 for (Enemy& other : roomEnemies) {
                     if (!other.alive) continue;
@@ -476,6 +510,12 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
                     999999.0f
                 );
             }
+        } else if (enemy.mimicsItemPickup && enemy.mimicItemId >= 0) {
+            RoomPickup pickup;
+            pickup.type = RoomPickupType::ITEM;
+            pickup.itemId = enemy.mimicItemId;
+            pickup.pos = { enemy.pos.x, enemy.pos.y };
+            spawnedPickups.push_back(pickup);
         }
 
         if (enemy.splitsOnDeath && !enemy.isSplitChild) {
@@ -521,6 +561,12 @@ bool UpdateAndCollideVsPlayer(std::vector<Projectile>& projectiles, Player& play
         Rect projRect = p.GetRect(projectileSize);
         if (p.alive && Collision::CheckAABB(projRect, player.GetRect())) {
             p.alive = false;
+
+            if (player.hasMirrorWard && player.mirrorWardCharges > 0) {
+                player.mirrorWardCharges--;
+                continue;
+            }
+
             int damage = p.damage;
             if (currentFloor >= 3) damage = std::max(damage, 2);
             tookDamage = PlayerLogic::TakeDamage(player, damage, invincibleDuration) || tookDamage;
@@ -598,7 +644,7 @@ void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color, 
     for (auto& p : projectiles) {
         int drawSize = (int)std::lround(size * p.sizeScale);
         if (drawSize < 1) drawSize = 1;
-        Renderer::DrawRect((int)(p.pos.x + offset.x), (int)(p.pos.y + offset.y), drawSize, drawSize, color);
+        Renderer::DrawRect((int)(p.pos.x + offset.x), (int)(p.pos.y + offset.y), drawSize, drawSize, ProjectileColor(p, color));
     }
 }
 
@@ -666,7 +712,15 @@ void DrawOrbiters(const Player& player, Vec2 offset) {
             playerCenter.x + std::cos(o.angle) * 20.0f,
             playerCenter.y + std::sin(o.angle) * 20.0f
         };
-        Renderer::DrawRect((int)(orbPos.x + offset.x) - 2, (int)(orbPos.y + offset.y) - 2, 4, 4, 0xFF66CCFF);
+        int baseX = (int)std::lround(orbPos.x + offset.x);
+        int baseY = (int)std::lround(orbPos.y + offset.y);
+        Renderer::DrawRect(baseX - 2, baseY - 2, 4, 4, 0xFF66CCFF);
+
+        // A tiny leading sparkle makes the shard's rotation visible instead of
+        // looking like a plain square.
+        int tipX = (int)std::lround(orbPos.x + std::cos(o.angle) * 4.0f + offset.x);
+        int tipY = (int)std::lround(orbPos.y + std::sin(o.angle) * 4.0f + offset.y);
+        Renderer::DrawRect(tipX - 1, tipY - 1, 2, 2, 0xFFFFFFFF);
     }
 }
 
