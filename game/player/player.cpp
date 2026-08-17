@@ -399,7 +399,7 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
             player.satelliteShotCounter = 0;
             Orbiter& o = player.orbiters[player.orbiterCount++];
             o.angle = 6.2831853f * ((float)(player.orbiterCount - 1) / (float)Player::MAX_ORBITERS);
-            o.timeRemaining = 3.0f;
+            o.timeRemaining = 15.0f;
             o.damage = std::max(1, player.damage / 2);
         }
     }

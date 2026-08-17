@@ -185,7 +185,7 @@ contact_damage=3
 charge_contact_damage=4
 max_adds=5
 phase2_hp_ratio=0.35
-attack_cycle_phase1=DENSE_RING CHARGE
+attack_cycle_phase1=FLOOR_HAZARD TELEPORT_BURST
 attack_cycle_phase2=DENSE_RING MIRROR_SHOT CHARGE FLOOR_HAZARD
 
 [Eclipse]
@@ -237,7 +237,7 @@ contact_damage=2
 charge_contact_damage=3
 max_adds=6
 phase2_hp_ratio=0.48
-attack_cycle_phase1=SUMMON_WAVE RADIAL_BURST
+attack_cycle_phase1=MIRROR_SHOT DENSE_RING
 attack_cycle_phase2=SUMMON_WAVE SPIRAL_BURST DENSE_RING
 
 [IronSaint]
@@ -304,3 +304,107 @@ max_adds=6
 phase2_hp_ratio=0.32
 attack_cycle_phase1=TELEPORT_BURST FLOOR_HAZARD
 attack_cycle_phase2=TELEPORT_BURST SUMMON_WAVE MIRROR_SHOT SPIRAL_BURST
+
+[Ashcaller]
+hp=780
+drift_speed=26
+attack_cd_phase1=1.7
+attack_cd_phase2=1.0
+charge_speed=250
+phase2_hp_ratio=0.5
+contact_damage=1
+charge_contact_damage=2
+max_adds=3
+attack_cycle_phase1=CARDINAL_BURST TELEPORT_BURST
+attack_cycle_phase2=CARDINAL_BURST TELEPORT_BURST GAPPED_RING
+
+[Frostgrip]
+hp=820
+drift_speed=24
+attack_cd_phase1=1.6
+attack_cd_phase2=0.95
+charge_speed=240
+phase2_hp_ratio=0.5
+contact_damage=1
+charge_contact_damage=2
+max_adds=3
+attack_cycle_phase1=TRIPLE_SPREAD LASER_SWEEP
+attack_cycle_phase2=TRIPLE_SPREAD LASER_SWEEP FLOOR_HAZARD
+
+[Voidcrown]
+hp=1100
+drift_speed=28
+attack_cd_phase1=1.4
+attack_cd_phase2=0.8
+charge_speed=270
+phase2_hp_ratio=0.45
+contact_damage=2
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=SPIRAL_BURST TELEPORT_BURST MIRROR_SHOT
+attack_cycle_phase2=SPIRAL_BURST TELEPORT_BURST MIRROR_SHOT DENSE_RING
+
+[Duskfang]
+hp=1050
+drift_speed=30
+attack_cd_phase1=1.35
+attack_cd_phase2=0.75
+charge_speed=280
+phase2_hp_ratio=0.45
+contact_damage=2
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=CHARGE GAPPED_RING
+attack_cycle_phase2=CHARGE GAPPED_RING CARDINAL_BURST
+
+[Emberlord]
+hp=1150
+drift_speed=27
+attack_cd_phase1=1.3
+attack_cd_phase2=0.75
+charge_speed=260
+phase2_hp_ratio=0.45
+contact_damage=2
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=FLOOR_HAZARD LASER_SWEEP MIRROR_SHOT
+attack_cycle_phase2=FLOOR_HAZARD LASER_SWEEP MIRROR_SHOT TELEPORT_BURST
+
+[Hollowqueen]
+hp=1200
+drift_speed=25
+attack_cd_phase1=1.3
+attack_cd_phase2=0.7
+charge_speed=250
+phase2_hp_ratio=0.4
+contact_damage=2
+charge_contact_damage=2
+max_adds=5
+attack_cycle_phase1=SUMMON_WAVE TRIPLE_SPREAD
+attack_cycle_phase2=SUMMON_WAVE TRIPLE_SPREAD SPIRAL_BURST
+
+[Graveforge]
+hp=1250
+drift_speed=26
+attack_cd_phase1=1.25
+attack_cd_phase2=0.7
+charge_speed=265
+phase2_hp_ratio=0.4
+contact_damage=2
+charge_contact_damage=2
+max_adds=5
+attack_cycle_phase1=DENSE_RING TELEPORT_BURST
+attack_cycle_phase2=DENSE_RING TELEPORT_BURST CHARGE
+
+[Sovereign]
+hp=1400
+drift_speed=29
+attack_cd_phase1=1.15
+attack_cd_phase2=0.65
+charge_speed=290
+phase2_hp_ratio=0.4
+contact_damage=2
+charge_contact_damage=2
+max_adds=5
+attack_cycle_phase1=RADIAL_BURST CARDINAL_BURST GAPPED_RING
+attack_cycle_phase2=RADIAL_BURST CARDINAL_BURST GAPPED_RING TELEPORT_BURST MIRROR_SHOT

@@ -151,6 +151,32 @@ namespace {
         }
     }
 
+    // MIRROR_SHOT: fires from the point on the opposite side of the room
+    // from the boss (mirrored through room center), aimed at the player.
+    // Reads as a genuine "second source" instead of a reskinned ring.
+    void FireMirrorShot(Boss& boss, Vec2 playerPos, std::vector<Projectile>& out) {
+        const Vec2 roomCenter = { 160.0f, 90.0f }; // 320x180 play area center
+        Vec2 mirrorPos = {
+            roomCenter.x + (roomCenter.x - boss.pos.x),
+            roomCenter.y + (roomCenter.y - boss.pos.y)
+        };
+
+        Vec2 dirFromBoss = Normalize({ playerPos.x - boss.pos.x, playerPos.y - boss.pos.y });
+        Vec2 dirFromMirror = Normalize({ playerPos.x - mirrorPos.x, playerPos.y - mirrorPos.y });
+        const float speed = 90.0f;
+
+        ProjectileSystem::Spawn(
+            out, boss.pos,
+            { dirFromBoss.x * speed, dirFromBoss.y * speed },
+            BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
+        );
+        ProjectileSystem::Spawn(
+            out, mirrorPos,
+            { dirFromMirror.x * speed, dirFromMirror.y * speed },
+            BOSS_PROJECTILE_DAMAGE, BOSS_PROJECTILE_RANGE
+        );
+    }
+
     void FireTeleportBurst(Boss& boss, Vec2 playerPos, std::vector<Projectile>& out) {
         const Vec2 pads[] = {
             { 44.0f, 28.0f }, { 224.0f, 28.0f }, { 44.0f, 104.0f }, { 224.0f, 104.0f }
@@ -219,7 +245,7 @@ namespace {
             case BossAttackType::LASER_SWEEP:     FireLaserSweep(boss, playerPos, bossProjectiles); break;
             case BossAttackType::SUMMON_WAVE:     SummonAdds(boss, roomAdds, spawnedAdds); break;
             case BossAttackType::FLOOR_HAZARD:    DropFloorHazard(boss, playerPos); break;
-            case BossAttackType::MIRROR_SHOT:     FireGappedRing(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::MIRROR_SHOT:     FireMirrorShot(boss, playerPos, bossProjectiles); break;
             case BossAttackType::CARDINAL_BURST:  FireCardinalBurst(boss, bossProjectiles); break;
             case BossAttackType::SPIRAL_BURST:    FireSpiralBurst(boss, bossProjectiles); break;
             case BossAttackType::TRIPLE_SPREAD:   FireTripleSpread(boss, playerPos, bossProjectiles); break;

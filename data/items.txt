@@ -955,7 +955,7 @@ desc=Enemies that touch you take damage back
 tier=1
 pools=TREASURE,SHOP,CHEST
 
-[SecondWind]
+[LastStand]
 type=unlock
 flag=second_wind
 desc=First time you drop to your last HP, gain a shield
@@ -999,10 +999,10 @@ desc=All incoming damage is doubled. No going back.
 tier=1
 pools=TREASURE,SHOP,CHEST
 
-[Overclock]
+[OverdriveCore]
 type=unlock
 flag=overclock
-desc=Much faster and quicker, but bleeds HP over time
+desc=Redlines your systems faster, but it costs you blood
 tier=1
 pools=TREASURE,SHOP,CHEST
 
@@ -1221,14 +1221,7 @@ desc=Some shots freeze enemies in place
 tier=3
 pools=TREASURE,BOSS,CHEST
 
-[RicochetCore]
-type=stat_mod
-stat=wallBounceChance
-mode=add
-value=0.35
-desc=Shots rebound off the room walls
-tier=2
-pools=TREASURE,SHOP,CHEST
+
 
 [SplitSpark]
 type=stat_mod
