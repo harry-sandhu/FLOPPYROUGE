@@ -33,39 +33,84 @@ enum class ChestType {
     GAMBLE
 };
 
-enum class RoomRockType {
-    BOMBABLE_COIN,
-    BOMBABLE_HEART,
-    INDESTRUCTIBLE
+enum class RoomTerrainType {
+    ROCK_BOMBABLE_COIN,
+    ROCK_BOMBABLE_HEART,
+    ROCK_INDESTRUCTIBLE,
+    PIT,
+    TRAP_POISON,
+    TRAP_TELEPORT,
+    TRAP_SUMMON,
+    TRAP_SPIKE
 };
 
-enum class RoomTrapType {
-    POISON,
-    TELEPORT,
-    SUMMON,
-    SPIKE
+enum class RoomArchetype {
+    OPEN_ARENA,
+    PILLAR_FIELD,
+    BROKEN_ARENA,
+    GAUNTLET,
+    HAZARD_ROOM,
+    RITUAL_ROOM
 };
 
-struct RoomRock {
+enum class RoomEncounterFamily {
+    RUSH,
+    ARTILLERY,
+    SWARM,
+    GUARDIAN,
+    AMBUSH,
+    MIXED,
+    ELITE
+};
+
+enum class DungeonTheme {
+    RUINS,
+    FORGE,
+    CRYPT,
+    FUNGAL,
+    DRACONIC
+};
+
+struct TerrainTraversalProfile {
+    bool canFly = false;
+    bool canCrossPits = false;
+    bool immuneToHazards = false;
+};
+
+struct RoomTerrainFeature {
     Vec2 pos = { 0.0f, 0.0f };
     float w = 10.0f;
     float h = 10.0f;
-    RoomRockType type = RoomRockType::BOMBABLE_COIN;
+    RoomTerrainType type = RoomTerrainType::ROCK_BOMBABLE_COIN;
     int rewardAmount = 1;
+    int featureId = -1;
+    int linkId = -1;
     bool broken = false;
-
-    Rect GetRect() const { return { pos.x, pos.y, w, h }; }
-    bool IsBombable() const { return type != RoomRockType::INDESTRUCTIBLE; }
-};
-
-struct RoomTrap {
-    Vec2 pos = { 0.0f, 0.0f };
-    float w = 10.0f;
-    float h = 10.0f;
-    RoomTrapType type = RoomTrapType::POISON;
     bool triggered = false;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
+    bool BlocksMovement() const {
+        return type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
+               type == RoomTerrainType::ROCK_BOMBABLE_HEART ||
+               type == RoomTerrainType::ROCK_INDESTRUCTIBLE;
+    }
+    bool IsBombable() const {
+        return type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
+               type == RoomTerrainType::ROCK_BOMBABLE_HEART;
+    }
+    bool IsTrap() const {
+        return type == RoomTerrainType::TRAP_POISON ||
+               type == RoomTerrainType::TRAP_TELEPORT ||
+               type == RoomTerrainType::TRAP_SUMMON ||
+               type == RoomTerrainType::TRAP_SPIKE;
+    }
+    bool IsHazard() const {
+        return type == RoomTerrainType::PIT || IsTrap();
+    }
+
+    bool IsLinked() const {
+        return linkId >= 0;
+    }
 };
 
 struct RoomPickup {
@@ -86,6 +131,8 @@ struct Room {
     float y = 0.0f;
     float width = 320.0f;
     float height = 180.0f;
+    float timeInRoom = 0.0f;
+    bool pacingReinforcementSent = false;
 
     Vec2 gridPos = { 0.0f, 0.0f };
 
@@ -100,15 +147,30 @@ struct Room {
 
     int bossVariant = 0;
     int targetDegree = 0;
+    RoomArchetype archetype = RoomArchetype::OPEN_ARENA;
+    RoomEncounterFamily encounterFamily = RoomEncounterFamily::MIXED;
+    DungeonTheme theme = DungeonTheme::RUINS;
 
     std::vector<int> enemySpawnList;
     std::vector<int> itemSpawnList;
     std::vector<RoomPickup> pickups;
-    std::vector<RoomRock> rocks;
-    std::vector<RoomTrap> traps;
+    std::vector<RoomTerrainFeature> terrain;
 
     bool IsEnemyCurseRoom() const {
         return type == RoomType::CURSE && !enemySpawnList.empty();
+    }
+
+    bool CanTraverseTerrain(const RoomTerrainFeature& feature, const TerrainTraversalProfile& profile) const {
+        if (feature.type == RoomTerrainType::PIT) {
+            return profile.canFly || profile.canCrossPits;
+        }
+        if (feature.IsTrap()) {
+            return true;
+        }
+        if (feature.IsBombable() || feature.type == RoomTerrainType::ROCK_INDESTRUCTIBLE) {
+            return false;
+        }
+        return true;
     }
 
     // Wall thickness and door-gap width, in the same 320x180 internal-pixel

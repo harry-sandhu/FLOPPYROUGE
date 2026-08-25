@@ -1,10 +1,12 @@
 #include "dungeon.h"
 #include <algorithm>
+#include <array>
 #include <climits>
 #include <queue>
 #include <cstring>
 #include "../../engine/data_parser.h"
 #include "../enemies/enemy_database.h"
+#include "../bosses/boss_database.h"
 #include "../items/item_database.h"
 
 namespace {
@@ -38,6 +40,144 @@ namespace {
         return ChestType::IRON;
     }
 
+    struct DungeonThemeProfile {
+        DungeonTheme theme = DungeonTheme::RUINS;
+        char name[16] = {};
+        char enemyPools[96] = {};
+        char bossPools[96] = {};
+        float specialEnemyBonus = 0.0f;
+        float trapChanceBonus = 0.0f;
+        int rockBonus = 0;
+        int pitBonus = 0;
+        int rewardBonus = 0;
+    };
+
+    DungeonThemeProfile g_themeProfiles[8];
+    int g_themeProfileCount = 0;
+
+    DungeonTheme ParseThemeName(const char* s) {
+        if (std::strcmp(s, "FORGE") == 0) return DungeonTheme::FORGE;
+        if (std::strcmp(s, "CRYPT") == 0) return DungeonTheme::CRYPT;
+        if (std::strcmp(s, "FUNGAL") == 0) return DungeonTheme::FUNGAL;
+        if (std::strcmp(s, "DRACONIC") == 0) return DungeonTheme::DRACONIC;
+        return DungeonTheme::RUINS;
+    }
+
+    const char* ThemeName(DungeonTheme theme) {
+        switch (theme) {
+            case DungeonTheme::FORGE: return "FORGE";
+            case DungeonTheme::CRYPT: return "CRYPT";
+            case DungeonTheme::FUNGAL: return "FUNGAL";
+            case DungeonTheme::DRACONIC: return "DRACONIC";
+            case DungeonTheme::RUINS:
+            default:
+                return "RUINS";
+        }
+    }
+
+    const DungeonThemeProfile& DefaultThemeProfile(DungeonTheme theme) {
+        static DungeonThemeProfile defaults[5];
+        static bool initialized = false;
+        if (!initialized) {
+            initialized = true;
+
+            defaults[0].theme = DungeonTheme::RUINS;
+            std::strncpy(defaults[0].name, "RUINS", sizeof(defaults[0].name) - 1);
+            std::strncpy(defaults[0].enemyPools, "Zombie,Gunner,Fly,Spider", sizeof(defaults[0].enemyPools) - 1);
+            std::strncpy(defaults[0].bossPools, "Runt,Pinwheel,Spinner,GlassKing", sizeof(defaults[0].bossPools) - 1);
+
+            defaults[1].theme = DungeonTheme::FORGE;
+            std::strncpy(defaults[1].name, "FORGE", sizeof(defaults[1].name) - 1);
+            std::strncpy(defaults[1].enemyPools, "BombKnight,Warlord,JuggernautPrime,HexMatron", sizeof(defaults[1].enemyPools) - 1);
+            std::strncpy(defaults[1].bossPools, "IronSaint,Graveforge,Emberlord", sizeof(defaults[1].bossPools) - 1);
+            defaults[1].rockBonus = 1;
+            defaults[1].trapChanceBonus = 0.08f;
+            defaults[1].specialEnemyBonus = 0.02f;
+
+            defaults[2].theme = DungeonTheme::CRYPT;
+            std::strncpy(defaults[2].name, "CRYPT", sizeof(defaults[2].name) - 1);
+            std::strncpy(defaults[2].enemyPools, "Mimic,BlightGrub,HexMatron,Reaper", sizeof(defaults[2].enemyPools) - 1);
+            std::strncpy(defaults[2].bossPools, "Grief,Hollowqueen,Voidcrown", sizeof(defaults[2].bossPools) - 1);
+            defaults[2].trapChanceBonus = 0.12f;
+            defaults[2].pitBonus = 1;
+
+            defaults[3].theme = DungeonTheme::FUNGAL;
+            std::strncpy(defaults[3].name, "FUNGAL", sizeof(defaults[3].name) - 1);
+            std::strncpy(defaults[3].enemyPools, "BlightGrub,VenomEye,SplitterLord,SnareTurret", sizeof(defaults[3].enemyPools) - 1);
+            std::strncpy(defaults[3].bossPools, "Mire,Spite,Harvester,Nullsire", sizeof(defaults[3].bossPools) - 1);
+            defaults[3].trapChanceBonus = 0.10f;
+            defaults[3].specialEnemyBonus = 0.03f;
+            defaults[3].pitBonus = 1;
+
+            defaults[4].theme = DungeonTheme::DRACONIC;
+            std::strncpy(defaults[4].name, "DRACONIC", sizeof(defaults[4].name) - 1);
+            std::strncpy(defaults[4].enemyPools, "Ravager,Stormeye,Railwing,Titan,Eclipse", sizeof(defaults[4].enemyPools) - 1);
+            std::strncpy(defaults[4].bossPools, "DragonSovereign,Sovereign,Eclipse,Emberlord", sizeof(defaults[4].bossPools) - 1);
+            defaults[4].rockBonus = 2;
+            defaults[4].trapChanceBonus = 0.15f;
+            defaults[4].specialEnemyBonus = 0.05f;
+            defaults[4].pitBonus = 2;
+            defaults[4].rewardBonus = 1;
+        }
+
+        for (const auto& profile : defaults) {
+            if (profile.theme == theme) return profile;
+        }
+        return defaults[0];
+    }
+
+    const DungeonThemeProfile& ThemeProfileFor(DungeonTheme theme) {
+        for (int i = 0; i < g_themeProfileCount; ++i) {
+            if (g_themeProfiles[i].theme == theme) return g_themeProfiles[i];
+        }
+        return DefaultThemeProfile(theme);
+    }
+
+    void LoadDefaultThemeProfiles() {
+        g_themeProfileCount = 0;
+        for (DungeonTheme theme : { DungeonTheme::RUINS, DungeonTheme::FORGE, DungeonTheme::CRYPT,
+                                     DungeonTheme::FUNGAL, DungeonTheme::DRACONIC }) {
+            if (g_themeProfileCount >= (int)(sizeof(g_themeProfiles) / sizeof(g_themeProfiles[0]))) break;
+            g_themeProfiles[g_themeProfileCount++] = DefaultThemeProfile(theme);
+        }
+    }
+
+    bool LoadThemeProfiles(const char* path) {
+        std::vector<DataBlock> blocks = DataParser::ParseFile(path);
+        if (blocks.empty()) return false;
+
+        LoadDefaultThemeProfiles();
+        for (const DataBlock& block : blocks) {
+            if (g_themeProfileCount >= (int)(sizeof(g_themeProfiles) / sizeof(g_themeProfiles[0]))) break;
+            DungeonThemeProfile profile = DefaultThemeProfile(ParseThemeName(block.name));
+            profile.theme = ParseThemeName(block.GetString("theme", block.name));
+            std::strncpy(profile.name, block.name, sizeof(profile.name) - 1);
+            std::strncpy(profile.enemyPools, block.GetString("enemy_pools", profile.enemyPools), sizeof(profile.enemyPools) - 1);
+            profile.enemyPools[sizeof(profile.enemyPools) - 1] = '\0';
+            std::strncpy(profile.bossPools, block.GetString("boss_pools", profile.bossPools), sizeof(profile.bossPools) - 1);
+            profile.bossPools[sizeof(profile.bossPools) - 1] = '\0';
+            profile.specialEnemyBonus = std::clamp(block.GetFloat("special_enemy_bonus", profile.specialEnemyBonus), 0.0f, 0.25f);
+            profile.trapChanceBonus = std::clamp(block.GetFloat("trap_chance_bonus", profile.trapChanceBonus), -0.10f, 0.30f);
+            profile.rockBonus = block.GetInt("rock_bonus", profile.rockBonus);
+            profile.pitBonus = block.GetInt("pit_bonus", profile.pitBonus);
+            profile.rewardBonus = block.GetInt("reward_bonus", profile.rewardBonus);
+
+            bool replaced = false;
+            for (int i = 0; i < g_themeProfileCount; ++i) {
+                if (g_themeProfiles[i].theme == profile.theme) {
+                    g_themeProfiles[i] = profile;
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) {
+                g_themeProfiles[g_themeProfileCount++] = profile;
+            }
+        }
+
+        return true;
+    }
+
     // Normal-room connection-degree distribution: 10% / 50% / 30% / 10%
     // for 1 / 2 / 3 / 4 connections. START/BOSS/TREASURE/CURSE are excluded.
     int RollNormalRoomTargetDegree() {
@@ -54,6 +194,114 @@ namespace {
         int itemId = ItemDatabase::Pick(pools, cappedMin, cappedMax);
         if (itemId >= 0) return itemId;
         return ItemDatabase::Pick(nullptr, cappedMin, cappedMax);
+    }
+
+    DungeonTheme RollDungeonTheme(int floor) {
+        if (floor <= 1) return DungeonTheme::RUINS;
+        if (floor == 2) return DungeonTheme::FORGE;
+        if (floor == 3) return DungeonTheme::CRYPT;
+        if (floor == 4) return DungeonTheme::FUNGAL;
+        return DungeonTheme::DRACONIC;
+    }
+
+    RoomArchetype RollArchetype(RoomType type, int floor) {
+        switch (type) {
+            case RoomType::START:
+            case RoomType::TREASURE:
+            case RoomType::SHOP:
+                return RoomArchetype::OPEN_ARENA;
+            case RoomType::BOSS:
+                return RoomArchetype::RITUAL_ROOM;
+            case RoomType::CURSE:
+                return (RNG::Chance(0.55f)) ? RoomArchetype::HAZARD_ROOM : RoomArchetype::BROKEN_ARENA;
+            case RoomType::NORMAL:
+            default:
+                break;
+        }
+
+        float roll = RNG::Range(0.0f, 1.0f);
+        if (floor <= 1) {
+            if (roll < 0.35f) return RoomArchetype::OPEN_ARENA;
+            if (roll < 0.65f) return RoomArchetype::PILLAR_FIELD;
+            return RoomArchetype::BROKEN_ARENA;
+        }
+        if (floor == 2) {
+            if (roll < 0.25f) return RoomArchetype::OPEN_ARENA;
+            if (roll < 0.55f) return RoomArchetype::PILLAR_FIELD;
+            if (roll < 0.80f) return RoomArchetype::GAUNTLET;
+            return RoomArchetype::BROKEN_ARENA;
+        }
+        if (floor == 3) {
+            if (roll < 0.20f) return RoomArchetype::GAUNTLET;
+            if (roll < 0.45f) return RoomArchetype::HAZARD_ROOM;
+            if (roll < 0.70f) return RoomArchetype::PILLAR_FIELD;
+            return RoomArchetype::BROKEN_ARENA;
+        }
+        if (roll < 0.20f) return RoomArchetype::HAZARD_ROOM;
+        if (roll < 0.45f) return RoomArchetype::GAUNTLET;
+        if (roll < 0.70f) return RoomArchetype::PILLAR_FIELD;
+        return RoomArchetype::BROKEN_ARENA;
+    }
+
+    RoomEncounterFamily RollEncounterFamily(RoomArchetype archetype, int floor) {
+        switch (archetype) {
+            case RoomArchetype::OPEN_ARENA:
+                return RoomEncounterFamily::RUSH;
+            case RoomArchetype::PILLAR_FIELD:
+                return RoomEncounterFamily::GUARDIAN;
+            case RoomArchetype::BROKEN_ARENA:
+                return RoomEncounterFamily::AMBUSH;
+            case RoomArchetype::GAUNTLET:
+                return RoomEncounterFamily::SWARM;
+            case RoomArchetype::HAZARD_ROOM:
+                return RoomEncounterFamily::ARTILLERY;
+            case RoomArchetype::RITUAL_ROOM:
+                return RoomEncounterFamily::ELITE;
+        }
+        return (floor >= 3) ? RoomEncounterFamily::MIXED : RoomEncounterFamily::RUSH;
+    }
+
+    int EncounterFamilySpawnBias(RoomEncounterFamily family) {
+        switch (family) {
+            case RoomEncounterFamily::RUSH: return -1;
+            case RoomEncounterFamily::ARTILLERY: return 0;
+            case RoomEncounterFamily::SWARM: return 2;
+            case RoomEncounterFamily::GUARDIAN: return 0;
+            case RoomEncounterFamily::AMBUSH: return 1;
+            case RoomEncounterFamily::MIXED: return 1;
+            case RoomEncounterFamily::ELITE: return 0;
+        }
+        return 0;
+    }
+
+    float EncounterFamilySpecialChance(RoomEncounterFamily family) {
+        switch (family) {
+            case RoomEncounterFamily::RUSH: return 0.04f;
+            case RoomEncounterFamily::ARTILLERY: return 0.16f;
+            case RoomEncounterFamily::SWARM: return 0.08f;
+            case RoomEncounterFamily::GUARDIAN: return 0.18f;
+            case RoomEncounterFamily::AMBUSH: return 0.12f;
+            case RoomEncounterFamily::MIXED: return 0.10f;
+            case RoomEncounterFamily::ELITE: return 0.22f;
+        }
+        return 0.10f;
+    }
+
+    bool PoolsContainToken(const char* pools, const char* token) {
+        if (!pools || !token || !token[0]) return false;
+        char buffer[96];
+        std::strncpy(buffer, pools, sizeof(buffer) - 1);
+        buffer[sizeof(buffer) - 1] = '\0';
+        char* part = std::strtok(buffer, ",");
+        while (part) {
+            while (*part == ' ' || *part == '\t') ++part;
+            char* end = part + std::strlen(part);
+            while (end > part && (end[-1] == ' ' || end[-1] == '\t')) --end;
+            *end = '\0';
+            if (std::strcmp(part, token) == 0) return true;
+            part = std::strtok(nullptr, ",");
+        }
+        return false;
     }
 
     int PickChestItem(ChestType chestType, int floor) {
@@ -76,126 +324,416 @@ namespace {
         return ItemDatabase::Pick(nullptr, 1, 5);
     }
 
+    constexpr int TERRAIN_GRID_W = 16;
+    constexpr int TERRAIN_GRID_H = 9;
+    constexpr float TERRAIN_CELL_W = 20.0f;
+    constexpr float TERRAIN_CELL_H = 20.0f;
+
+    int TerrainCellIndex(int x, int y) {
+        return y * TERRAIN_GRID_W + x;
+    }
+
+    Rect TerrainCellRect(const Room& room, int x, int y) {
+        return {
+            room.x + (float)x * TERRAIN_CELL_W,
+            room.y + (float)y * TERRAIN_CELL_H,
+            TERRAIN_CELL_W,
+            TERRAIN_CELL_H
+        };
+    }
+
+    bool TerrainBlocksBaseline(const RoomTerrainFeature& feature) {
+        return feature.type == RoomTerrainType::PIT || feature.BlocksMovement();
+    }
+
+    bool IsReservedTerrainCell(const Room& room, int x, int y) {
+        const int centerX = TERRAIN_GRID_W / 2;
+        const int centerY = TERRAIN_GRID_H / 2;
+
+        if (x == centerX || x == centerX - 1 || y == centerY) return true;
+
+        if (room.north >= 0 && y <= 1 && x >= centerX - 1 && x <= centerX + 1) return true;
+        if (room.south >= 0 && y >= TERRAIN_GRID_H - 2 && x >= centerX - 1 && x <= centerX + 1) return true;
+        if (room.west >= 0 && x <= 1 && y >= centerY - 1 && y <= centerY + 1) return true;
+        if (room.east >= 0 && x >= TERRAIN_GRID_W - 2 && y >= centerY - 1 && y <= centerY + 1) return true;
+
+        return false;
+    }
+
+    bool RectsOverlap(const Rect& a, const Rect& b);
+
+    void MarkTerrainOccupancy(const Room& room, std::array<bool, TERRAIN_GRID_W * TERRAIN_GRID_H>& blocked) {
+        blocked.fill(false);
+        for (const auto& feature : room.terrain) {
+            if (feature.broken) continue;
+            if (!TerrainBlocksBaseline(feature)) continue;
+
+            Rect featureRect = feature.GetRect();
+            for (int y = 0; y < TERRAIN_GRID_H; ++y) {
+                for (int x = 0; x < TERRAIN_GRID_W; ++x) {
+                    if (IsReservedTerrainCell(room, x, y)) continue;
+                    Rect cellRect = TerrainCellRect(room, x, y);
+                    if (featureRect.x + featureRect.w <= cellRect.x ||
+                        cellRect.x + cellRect.w <= featureRect.x ||
+                        featureRect.y + featureRect.h <= cellRect.y ||
+                        cellRect.y + cellRect.h <= featureRect.y) {
+                        continue;
+                    }
+                    blocked[TerrainCellIndex(x, y)] = true;
+                }
+            }
+        }
+    }
+
+    bool ValidateTerrainLayout(const Room& room) {
+        std::array<bool, TERRAIN_GRID_W * TERRAIN_GRID_H> blocked{};
+        MarkTerrainOccupancy(room, blocked);
+
+        std::vector<int> doorCells;
+        auto AddDoorCells = [&](int minX, int maxX, int minY, int maxY) {
+            for (int y = minY; y <= maxY; ++y) {
+                for (int x = minX; x <= maxX; ++x) {
+                    if (x < 0 || y < 0 || x >= TERRAIN_GRID_W || y >= TERRAIN_GRID_H) continue;
+                    if (blocked[TerrainCellIndex(x, y)]) continue;
+                    doorCells.push_back(TerrainCellIndex(x, y));
+                }
+            }
+        };
+
+        if (room.north >= 0) AddDoorCells(TERRAIN_GRID_W / 2 - 1, TERRAIN_GRID_W / 2 + 1, 0, 1);
+        if (room.south >= 0) AddDoorCells(TERRAIN_GRID_W / 2 - 1, TERRAIN_GRID_W / 2 + 1, TERRAIN_GRID_H - 2, TERRAIN_GRID_H - 1);
+        if (room.west >= 0) AddDoorCells(0, 1, TERRAIN_GRID_H / 2 - 1, TERRAIN_GRID_H / 2 + 1);
+        if (room.east >= 0) AddDoorCells(TERRAIN_GRID_W - 2, TERRAIN_GRID_W - 1, TERRAIN_GRID_H / 2 - 1, TERRAIN_GRID_H / 2 + 1);
+
+        if (doorCells.empty()) return true;
+
+        std::array<bool, TERRAIN_GRID_W * TERRAIN_GRID_H> visited{};
+        std::queue<int> q;
+        visited[doorCells[0]] = true;
+        q.push(doorCells[0]);
+
+        auto EnqueueNeighbor = [&](int x, int y) {
+            if (x < 0 || y < 0 || x >= TERRAIN_GRID_W || y >= TERRAIN_GRID_H) return;
+            int idx = TerrainCellIndex(x, y);
+            if (blocked[idx] || visited[idx]) return;
+            visited[idx] = true;
+            q.push(idx);
+        };
+
+        while (!q.empty()) {
+            int idx = q.front();
+            q.pop();
+            int x = idx % TERRAIN_GRID_W;
+            int y = idx / TERRAIN_GRID_W;
+            EnqueueNeighbor(x + 1, y);
+            EnqueueNeighbor(x - 1, y);
+            EnqueueNeighbor(x, y + 1);
+            EnqueueNeighbor(x, y - 1);
+        }
+
+        for (int doorCell : doorCells) {
+            if (!visited[doorCell]) return false;
+        }
+
+        return true;
+    }
+
     bool RectsOverlap(const Rect& a, const Rect& b) {
         return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
     }
 
-    void PopulateRoomHazards(Room& room, int floor) {
-        room.rocks.clear();
-        room.traps.clear();
+    bool PopulateRoomHazards(Room& room, int floor) {
+        room.terrain.clear();
 
         if (room.type == RoomType::START || room.type == RoomType::TREASURE || room.type == RoomType::SHOP) {
-            return;
+            return true;
         }
 
-        static const Vec2 ROCK_CLUSTERS[][4] = {
-            { { 34.0f, 30.0f }, { 46.0f, 30.0f }, { 34.0f, 42.0f }, { 46.0f, 42.0f } },
-            { { 238.0f, 30.0f }, { 250.0f, 30.0f }, { 238.0f, 42.0f }, { 250.0f, 42.0f } },
-            { { 34.0f, 126.0f }, { 46.0f, 126.0f }, { 34.0f, 138.0f }, { 46.0f, 138.0f } },
-            { { 238.0f, 126.0f }, { 250.0f, 126.0f }, { 238.0f, 138.0f }, { 250.0f, 138.0f } },
-            { { 84.0f, 66.0f }, { 96.0f, 66.0f }, { 84.0f, 78.0f }, { 96.0f, 78.0f } },
-            { { 220.0f, 66.0f }, { 232.0f, 66.0f }, { 220.0f, 78.0f }, { 232.0f, 78.0f } },
-            { { 84.0f, 100.0f }, { 96.0f, 100.0f }, { 84.0f, 112.0f }, { 96.0f, 112.0f } },
-            { { 220.0f, 100.0f }, { 232.0f, 100.0f }, { 220.0f, 112.0f }, { 232.0f, 112.0f } }
+        const DungeonThemeProfile& themeProfile = ThemeProfileFor(room.theme);
+        int nextFeatureId = 0;
+
+        auto AddFeature = [&](RoomTerrainFeature feature) {
+            feature.featureId = nextFeatureId++;
+            room.terrain.push_back(feature);
         };
 
-        static const Vec2 TRAP_SPOTS[] = {
-            { 70.0f, 48.0f }, { 158.0f, 48.0f }, { 246.0f, 48.0f },
-            { 70.0f, 116.0f }, { 158.0f, 116.0f }, { 246.0f, 116.0f },
-            { 122.0f, 82.0f }, { 196.0f, 82.0f }
+        auto OverlapsBlocking = [&](const Rect& rect) {
+            for (const auto& feature : room.terrain) {
+                if (feature.broken) continue;
+                if (!TerrainBlocksBaseline(feature)) continue;
+                if (RectsOverlap(rect, feature.GetRect())) return true;
+            }
+            return false;
         };
 
-        const Rect playerCore = { room.width * 0.5f - 18.0f, room.height * 0.5f - 18.0f, 36.0f, 36.0f };
-
-        int clusterCount = (room.type == RoomType::BOSS) ? 4 : 3;
-        clusterCount += std::min(2, floor / 2);
-        if (room.type == RoomType::CURSE) clusterCount++;
-        clusterCount = std::clamp(clusterCount, 2, 7);
-
-        std::vector<int> clusterIndices;
-        for (int i = 0; i < (int)(sizeof(ROCK_CLUSTERS) / sizeof(ROCK_CLUSTERS[0])); ++i) {
-            bool overlapsPlayer = false;
-            for (int j = 0; j < 4; ++j) {
-                Rect rockRect = { ROCK_CLUSTERS[i][j].x, ROCK_CLUSTERS[i][j].y, 12.0f, 12.0f };
-                if (RectsOverlap(rockRect, playerCore)) {
-                    overlapsPlayer = true;
-                    break;
+        auto GenerateTraps = [&]() {
+            int trapTarget = 0;
+            if (room.type == RoomType::BOSS) {
+                trapTarget = (floor >= 2 && RNG::Chance(0.70f)) ? 2 : 1;
+            } else if (room.type == RoomType::NORMAL || room.IsEnemyCurseRoom()) {
+                float trapChance = std::clamp(0.20f + 0.08f * (float)floor, 0.20f, 0.55f);
+                if (room.archetype == RoomArchetype::HAZARD_ROOM) trapChance += 0.15f;
+                if (room.archetype == RoomArchetype::GAUNTLET) trapChance += 0.08f;
+                trapChance += themeProfile.trapChanceBonus;
+                if (RNG::Chance(std::clamp(trapChance, 0.0f, 0.75f))) {
+                    trapTarget = 1;
+                    if (floor >= 3 && RNG::Chance(0.30f)) trapTarget = 2;
                 }
             }
-            if (!overlapsPlayer) clusterIndices.push_back(i);
-        }
+            trapTarget = std::min(trapTarget, 3);
 
-        for (int i = 0; i < clusterCount && !clusterIndices.empty(); ++i) {
-            int choiceIndex = RNG::Range(0, (int)clusterIndices.size() - 1);
-            int cluster = clusterIndices[choiceIndex];
-            clusterIndices.erase(clusterIndices.begin() + choiceIndex);
+            static const Vec2 TRAP_SPOTS[] = {
+                { 70.0f, 48.0f }, { 158.0f, 48.0f }, { 246.0f, 48.0f },
+                { 70.0f, 116.0f }, { 158.0f, 116.0f }, { 246.0f, 116.0f },
+                { 122.0f, 82.0f }, { 196.0f, 82.0f }
+            };
 
-            int rocksInCluster = RNG::Chance(0.35f) ? 4 : 3;
-            if (room.type == RoomType::BOSS) rocksInCluster = 4;
-            if (room.type == RoomType::CURSE && RNG::Chance(0.35f)) rocksInCluster = 2;
+            const Rect playerCore = { room.width * 0.5f - 18.0f, room.height * 0.5f - 18.0f, 36.0f, 36.0f };
+            std::vector<int> trapIndices;
+            for (int i = 0; i < (int)(sizeof(TRAP_SPOTS) / sizeof(TRAP_SPOTS[0])); ++i) {
+                Rect trapRect = { TRAP_SPOTS[i].x, TRAP_SPOTS[i].y, 12.0f, 12.0f };
+                if (RectsOverlap(trapRect, playerCore)) continue;
+                if (OverlapsBlocking(trapRect)) continue;
+                trapIndices.push_back(i);
+            }
 
-            for (int j = 0; j < rocksInCluster; ++j) {
-                RoomRock rock;
-                rock.pos = ROCK_CLUSTERS[cluster][j];
-                rock.w = 12.0f;
-                rock.h = 12.0f;
-                float indestructibleChance = 0.18f + 0.04f * (float)floor;
-                if (room.type == RoomType::BOSS) indestructibleChance += 0.10f;
-                if (room.type == RoomType::CURSE) indestructibleChance += 0.05f;
-                if (RNG::Chance(std::clamp(indestructibleChance, 0.18f, 0.45f))) {
-                    rock.type = RoomRockType::INDESTRUCTIBLE;
-                } else if (RNG::Chance(0.62f)) {
-                    rock.type = RoomRockType::BOMBABLE_COIN;
-                    rock.rewardAmount = RNG::Chance(0.22f) ? 5 : 1;
-                } else {
-                    rock.type = RoomRockType::BOMBABLE_HEART;
-                    rock.rewardAmount = 1;
+            for (int i = 0; i < trapTarget && !trapIndices.empty(); ++i) {
+                int choiceIndex = RNG::Range(0, (int)trapIndices.size() - 1);
+                int spotIndex = trapIndices[choiceIndex];
+                trapIndices.erase(trapIndices.begin() + choiceIndex);
+
+                RoomTerrainFeature feature;
+                feature.pos = TRAP_SPOTS[spotIndex];
+                feature.w = 12.0f;
+                feature.h = 12.0f;
+                feature.rewardAmount = 0;
+                int roll = RNG::Range(0, 99);
+                if (roll < 35) feature.type = RoomTerrainType::TRAP_POISON;
+                else if (roll < 62) feature.type = RoomTerrainType::TRAP_TELEPORT;
+                else if (roll < 84) feature.type = RoomTerrainType::TRAP_SUMMON;
+                else feature.type = RoomTerrainType::TRAP_SPIKE;
+                AddFeature(feature);
+            }
+        };
+
+        auto GenerateRuleBasedTerrain = [&]() {
+            static const Vec2 ROCK_CLUSTERS[][4] = {
+                { { 34.0f, 30.0f }, { 46.0f, 30.0f }, { 34.0f, 42.0f }, { 46.0f, 42.0f } },
+                { { 238.0f, 30.0f }, { 250.0f, 30.0f }, { 238.0f, 42.0f }, { 250.0f, 42.0f } },
+                { { 34.0f, 126.0f }, { 46.0f, 126.0f }, { 34.0f, 138.0f }, { 46.0f, 138.0f } },
+                { { 238.0f, 126.0f }, { 250.0f, 126.0f }, { 238.0f, 138.0f }, { 250.0f, 138.0f } },
+                { { 84.0f, 66.0f }, { 96.0f, 66.0f }, { 84.0f, 78.0f }, { 96.0f, 78.0f } },
+                { { 220.0f, 66.0f }, { 232.0f, 66.0f }, { 220.0f, 78.0f }, { 232.0f, 78.0f } },
+                { { 84.0f, 100.0f }, { 96.0f, 100.0f }, { 84.0f, 112.0f }, { 96.0f, 112.0f } },
+                { { 220.0f, 100.0f }, { 232.0f, 100.0f }, { 220.0f, 112.0f }, { 232.0f, 112.0f } }
+            };
+
+            static const Vec2 PIT_SPOTS[] = {
+                { 108.0f, 54.0f }, { 176.0f, 54.0f },
+                { 108.0f, 98.0f }, { 176.0f, 98.0f },
+                { 142.0f, 72.0f }
+            };
+
+            const Rect playerCore = { room.width * 0.5f - 18.0f, room.height * 0.5f - 18.0f, 36.0f, 36.0f };
+
+            int clusterCount = 2;
+            switch (room.archetype) {
+                case RoomArchetype::OPEN_ARENA: clusterCount = 1; break;
+                case RoomArchetype::PILLAR_FIELD: clusterCount = 3; break;
+                case RoomArchetype::BROKEN_ARENA: clusterCount = 4; break;
+                case RoomArchetype::GAUNTLET: clusterCount = 2; break;
+                case RoomArchetype::HAZARD_ROOM: clusterCount = 2; break;
+                case RoomArchetype::RITUAL_ROOM: clusterCount = 4; break;
+            }
+            clusterCount += std::min(2, floor / 2);
+            if (room.type == RoomType::CURSE) clusterCount++;
+            clusterCount += themeProfile.rockBonus;
+            clusterCount = std::clamp(clusterCount, 1, 7);
+
+            std::vector<int> clusterIndices;
+            for (int i = 0; i < (int)(sizeof(ROCK_CLUSTERS) / sizeof(ROCK_CLUSTERS[0])); ++i) {
+                bool overlapsPlayer = false;
+                for (int j = 0; j < 4; ++j) {
+                    Rect rockRect = { ROCK_CLUSTERS[i][j].x, ROCK_CLUSTERS[i][j].y, 12.0f, 12.0f };
+                    if (RectsOverlap(rockRect, playerCore)) {
+                        overlapsPlayer = true;
+                        break;
+                    }
                 }
-                room.rocks.push_back(rock);
+                if (!overlapsPlayer) clusterIndices.push_back(i);
             }
-        }
 
-        int trapTarget = 0;
-        if (room.type == RoomType::BOSS) {
-            trapTarget = (floor >= 2 && RNG::Chance(0.70f)) ? 2 : 1;
-        } else if (room.type == RoomType::NORMAL || room.IsEnemyCurseRoom()) {
-            if (RNG::Chance(std::clamp(0.20f + 0.08f * (float)floor, 0.20f, 0.55f))) {
-                trapTarget = 1;
-                if (floor >= 3 && RNG::Chance(0.30f)) trapTarget = 2;
-            }
-        }
-        trapTarget = std::min(trapTarget, 3);
+            for (int i = 0; i < clusterCount && !clusterIndices.empty(); ++i) {
+                int choiceIndex = RNG::Range(0, (int)clusterIndices.size() - 1);
+                int cluster = clusterIndices[choiceIndex];
+                clusterIndices.erase(clusterIndices.begin() + choiceIndex);
 
-        std::vector<int> trapIndices;
-        for (int i = 0; i < (int)(sizeof(TRAP_SPOTS) / sizeof(TRAP_SPOTS[0])); ++i) {
-            Rect trapRect = { TRAP_SPOTS[i].x, TRAP_SPOTS[i].y, 12.0f, 12.0f };
-            if (RectsOverlap(trapRect, playerCore)) continue;
-            bool blocked = false;
-            for (const RoomRock& rock : room.rocks) {
-                if (RectsOverlap(trapRect, rock.GetRect())) {
-                    blocked = true;
-                    break;
+                int rocksInCluster = RNG::Chance(0.35f) ? 4 : 3;
+                if (room.archetype == RoomArchetype::OPEN_ARENA) rocksInCluster = 2;
+                if (room.archetype == RoomArchetype::GAUNTLET) rocksInCluster = 3;
+                if (room.archetype == RoomArchetype::RITUAL_ROOM) rocksInCluster = 4;
+                if (room.type == RoomType::CURSE && RNG::Chance(0.35f)) rocksInCluster = 2;
+                if (room.theme == DungeonTheme::DRACONIC) rocksInCluster++;
+
+                for (int j = 0; j < rocksInCluster; ++j) {
+                    RoomTerrainFeature feature;
+                    feature.pos = ROCK_CLUSTERS[cluster][j];
+                    feature.w = 12.0f;
+                    feature.h = 12.0f;
+                    float indestructibleChance = 0.18f + 0.04f * (float)floor;
+                    if (room.type == RoomType::BOSS) indestructibleChance += 0.10f;
+                    if (room.type == RoomType::CURSE) indestructibleChance += 0.05f;
+                    if (RNG::Chance(std::clamp(indestructibleChance, 0.18f, 0.45f))) {
+                        feature.type = RoomTerrainType::ROCK_INDESTRUCTIBLE;
+                    } else if (RNG::Chance(0.62f)) {
+                        feature.type = RoomTerrainType::ROCK_BOMBABLE_COIN;
+                        feature.rewardAmount = RNG::Chance(0.22f) ? 5 : 1;
+                    } else {
+                        feature.type = RoomTerrainType::ROCK_BOMBABLE_HEART;
+                        feature.rewardAmount = 1;
+                    }
+                    AddFeature(feature);
                 }
             }
-            if (!blocked) trapIndices.push_back(i);
+
+            int pitTarget = 0;
+            if (room.archetype == RoomArchetype::BROKEN_ARENA) pitTarget = 1;
+            if (room.archetype == RoomArchetype::HAZARD_ROOM) pitTarget = 2;
+            if (room.archetype == RoomArchetype::RITUAL_ROOM) pitTarget = 2;
+            if (room.theme == DungeonTheme::CRYPT) pitTarget++;
+            if (room.theme == DungeonTheme::DRACONIC) pitTarget += 2;
+            pitTarget += themeProfile.pitBonus;
+            pitTarget = std::clamp(pitTarget, 0, 4);
+
+            std::vector<int> pitIndices;
+            for (int i = 0; i < (int)(sizeof(PIT_SPOTS) / sizeof(PIT_SPOTS[0])); ++i) {
+                Rect pitRect = { PIT_SPOTS[i].x, PIT_SPOTS[i].y, 14.0f, 14.0f };
+                if (RectsOverlap(pitRect, playerCore)) continue;
+                if (OverlapsBlocking(pitRect)) continue;
+                pitIndices.push_back(i);
+            }
+
+            for (int i = 0; i < pitTarget && !pitIndices.empty(); ++i) {
+                int choiceIndex = RNG::Range(0, (int)pitIndices.size() - 1);
+                int spotIndex = pitIndices[choiceIndex];
+                pitIndices.erase(pitIndices.begin() + choiceIndex);
+
+                RoomTerrainFeature feature;
+                feature.pos = PIT_SPOTS[spotIndex];
+                feature.w = 14.0f;
+                feature.h = 14.0f;
+                feature.type = RoomTerrainType::PIT;
+                AddFeature(feature);
+            }
+        };
+
+        auto GenerateCellularTerrain = [&]() -> bool {
+            std::array<bool, TERRAIN_GRID_W * TERRAIN_GRID_H> solid{};
+            std::array<bool, TERRAIN_GRID_W * TERRAIN_GRID_H> next{};
+
+            float seedChance = (room.archetype == RoomArchetype::BROKEN_ARENA) ? 0.36f : 0.48f;
+            seedChance += 0.02f * (float)std::min(3, floor / 2);
+            if (room.type == RoomType::CURSE) seedChance += 0.04f;
+            if (room.theme == DungeonTheme::DRACONIC) seedChance += 0.03f;
+            if (room.theme == DungeonTheme::CRYPT || room.theme == DungeonTheme::FUNGAL) seedChance += 0.02f;
+            seedChance = std::clamp(seedChance, 0.28f, 0.65f);
+
+            for (int y = 0; y < TERRAIN_GRID_H; ++y) {
+                for (int x = 0; x < TERRAIN_GRID_W; ++x) {
+                    int idx = TerrainCellIndex(x, y);
+                    solid[idx] = !IsReservedTerrainCell(room, x, y) && RNG::Chance(seedChance);
+                }
+            }
+
+            int smoothingPasses = (room.archetype == RoomArchetype::BROKEN_ARENA) ? 3 : 4;
+            for (int pass = 0; pass < smoothingPasses; ++pass) {
+                next = solid;
+                for (int y = 0; y < TERRAIN_GRID_H; ++y) {
+                    for (int x = 0; x < TERRAIN_GRID_W; ++x) {
+                        int idx = TerrainCellIndex(x, y);
+                        if (IsReservedTerrainCell(room, x, y)) {
+                            next[idx] = false;
+                            continue;
+                        }
+
+                        int solidNeighbors = 0;
+                        for (int oy = -1; oy <= 1; ++oy) {
+                            for (int ox = -1; ox <= 1; ++ox) {
+                                if (ox == 0 && oy == 0) continue;
+                                int nx = x + ox;
+                                int ny = y + oy;
+                                if (nx < 0 || ny < 0 || nx >= TERRAIN_GRID_W || ny >= TERRAIN_GRID_H) continue;
+                                if (solid[TerrainCellIndex(nx, ny)]) solidNeighbors++;
+                            }
+                        }
+
+                        int threshold = (room.archetype == RoomArchetype::BROKEN_ARENA) ? 5 : 4;
+                        next[idx] = solidNeighbors >= threshold;
+                    }
+                }
+                solid = next;
+            }
+
+            int solidCount = 0;
+            for (int y = 0; y < TERRAIN_GRID_H; ++y) {
+                for (int x = 0; x < TERRAIN_GRID_W; ++x) {
+                    int idx = TerrainCellIndex(x, y);
+                    if (!solid[idx] || IsReservedTerrainCell(room, x, y)) continue;
+                    solidCount++;
+
+                    RoomTerrainFeature feature;
+                    feature.pos = {
+                        room.x + (float)x * TERRAIN_CELL_W,
+                        room.y + (float)y * TERRAIN_CELL_H
+                    };
+                    feature.w = TERRAIN_CELL_W;
+                    feature.h = TERRAIN_CELL_H;
+                    feature.rewardAmount = 0;
+
+                    float pitChance = (room.archetype == RoomArchetype::HAZARD_ROOM) ? 0.58f : 0.22f;
+                    if (room.theme == DungeonTheme::CRYPT) pitChance += 0.14f;
+                    if (room.theme == DungeonTheme::FUNGAL) pitChance += 0.10f;
+                    if (room.theme == DungeonTheme::FORGE) pitChance -= 0.12f;
+                    if (room.theme == DungeonTheme::DRACONIC) pitChance += 0.08f;
+                    pitChance = std::clamp(pitChance, 0.0f, 0.85f);
+
+                    if (RNG::Chance(pitChance)) {
+                        feature.type = RoomTerrainType::PIT;
+                    } else {
+                        float indestructibleChance = 0.15f + 0.03f * (float)floor;
+                        if (room.theme == DungeonTheme::FORGE) indestructibleChance += 0.10f;
+                        if (room.theme == DungeonTheme::DRACONIC) indestructibleChance += 0.08f;
+                        if (room.theme == DungeonTheme::CRYPT || room.theme == DungeonTheme::FUNGAL) indestructibleChance -= 0.04f;
+                        indestructibleChance = std::clamp(indestructibleChance, 0.10f, 0.50f);
+
+                        if (RNG::Chance(indestructibleChance)) {
+                            feature.type = RoomTerrainType::ROCK_INDESTRUCTIBLE;
+                        } else if (RNG::Chance(0.65f)) {
+                            feature.type = RoomTerrainType::ROCK_BOMBABLE_COIN;
+                            feature.rewardAmount = RNG::Chance(0.22f) ? 5 : 1;
+                        } else {
+                            feature.type = RoomTerrainType::ROCK_BOMBABLE_HEART;
+                            feature.rewardAmount = 1;
+                        }
+                    }
+
+                    AddFeature(feature);
+                }
+            }
+
+            return solidCount >= 4;
+        };
+
+        bool terrainOk = true;
+        if (room.archetype == RoomArchetype::BROKEN_ARENA || room.archetype == RoomArchetype::HAZARD_ROOM) {
+            terrainOk = GenerateCellularTerrain();
+        } else {
+            GenerateRuleBasedTerrain();
         }
 
-        for (int i = 0; i < trapTarget && !trapIndices.empty(); ++i) {
-            int choiceIndex = RNG::Range(0, (int)trapIndices.size() - 1);
-            int spotIndex = trapIndices[choiceIndex];
-            trapIndices.erase(trapIndices.begin() + choiceIndex);
-
-            RoomTrap trap;
-            trap.pos = TRAP_SPOTS[spotIndex];
-            trap.w = 12.0f;
-            trap.h = 12.0f;
-            int roll = RNG::Range(0, 99);
-            if (roll < 35) trap.type = RoomTrapType::POISON;
-            else if (roll < 62) trap.type = RoomTrapType::TELEPORT;
-            else if (roll < 84) trap.type = RoomTrapType::SUMMON;
-            else trap.type = RoomTrapType::SPIKE;
-            room.traps.push_back(trap);
-        }
+        if (!terrainOk) return false;
+        GenerateTraps();
+        return ValidateTerrainLayout(room);
     }
 
     // ... existing DoorDir, TransitionCandidate, ComputeDistances stay as-is
@@ -242,6 +780,9 @@ namespace {
 bool Dungeon::LoadSettings(const char* path) {
     std::vector<DataBlock> blocks = DataParser::ParseFile(path);
     if (blocks.empty()) return false;
+
+    LoadDefaultThemeProfiles();
+    LoadThemeProfiles("data/themes.txt");
 
     bool loaded = false;
     for (const DataBlock& block : blocks) {
@@ -542,6 +1083,50 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         rooms[curseIndex].type = RoomType::CURSE;
         rooms[shopIndex].type = RoomType::SHOP;
 
+        DungeonTheme floorTheme = RollDungeonTheme(currentFloor);
+        const DungeonThemeProfile& themeProfile = ThemeProfileFor(floorTheme);
+        for (auto& room : rooms) {
+            room.theme = floorTheme;
+            room.archetype = RollArchetype(room.type, currentFloor);
+            room.encounterFamily = RollEncounterFamily(room.archetype, currentFloor);
+            if (room.type == RoomType::BOSS) {
+                room.archetype = RoomArchetype::RITUAL_ROOM;
+                room.encounterFamily = RoomEncounterFamily::ELITE;
+            } else if (room.type == RoomType::START || room.type == RoomType::TREASURE || room.type == RoomType::SHOP) {
+                room.archetype = RoomArchetype::OPEN_ARENA;
+                room.encounterFamily = RoomEncounterFamily::MIXED;
+            }
+        }
+
+        auto PickBossVariantForTheme = [&](const DungeonThemeProfile& profile) {
+            std::vector<int> themedVariants;
+            if (profile.bossPools[0] != '\0') {
+                char buffer[96];
+                std::strncpy(buffer, profile.bossPools, sizeof(buffer) - 1);
+                buffer[sizeof(buffer) - 1] = '\0';
+                char* token = std::strtok(buffer, ",");
+                while (token) {
+                    while (*token == ' ' || *token == '\t') ++token;
+                    char* end = token + std::strlen(token);
+                    while (end > token && (end[-1] == ' ' || end[-1] == '\t')) --end;
+                    *end = '\0';
+                    int bossIndex = BossDatabase::IndexOf(token);
+                    if (bossIndex >= 0) themedVariants.push_back(bossIndex);
+                    token = std::strtok(nullptr, ",");
+                }
+            }
+
+            if (themedVariants.empty()) {
+                for (int v = 0; v < 32; ++v) {
+                    if (BOSS_VARIANT_TIER[v] <= currentFloor) themedVariants.push_back(v);
+                }
+            }
+            if (themedVariants.empty()) return 0;
+            return themedVariants[RNG::Range(0, (int)themedVariants.size() - 1)];
+        };
+
+        rooms[bossRoomIndex].bossVariant = PickBossVariantForTheme(themeProfile);
+
         const int enemyCount = EnemyDatabase::Count();
         const int itemCount = ItemDatabase::Count();
 
@@ -553,8 +1138,43 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             for (int e = 0; e < enemyCount; ++e) eligibleEnemyIndices.push_back(e); // safety fallback
         }
 
-        auto PickEnemyIndex = [&]() {
-            return eligibleEnemyIndices[RNG::Range(0, (int)eligibleEnemyIndices.size() - 1)];
+        std::vector<int> themedEnemyIndices;
+        if (themeProfile.enemyPools[0] != '\0') {
+            char buffer[96];
+            std::strncpy(buffer, themeProfile.enemyPools, sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = '\0';
+            char* token = std::strtok(buffer, ",");
+            while (token) {
+                while (*token == ' ' || *token == '\t') ++token;
+                char* end = token + std::strlen(token);
+                while (end > token && (end[-1] == ' ' || end[-1] == '\t')) --end;
+                *end = '\0';
+                int enemyIndex = EnemyDatabase::IndexOf(token);
+                if (enemyIndex >= 0 && EnemyDatabase::Tier(enemyIndex) <= currentFloor) {
+                    themedEnemyIndices.push_back(enemyIndex);
+                }
+                token = std::strtok(nullptr, ",");
+            }
+        }
+
+        auto PickEnemyIndex = [&](RoomEncounterFamily family) {
+            const std::vector<int>& source = themedEnemyIndices.empty() ? eligibleEnemyIndices : themedEnemyIndices;
+            if (source.empty()) return -1;
+
+            int start = 0;
+            int end = (int)source.size() - 1;
+            if (family == RoomEncounterFamily::RUSH) {
+                end = std::max(0, (int)source.size() / 2);
+            } else if (family == RoomEncounterFamily::ARTILLERY || family == RoomEncounterFamily::ELITE) {
+                start = std::max(0, (int)source.size() / 3);
+            } else if (family == RoomEncounterFamily::GUARDIAN) {
+                start = std::max(0, (int)source.size() / 4);
+            }
+
+            if (start > end) std::swap(start, end);
+            int choice = RNG::Range(start, end);
+            choice = std::clamp(choice, 0, (int)source.size() - 1);
+            return source[choice];
         };
 
         for (int i = 0; i < (int)rooms.size(); ++i) {
@@ -570,8 +1190,12 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                 int spawnCount = settings.normalEnemyBase
                     + settings.normalEnemyPerFloor * currentFloor
                     + (distBonus > 2 ? settings.deepRoomBonus : 0);
+                spawnCount += EncounterFamilySpawnBias(rooms[i].encounterFamily);
+                if (rooms[i].theme == DungeonTheme::DRACONIC) spawnCount++;
+                spawnCount = std::max(1, spawnCount);
                 for (int j = 0; j < spawnCount; ++j) {
-                    rooms[i].enemySpawnList.push_back(PickEnemyIndex());
+                    int enemyIndex = PickEnemyIndex(rooms[i].encounterFamily);
+                    if (enemyIndex >= 0) rooms[i].enemySpawnList.push_back(enemyIndex);
                 }
             } else if (rooms[i].type == RoomType::TREASURE && itemCount > 0) {
                 int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);
@@ -591,9 +1215,12 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                     int distBonus = distFromStart[i];
                     int spawnCount = settings.normalEnemyBase
                         + settings.normalEnemyPerFloor * currentFloor
-                        + (distBonus > 2 ? settings.deepRoomBonus : 0);
+                        + (distBonus > 2 ? settings.deepRoomBonus : 0)
+                        + EncounterFamilySpawnBias(rooms[i].encounterFamily);
+                    spawnCount = std::max(1, spawnCount);
                     for (int j = 0; j < spawnCount; ++j) {
-                        rooms[i].enemySpawnList.push_back(PickEnemyIndex());
+                        int enemyIndex = PickEnemyIndex(rooms[i].encounterFamily);
+                        if (enemyIndex >= 0) rooms[i].enemySpawnList.push_back(enemyIndex);
                     }
                 } else if (itemCount > 0) {
                     int itemDrops = RNG::Range(settings.treasureMinItems, settings.treasureMaxItems);
@@ -610,9 +1237,14 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         }
 
         ApplyRoomDefaults();
+        bool terrainOk = true;
         for (auto& room : rooms) {
-            PopulateRoomHazards(room, currentFloor);
+            if (!PopulateRoomHazards(room, currentFloor)) {
+                terrainOk = false;
+                break;
+            }
         }
+        if (!terrainOk) continue;
         currentRoomIndex = startRoomIndex;
         return true;
     }
@@ -732,6 +1364,8 @@ void Dungeon::MarkCurrentRoomCleared(bool rollCurseReward) {
     bool rewardRoom = room.type == RoomType::NORMAL || room.type == RoomType::BOSS || room.IsEnemyCurseRoom();
     if (!rewardRoom) return;
 
+    const DungeonThemeProfile& themeProfile = ThemeProfileFor(room.theme);
+
     auto MakePickup = [&](RoomPickupType type, int amount = 0) {
         RoomPickup pickup;
         pickup.type = type;
@@ -740,7 +1374,7 @@ void Dungeon::MarkCurrentRoomCleared(bool rollCurseReward) {
         room.pickups.push_back(pickup);
     };
 
-    float roll = RNG::Range(0.0f, 1.0f);
+    float roll = std::clamp(RNG::Range(0.0f, 1.0f) - 0.03f * (float)themeProfile.rewardBonus, 0.0f, 1.0f);
     if (roll < 0.10f) {
         RoomPickup pickup;
         pickup.type = RoomPickupType::CHEST;
