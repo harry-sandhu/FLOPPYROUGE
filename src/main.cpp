@@ -3,7 +3,11 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <vector>
+#include <thread>
 #include "../engine/window.h"
 #include "../engine/renderer.h"
 #include "../engine/input.h"
@@ -47,6 +51,13 @@ namespace {
 
     void ResolvePlayerSolidCollision(Player& player, const Rect& obstacleRect) {
         ResolveEntitySolidCollision(player.pos, (float)player.size, (float)player.size, obstacleRect);
+    }
+
+    TerrainTraversalProfile BuildPlayerTraversalProfile(const Player& player) {
+        TerrainTraversalProfile profile;
+        profile.canCrossPits = player.hasPitWalker;
+        profile.immuneToHazards = player.hasHazardShroud;
+        return profile;
     }
 
     void BuildTreasureSenseLine(const Dungeon& dungeon, const Player& player, char* out, size_t outSize) {
@@ -98,6 +109,63 @@ namespace {
         player.silverCoins = total / 5;
         total %= 5;
         player.nickelCoins = total;
+    }
+
+    struct FloorGenerationState {
+        std::mutex mutex;
+        uint64_t requestId = 0;
+        uint64_t latestRequestId = 0;
+        int readyFloor = 0;
+        bool ready = false;
+        std::unique_ptr<Dungeon> readyDungeon;
+    };
+
+    void QueueFloorGeneration(const std::shared_ptr<FloorGenerationState>& state, const Dungeon& source, uint32_t seedBase, int targetFloor) {
+        if (!state || targetFloor < 1) return;
+
+        uint64_t jobId = 0;
+        {
+            std::lock_guard<std::mutex> lock(state->mutex);
+            jobId = ++state->requestId;
+            state->latestRequestId = jobId;
+            state->ready = false;
+            state->readyFloor = 0;
+            state->readyDungeon.reset();
+        }
+
+        Dungeon sourceCopy = source;
+        std::thread([state, sourceCopy = std::move(sourceCopy), seedBase, targetFloor, jobId]() mutable {
+            Dungeon generated = std::move(sourceCopy);
+
+            for (uint32_t attempt = 0; ; ++attempt) {
+                uint32_t seed = seedBase + attempt * 17u;
+                if (generated.Generate(seed, targetFloor)) {
+                    auto readyDungeon = std::make_unique<Dungeon>(std::move(generated));
+                    std::lock_guard<std::mutex> lock(state->mutex);
+                    if (state->latestRequestId == jobId) {
+                        state->readyDungeon = std::move(readyDungeon);
+                        state->readyFloor = targetFloor;
+                        state->ready = true;
+                    }
+                    return;
+                }
+            }
+        }).detach();
+    }
+
+    bool TryConsumeQueuedFloorGeneration(const std::shared_ptr<FloorGenerationState>& state, int targetFloor, Dungeon& outDungeon) {
+        if (!state) return false;
+
+        std::lock_guard<std::mutex> lock(state->mutex);
+        if (!state->ready || state->readyFloor != targetFloor || !state->readyDungeon) {
+            return false;
+        }
+
+        outDungeon = std::move(*state->readyDungeon);
+        state->readyDungeon.reset();
+        state->ready = false;
+        state->readyFloor = 0;
+        return true;
     }
 
     void AddCoinValue(Player& player, int value) {
@@ -152,9 +220,9 @@ namespace {
     float ChestItemChance(ChestType type, int attempt = 0) {
         switch (type) {
             case ChestType::WOODEN: return 0.10f;
-            case ChestType::IRON:   return 0.05f;
-            case ChestType::STONE:  return 0.08f;
-            case ChestType::GOLDEN: return 0.10f;
+            case ChestType::IRON:   return 0.30f;  // costs a heart — should clearly beat free Wooden
+            case ChestType::STONE:  return 0.25f;  // costs a bomb — same logic
+            case ChestType::GOLDEN: return 0.15f;
             case ChestType::DEVIL:  return 0.50f;
             case ChestType::ANGEL:
                 return std::clamp(0.10f + 0.10f * (float)attempt, 0.10f, 0.50f);
@@ -241,6 +309,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     float floorTransitionTimer = 0.0f;
     int floorTransitionFloor = 1;
     char floorTransitionTreasureLine[160] = {};
+    bool pendingFloorAdvance = false;
+    int pendingFloorTarget = 0;
+    auto floorGeneration = std::make_shared<FloorGenerationState>();
 
     auto ClearRunEntities = [&]() {
         enemies.clear();
@@ -257,7 +328,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         BuildTreasureSenseLine(dungeon, player, floorTransitionTreasureLine, sizeof(floorTransitionTreasureLine));
         screenShakeTimer = 0.0f;
         screenShakeStrength = 0.0f;
+        pendingFloorAdvance = false;
+        pendingFloorTarget = 0;
         state = GameState::FLOOR_TRANSITION;
+    };
+
+    auto StartPendingFloorAdvance = [&](int targetFloor) {
+        pendingFloorAdvance = true;
+        pendingFloorTarget = targetFloor;
+        floorTransitionTimer = 0.0f;
+        floorTransitionFloor = targetFloor;
+        floorTransitionTreasureLine[0] = '\0';
+        screenShakeTimer = 0.0f;
+        screenShakeStrength = 0.0f;
+        state = GameState::FLOOR_TRANSITION;
+    };
+
+    auto TryCompletePendingFloorAdvance = [&]() {
+        if (!pendingFloorAdvance || pendingFloorTarget <= 0) return false;
+
+        if (TryConsumeQueuedFloorGeneration(floorGeneration, pendingFloorTarget, dungeon)) {
+            dungeon.PlacePlayerAtCurrentRoomCenter(player);
+            ClearRunEntities();
+            BeginFloorTransition();
+            return true;
+        }
+
+        return false;
     };
 
     auto DamagePlayer = [&](int amount) {
@@ -375,13 +472,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 RoomPickup itemPickup;
                 itemPickup.type = RoomPickupType::ITEM;
                 itemPickup.itemId = room.itemSpawnList[0];
-                itemPickup.pos = { center.x, center.y - 12.0f };
+                itemPickup.pos = { center.x, center.y };
                 room.pickups.push_back(itemPickup);
             }
 
             RoomPickup exitPickup;
             exitPickup.type = RoomPickupType::EXIT;
-            exitPickup.pos = { center.x, center.y + 10.0f };
+            exitPickup.pos = { center.x, center.y + 14.0f };
             room.pickups.push_back(exitPickup);
         } else {
             RoomPickup trophyPickup;
@@ -398,20 +495,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         ClearRunEntities();
         screenShakeTimer = 0.0f;
         screenShakeStrength = 0.0f;
-
-        uint32_t seedBase = (uint32_t)GetTickCount();
-        bool generated = false;
-        for (int attempt = 0; attempt < 8 && !generated; ++attempt) {
-            generated = dungeon.Generate(seedBase + (uint32_t)attempt * 17u);
-        }
-
-        if (!generated) {
-            state = GameState::GAME_OVER;
-            return;
-        }
-
-        dungeon.PlacePlayerAtCurrentRoomCenter(player);
-        BeginFloorTransition();
+        QueueFloorGeneration(floorGeneration, dungeon, (uint32_t)GetTickCount(), 1);
+        StartPendingFloorAdvance(1);
     };
 
     auto ScaleEnemyForFloor = [&](Enemy& enemy) {
@@ -449,8 +534,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         boss.attackTimer = boss.attackCooldownPhase1;
     };
 
-    auto MakeSpecialEnemy = [&](Enemy& enemy) {
-        if (!RNG::Chance(dungeon.SpecialEnemyChance())) return;
+    auto SpecialEnemyBonusForTheme = [](DungeonTheme theme) {
+        switch (theme) {
+            case DungeonTheme::FORGE: return 0.02f;
+            case DungeonTheme::CRYPT: return 0.03f;
+            case DungeonTheme::FUNGAL: return 0.03f;
+            case DungeonTheme::DRACONIC: return 0.05f;
+            case DungeonTheme::RUINS:
+            default:
+                return 0.0f;
+        }
+    };
+
+    auto MakeSpecialEnemy = [&](Enemy& enemy, float chanceBonus = 0.0f) {
+        float chance = std::clamp(dungeon.SpecialEnemyChance() + chanceBonus, 0.0f, 1.0f);
+        if (!RNG::Chance(chance)) return;
 
         enemy.specialType = (EnemySpecialType)RNG::Range(1, 3);
         enemy.creepDropTimer = 0.0f;
@@ -490,12 +588,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     auto LoadRoomEncounter = [&]() {
         const Room& room = dungeon.CurrentRoom();
+        float roomSpecialBonus = SpecialEnemyBonusForTheme(room.theme);
         const Vec2 spawnPoints[] = {
-            { 60.0f, 30.0f },
-            { 220.0f, 30.0f },
-            { 60.0f, 110.0f },
-            { 220.0f, 110.0f },
-            { 140.0f, 60.0f }
+            { 56.0f, 30.0f },
+            { 160.0f, 30.0f },
+            { 264.0f, 30.0f },
+            { 56.0f, 86.0f },
+            { 160.0f, 86.0f },
+            { 264.0f, 86.0f },
+            { 56.0f, 136.0f },
+            { 160.0f, 136.0f },
+            { 264.0f, 136.0f }
         };
 
         enemies.clear();
@@ -503,6 +606,75 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         playerShots.clear();
         boss = Boss{};
         boss.alive = false;
+
+        auto DoorCenter = [&](int dir) -> Vec2 {
+            if (dir == 0) return { room.x + room.width * 0.5f, room.y + 1.0f };
+            if (dir == 1) return { room.x + room.width * 0.5f, room.y + room.height - 1.0f };
+            if (dir == 2) return { room.x + 1.0f, room.y + room.height * 0.5f };
+            return { room.x + room.width - 1.0f, room.y + room.height * 0.5f };
+        };
+
+        auto IsSpawnPointSafe = [&](Vec2 p) {
+            Rect spawnRect = { p.x, p.y, 12.0f, 12.0f };
+            for (const auto& terrain : room.terrain) {
+                if (terrain.broken) continue;
+                if (terrain.IsTrap()) continue;
+                if (terrain.IsDamageTerrain() || terrain.IsSlowTerrain()) continue;
+                if (Collision::CheckAABB(spawnRect, terrain.GetRect())) return false;
+            }
+
+            const Vec2 doorCenters[] = {
+                DoorCenter(0), DoorCenter(1), DoorCenter(2), DoorCenter(3)
+            };
+            for (const Vec2& door : doorCenters) {
+                float dx = (p.x + 6.0f) - door.x;
+                float dy = (p.y + 6.0f) - door.y;
+                if (dx * dx + dy * dy < 72.0f * 72.0f) return false;
+            }
+            return true;
+        };
+
+        auto PickSpawnPoint = [&](int seedIndex, const std::vector<Vec2>& usedPoints) {
+            Vec2 fallback = spawnPoints[seedIndex % (int)(sizeof(spawnPoints) / sizeof(spawnPoints[0]))];
+            Vec2 best = fallback;
+            float bestScore = -1.0f;
+            for (int i = 0; i < (int)(sizeof(spawnPoints) / sizeof(spawnPoints[0])); ++i) {
+                Vec2 candidate = spawnPoints[i];
+                if (!IsSpawnPointSafe(candidate)) continue;
+                float score = 0.0f;
+                if (usedPoints.empty()) {
+                    for (int d = 0; d < 4; ++d) {
+                        Vec2 door = DoorCenter(d);
+                        float dx = (candidate.x + 6.0f) - door.x;
+                        float dy = (candidate.y + 6.0f) - door.y;
+                        score = std::max(score, dx * dx + dy * dy);
+                    }
+                } else {
+                    score = 1000000.0f;
+                    for (const Vec2& used : usedPoints) {
+                        float dx = candidate.x - used.x;
+                        float dy = candidate.y - used.y;
+                        score = std::min(score, dx * dx + dy * dy);
+                    }
+                }
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+
+            if (bestScore < 0.0f && !usedPoints.empty()) {
+                Vec2 jittered = fallback;
+                jittered.x += (float)((seedIndex % 3) - 1) * 14.0f;
+                jittered.y += (float)(((seedIndex / 3) % 3) - 1) * 10.0f;
+                if (jittered.x < 20.0f) jittered.x = 20.0f;
+                if (jittered.x > 284.0f) jittered.x = 284.0f;
+                if (jittered.y < 20.0f) jittered.y = 20.0f;
+                if (jittered.y > 144.0f) jittered.y = 144.0f;
+                best = jittered;
+            }
+            return best;
+        };
 
         if (player.hasShieldCharm) {
             player.shieldCharges = std::max(player.shieldCharges, player.hasBulwarkCore ? 2 : 1);
@@ -516,27 +688,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         if ((room.type == RoomType::NORMAL || room.IsEnemyCurseRoom()) && !room.cleared) {
+            std::vector<Vec2> usedSpawnPoints;
             if (!room.enemySpawnList.empty()) {
                 for (int i = 0; i < (int)room.enemySpawnList.size(); ++i) {
-                    Vec2 spawnPos = spawnPoints[i % (int)(sizeof(spawnPoints) / sizeof(spawnPoints[0]))];
+                    Vec2 spawnPos = PickSpawnPoint(i, usedSpawnPoints);
+                    usedSpawnPoints.push_back(spawnPos);
                     Enemy enemy = EnemyDatabase::Spawn(room.enemySpawnList[i], spawnPos);
                     ScaleEnemyForFloor(enemy);
-                    MakeSpecialEnemy(enemy);
+                    MakeSpecialEnemy(enemy, roomSpecialBonus);
                     enemies.push_back(enemy);
                 }
             } else {
-                Enemy zombie = EnemyDatabase::Spawn("Zombie", { 100.0f, 30.0f });
-                Enemy gunner = EnemyDatabase::Spawn("Gunner", { 220.0f, 30.0f });
+                Enemy zombie = EnemyDatabase::Spawn("Zombie", PickSpawnPoint(0, usedSpawnPoints));
+                usedSpawnPoints.push_back(zombie.pos);
+                Enemy gunner = EnemyDatabase::Spawn("Gunner", PickSpawnPoint(1, usedSpawnPoints));
                 ScaleEnemyForFloor(zombie);
                 ScaleEnemyForFloor(gunner);
-                MakeSpecialEnemy(zombie);
-                MakeSpecialEnemy(gunner);
+                MakeSpecialEnemy(zombie, roomSpecialBonus);
+                MakeSpecialEnemy(gunner, roomSpecialBonus);
                 enemies.push_back(zombie);
                 enemies.push_back(gunner);
             }
         } else if (room.type == RoomType::BOSS && !room.cleared) {
             boss = SpawnBossVariant(room.bossVariant);
             ScaleBossForFloor(boss);
+            if (boss.isDragonFinale) {
+                boss.pos = { 136.0f, 18.0f };
+            }
        } else if (room.type == RoomType::TREASURE && !room.lootGranted) {
             SpawnTreasurePickups(dungeon.CurrentRoom());
             dungeon.CurrentRoom().lootGranted = true;
@@ -552,6 +730,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     auto EnterGameplay = [&]() {
         state = GameState::PLAYING;
         LoadRoomEncounter();
+        if (dungeon.CurrentFloor() < dungeon.MaxFloors()) {
+            uint32_t nextSeed = (uint32_t)GetTickCount() + 97u * (uint32_t)(dungeon.CurrentFloor() + 1);
+            QueueFloorGeneration(floorGeneration, dungeon, nextSeed, dungeon.CurrentFloor() + 1);
+        }
     };
 
     auto TryCollectCurrentRoomPickups = [&]() -> bool {
@@ -695,7 +877,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                             const char* enemyName = (RNG::Chance(0.5f)) ? "Zombie" : "Fly";
                             Enemy enemy = EnemyDatabase::Spawn(enemyName, spawnPoints[i]);
                             ScaleEnemyForFloor(enemy);
-                            MakeSpecialEnemy(enemy);
+                            MakeSpecialEnemy(enemy, SpecialEnemyBonusForTheme(room.theme));
                             enemies.push_back(enemy);
                         }
                         return true;
@@ -813,14 +995,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 case RoomPickupType::EXIT:
                     if (room.type == RoomType::BOSS && room.cleared) {
                         pickup.collected = true;
-                        uint32_t nextSeed = (uint32_t)GetTickCount() + 97u * (uint32_t)(dungeon.CurrentFloor() + 1);
-                        if (dungeon.AdvanceFloor(nextSeed)) {
-                            dungeon.PlacePlayerAtCurrentRoomCenter(player);
-                            ClearRunEntities();
-                            BeginFloorTransition();
-                        } else {
-                            state = GameState::TITLE;
-                        }
+                        StartPendingFloorAdvance(dungeon.CurrentFloor() + 1);
                         return true;
                     }
                     break;
@@ -840,32 +1015,159 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         return false;
     };
 
-    auto SpawnRockReward = [&](Room& room, const RoomRock& rock) {
+    auto SpawnTerrainReward = [&](Room& room, const RoomTerrainFeature& terrain) {
         RoomPickup pickup;
-        pickup.pos = { rock.pos.x + rock.w * 0.5f - 4.0f, rock.pos.y + rock.h * 0.5f - 4.0f };
-        if (rock.type == RoomRockType::BOMBABLE_HEART) {
+        pickup.pos = { terrain.pos.x + terrain.w * 0.5f - 4.0f, terrain.pos.y + terrain.h * 0.5f - 4.0f };
+        if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_HEART) {
             pickup.type = RoomPickupType::HEART;
-        } else {
+        } else if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_COIN) {
             pickup.type = RoomPickupType::COIN;
-            pickup.amount = std::max(1, rock.rewardAmount);
+            pickup.amount = std::max(1, terrain.rewardAmount);
+        } else if (terrain.type == RoomTerrainType::CRATE_DESTRUCTIBLE) {
+            pickup.type = RoomPickupType::COIN;
+            pickup.amount = std::max(1, terrain.rewardAmount);
+        } else if (terrain.type == RoomTerrainType::ROCK_BOMBABLE) {
+            pickup.type = RoomPickupType::COIN;
+            pickup.amount = 1;
         }
         room.pickups.push_back(pickup);
     };
 
-    auto BreakRoomRock = [&](Room& room, RoomRock& rock, bool fromExplosion) {
-        if (rock.broken || !rock.IsBombable()) return false;
-        rock.broken = true;
-        SpawnRockReward(room, rock);
+    auto BreakTerrainFeature = [&](Room& room, RoomTerrainFeature& terrain, bool fromExplosion) {
+        if (terrain.broken || !terrain.IsBombable()) return false;
+        terrain.broken = true;
+        if (terrain.type != RoomTerrainType::ROCK_EXPLOSIVE) {
+            SpawnTerrainReward(room, terrain);
+        }
         AddScreenShake(fromExplosion ? 0.10f : 0.06f, fromExplosion ? 0.9f : 0.6f);
         return true;
     };
 
-    auto ResolveAgainstRoomRocks = [&](Room& room, Vec2& pos, float entityW, float entityH) {
+    std::function<bool(Room&, RoomTerrainFeature&, bool)> DetonateTerrainFeature;
+    DetonateTerrainFeature = [&](Room& room, RoomTerrainFeature& terrain, bool fromExplosion) -> bool {
+        if (terrain.broken) return false;
+        terrain.broken = true;
+        AddScreenShake(fromExplosion ? 0.16f : 0.12f, fromExplosion ? 1.2f : 0.9f);
+
+        Vec2 center = { terrain.pos.x + terrain.w * 0.5f, terrain.pos.y + terrain.h * 0.5f };
+        float radius = fromExplosion ? 42.0f : 34.0f;
+        float radiusSq = radius * radius;
+
+        for (auto& enemy : enemies) {
+            if (!enemy.alive) continue;
+            Vec2 enemyCenter = { enemy.pos.x + enemy.w * 0.5f, enemy.pos.y + enemy.h * 0.5f };
+            float dx = enemyCenter.x - center.x;
+            float dy = enemyCenter.y - center.y;
+            if (dx * dx + dy * dy <= radiusSq) {
+                enemy.hp -= 4;
+                if (enemy.hp <= 0) enemy.alive = false;
+            }
+        }
+
+        if (room.type == RoomType::BOSS && boss.alive) {
+            Vec2 bossCenter = { boss.pos.x + boss.w * 0.5f, boss.pos.y + boss.h * 0.5f };
+            float dx = bossCenter.x - center.x;
+            float dy = bossCenter.y - center.y;
+            if (dx * dx + dy * dy <= radiusSq) {
+                boss.hp -= 4;
+                if (boss.hp <= 0) { boss.hp = 0; boss.alive = false; }
+            }
+        }
+
+        for (auto& feature : room.terrain) {
+            if (&feature == &terrain) continue;
+            if (feature.broken) continue;
+            if (!feature.IsBombable() && !feature.IsExplosive()) continue;
+            Vec2 featureCenter = { feature.pos.x + feature.w * 0.5f, feature.pos.y + feature.h * 0.5f };
+            float dx = featureCenter.x - center.x;
+            float dy = featureCenter.y - center.y;
+            if (dx * dx + dy * dy > radiusSq) continue;
+            if (feature.IsExplosive()) {
+                DetonateTerrainFeature(room, feature, true);
+            } else {
+                BreakTerrainFeature(room, feature, true);
+            }
+        }
+
+        return true;
+    };
+
+    auto TryPushTerrainBlocks = [&](Room& room, const Vec2& previousPlayerPos, const TerrainTraversalProfile& traversal) {
+        Vec2 delta = { player.pos.x - previousPlayerPos.x, player.pos.y - previousPlayerPos.y };
+        float moveSq = delta.x * delta.x + delta.y * delta.y;
+        if (moveSq < 1.0f) return false;
+
+        Vec2 pushDir = { 0.0f, 0.0f };
+        if (std::fabs(delta.x) > std::fabs(delta.y)) {
+            pushDir.x = (delta.x > 0.0f) ? 1.0f : -1.0f;
+        } else {
+            pushDir.y = (delta.y > 0.0f) ? 1.0f : -1.0f;
+        }
+
+        for (auto& terrain : room.terrain) {
+            if (!terrain.IsPushable() || terrain.broken) continue;
+            if (!Collision::CheckAABB(player.GetRect(), terrain.GetRect())) continue;
+
+            Room trialRoom = room;
+            bool found = false;
+            for (auto& trialTerrain : trialRoom.terrain) {
+                if (trialTerrain.featureId != terrain.featureId) continue;
+                trialTerrain.pos.x += pushDir.x * terrain.w;
+                trialTerrain.pos.y += pushDir.y * terrain.h;
+                found = true;
+                break;
+            }
+            if (!found) continue;
+
+            Rect movedRect = terrain.GetRect();
+            movedRect.x += pushDir.x * terrain.w;
+            movedRect.y += pushDir.y * terrain.h;
+            if (movedRect.x < room.x + Room::WALL_THICKNESS ||
+                movedRect.y < room.y + Room::WALL_THICKNESS ||
+                movedRect.x + movedRect.w > room.x + room.width - Room::WALL_THICKNESS ||
+                movedRect.y + movedRect.h > room.y + room.height - Room::WALL_THICKNESS) {
+                continue;
+            }
+
+            bool overlapsBlocking = false;
+            for (const auto& other : trialRoom.terrain) {
+                if (other.featureId == terrain.featureId || other.broken) continue;
+                if (other.IsPushable() || other.IsTraversalAid() || other.IsTrap() || other.IsSlowTerrain() || other.IsDamageTerrain()) continue;
+                if (!other.BlocksMovement() && other.type != RoomTerrainType::PIT) continue;
+                if (Collision::CheckAABB(movedRect, other.GetRect())) {
+                    overlapsBlocking = true;
+                    break;
+                }
+            }
+            if (overlapsBlocking) continue;
+
+            if (!dungeon.ValidateRoomTerrain(trialRoom)) continue;
+
+            terrain.pos = { movedRect.x, movedRect.y };
+
+            for (auto& other : room.terrain) {
+                if (other.type != RoomTerrainType::PIT || other.broken) continue;
+                if (Collision::CheckAABB(movedRect, other.GetRect())) {
+                    other.broken = true;
+                }
+            }
+
+            AddScreenShake(0.05f, 0.6f);
+            return true;
+        }
+
+        (void)traversal;
+        return false;
+    };
+
+    auto ResolveAgainstRoomTerrain = [&](Room& room, Vec2& pos, float entityW, float entityH,
+                                         const TerrainTraversalProfile& traversal) {
         for (int pass = 0; pass < 2; ++pass) {
             bool moved = false;
-            for (const auto& rock : room.rocks) {
-                if (rock.broken) continue;
-                Rect rockRect = rock.GetRect();
+            for (const auto& terrain : room.terrain) {
+                if (terrain.broken) continue;
+                if (room.CanTraverseTerrain(terrain, traversal)) continue;
+                Rect rockRect = terrain.GetRect();
                 Vec2 before = pos;
                 ResolveEntitySolidCollision(pos, entityW, entityH, rockRect);
                 if (before.x != pos.x || before.y != pos.y) moved = true;
@@ -874,7 +1176,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
     };
 
-    auto FindSafeTeleportPos = [&](const Room& room) -> Vec2 {
+    auto FindSafeTeleportPos = [&](const Room& room, const TerrainTraversalProfile& traversal) -> Vec2 {
         static const Vec2 candidates[] = {
             { 46.0f, 40.0f }, { 274.0f, 40.0f },
             { 46.0f, 120.0f }, { 274.0f, 120.0f },
@@ -886,17 +1188,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         for (int i = 0; i < (int)(sizeof(candidates) / sizeof(candidates[0])); ++i) {
             Rect test = { candidates[i].x, candidates[i].y, (float)player.size, (float)player.size };
             bool blocked = false;
-            for (const auto& rock : room.rocks) {
-                if (rock.broken) continue;
-                if (Collision::CheckAABB(test, rock.GetRect())) {
+            for (const auto& terrain : room.terrain) {
+                if (terrain.broken) continue;
+                if (room.CanTraverseTerrain(terrain, traversal)) continue;
+                if (Collision::CheckAABB(test, terrain.GetRect())) {
                     blocked = true;
                     break;
                 }
             }
             if (!blocked) {
-                for (const auto& trap : room.traps) {
-                    if (trap.triggered) continue;
-                    if (Collision::CheckAABB(test, trap.GetRect())) {
+                for (const auto& terrain : room.terrain) {
+                    if (!terrain.IsTrap() || terrain.triggered) continue;
+                    if (Collision::CheckAABB(test, terrain.GetRect())) {
                         blocked = true;
                         break;
                     }
@@ -931,6 +1234,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     auto SpawnTrapWave = [&](Room& room, const Vec2& center, int count) {
         int enemyIndex = PickEligibleEnemyIndexForFloor();
         if (enemyIndex < 0) return;
+        float roomSpecialBonus = SpecialEnemyBonusForTheme(room.theme);
 
         room.cleared = false;
         room.gateOpen = false;
@@ -946,7 +1250,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             };
             Enemy enemy = EnemyDatabase::Spawn(enemyIndex, spawnPos);
             ScaleEnemyForFloor(enemy);
-            MakeSpecialEnemy(enemy);
+            MakeSpecialEnemy(enemy, roomSpecialBonus);
             enemies.push_back(enemy);
             enemyIndex = PickEligibleEnemyIndexForFloor();
             if (enemyIndex < 0) break;
@@ -955,36 +1259,37 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         AddScreenShake(0.12f, 1.0f);
     };
 
-    auto TriggerTrap = [&](Room& room, RoomTrap& trap) {
-        if (trap.triggered) return;
-        trap.triggered = true;
+    auto TriggerTrap = [&](Room& room, RoomTerrainFeature& terrain, const TerrainTraversalProfile& traversal) {
+        if (terrain.triggered) return;
+        terrain.triggered = true;
+        if (traversal.immuneToHazards) return;
 
-        Vec2 trapCenter = { trap.pos.x + trap.w * 0.5f, trap.pos.y + trap.h * 0.5f };
+        Vec2 trapCenter = { terrain.pos.x + terrain.w * 0.5f, terrain.pos.y + terrain.h * 0.5f };
 
-        switch (trap.type) {
-            case RoomTrapType::POISON:
+        switch (terrain.type) {
+            case RoomTerrainType::TRAP_POISON:
                 player.poisonTimer = std::max(player.poisonTimer, 3.0f);
                 player.poisonTickTimer = 0.5f;
                 player.poisonDamage = std::max(player.poisonDamage, (dungeon.CurrentFloor() >= 4) ? 2 : 1);
                 AddScreenShake(0.08f, 0.8f);
                 break;
-            case RoomTrapType::TELEPORT: {
+            case RoomTerrainType::TRAP_TELEPORT: {
                 float safeChance = std::clamp(0.35f + 0.08f * (float)player.luck, 0.15f, 0.90f);
-                Vec2 target = (RNG::Chance(safeChance)) ? FindSafeTeleportPos(room) : Vec2{
+                Vec2 target = (RNG::Chance(safeChance)) ? FindSafeTeleportPos(room, traversal) : Vec2{
                     room.x + 18.0f + RNG::Range(0, 8) * 28.0f,
                     room.y + 18.0f + RNG::Range(0, 4) * 28.0f
                 };
                 player.pos = room.ClampPlayerToRoom(target, (float)player.size, (float)player.size);
-                ResolveAgainstRoomRocks(room, player.pos, (float)player.size, (float)player.size);
+                ResolveAgainstRoomTerrain(room, player.pos, (float)player.size, (float)player.size, traversal);
                 AddScreenShake(0.10f, 1.0f);
                 break;
             }
-            case RoomTrapType::SUMMON: {
+            case RoomTerrainType::TRAP_SUMMON: {
                 int spawnCount = 2 + std::min(2, dungeon.CurrentFloor() / 2);
                 SpawnTrapWave(room, trapCenter, spawnCount);
                 break;
             }
-            case RoomTrapType::SPIKE:
+            case RoomTerrainType::TRAP_SPIKE:
             default:
                 DamagePlayer((dungeon.CurrentFloor() >= 3) ? 2 : 1);
                 break;
@@ -1082,10 +1387,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 StartRun();
             }
         } else if (state == GameState::FLOOR_TRANSITION) {
+            if (pendingFloorAdvance) {
+                TryCompletePendingFloorAdvance();
+            }
             floorTransitionTimer += dt;
             bool canContinue = floorTransitionTimer >= 0.75f;
-            if ((canContinue && (Input::IsPressed(VK_RETURN) || Input::IsPressed(VK_SPACE))) ||
-                floorTransitionTimer >= 1.75f) {
+            if (!pendingFloorAdvance &&
+                ((canContinue && (Input::IsPressed(VK_RETURN) || Input::IsPressed(VK_SPACE))) ||
+                 floorTransitionTimer >= 1.75f)) {
                 enterGameplayAfterPresent = true;
             }
         } else if (state == GameState::PLAYING) {
@@ -1096,6 +1405,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             PlayerLogic::UpdateTimers(player, dt);
             ProjectileSystem::Advance(playerShots, dt, &enemies, (room->type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
             ProjectileSystem::Advance(enemyShots, dt, nullptr, nullptr, &player.pos);
+            Vec2 preMovePlayerPos = player.pos;
             PlayerLogic::HandleMovement(player, dt);
 
             if (screenShakeTimer > 0.0f) {
@@ -1103,14 +1413,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if (screenShakeTimer < 0.0f) screenShakeTimer = 0.0f;
             }
 
-            if (dungeon.TryTransition(player)) {
+            bool transitionedRoom = dungeon.TryTransition(player);
+            if (transitionedRoom) {
                 LoadRoomEncounter();
             }
 
             activeRoom = &dungeon.CurrentRoom();
             room = activeRoom;
             player.pos = room->ClampPlayerToRoom(player.pos, (float)player.size, (float)player.size);
-            ResolveAgainstRoomRocks(*room, player.pos, (float)player.size, (float)player.size);
+            TerrainTraversalProfile playerTraversal = BuildPlayerTraversalProfile(player);
+            if (!transitionedRoom) {
+                TryPushTerrainBlocks(*room, preMovePlayerPos, playerTraversal);
+            }
+            ResolveAgainstRoomTerrain(*room, player.pos, (float)player.size, (float)player.size, playerTraversal);
             PlayerLogic::HandleShooting(player, dt, playerShots);
 
             if ((Input::IsPressed('B') || Input::IsPressed('E')) && player.bombCount > 0) {
@@ -1126,16 +1441,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 bombs.push_back(bomb);
             }
 
-            auto ApplyExplosiveShotsToRocks = [&](std::vector<Projectile>& shots) {
+            auto ApplyProjectileTerrainCollisions = [&](std::vector<Projectile>& shots) {
                 for (auto& shot : shots) {
-                    if (!shot.alive || !shot.explosive) continue;
+                    if (!shot.alive) continue;
                     Rect shotRect = shot.GetRect(projectileSize);
-                    for (auto& rock : room->rocks) {
-                        if (rock.broken) continue;
-                        if (!Collision::CheckAABB(shotRect, rock.GetRect())) continue;
-                        if (rock.IsBombable()) {
-                            BreakRoomRock(*room, rock, true);
+                    for (auto& terrain : room->terrain) {
+                        if (terrain.broken || !terrain.BlocksMovement()) continue;
+                        if (!Collision::CheckAABB(shotRect, terrain.GetRect())) continue;
+                        if (shot.spectral) continue;
+
+                        if (shot.explosive) {
+                            if (terrain.IsExplosive()) {
+                                DetonateTerrainFeature(*room, terrain, true);
+                                shot.alive = false;
+                                break;
+                            }
+                            if (terrain.IsBombable()) {
+                                BreakTerrainFeature(*room, terrain, true);
+                                shot.alive = false;
+                                break;
+                            }
                         }
+
                         shot.alive = false;
                         break;
                     }
@@ -1150,24 +1477,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 );
             };
 
-            ApplyExplosiveShotsToRocks(playerShots);
-            ApplyExplosiveShotsToRocks(enemyShots);
+            ApplyProjectileTerrainCollisions(playerShots);
+            ApplyProjectileTerrainCollisions(enemyShots);
 
-            for (auto& trap : room->traps) {
-                if (trap.triggered) continue;
-                if (!Collision::CheckAABB(player.GetRect(), trap.GetRect())) continue;
-                trap.triggered = true;
-
-                if (trap.type == RoomTrapType::POISON) {
-                    DamagePlayer(1);
-                    AddScreenShake(0.08f, 0.8f);
-                } else {
-                    player.pos = FindSafeTeleportPos(*room);
-                    player.pos = room->ClampPlayerToRoom(player.pos, (float)player.size, (float)player.size);
-                    ResolveAgainstRoomRocks(*room, player.pos, (float)player.size, (float)player.size);
-                    AddScreenShake(0.10f, 1.0f);
-                }
+            for (auto& terrain : room->terrain) {
+                if (!terrain.IsTrap() || terrain.triggered) continue;
+                if (!Collision::CheckAABB(player.GetRect(), terrain.GetRect())) continue;
+                TriggerTrap(*room, terrain, playerTraversal);
                 break;
+            }
+
+            for (auto& terrain : room->terrain) {
+                if (terrain.triggered || !terrain.IsTraversalAid()) continue;
+                if (!Collision::CheckAABB(player.GetRect(), terrain.GetRect())) continue;
+
+                if (terrain.type == RoomTerrainType::TELEPORT_PAD && terrain.linkId >= 0) {
+                    terrain.triggered = true;
+                    for (auto& other : room->terrain) {
+                        if (&other == &terrain) continue;
+                        if (other.linkId != terrain.linkId || other.type != RoomTerrainType::TELEPORT_PAD) continue;
+                        other.triggered = true;
+                        player.pos.x = other.pos.x;
+                        player.pos.y = other.pos.y;
+                        break;
+                    }
+                    player.pos = room->ClampPlayerToRoom(player.pos, (float)player.size, (float)player.size);
+                    ResolveAgainstRoomTerrain(*room, player.pos, (float)player.size, (float)player.size, playerTraversal);
+                    AddScreenShake(0.08f, 0.9f);
+                    break;
+                }
+
+                if (terrain.type == RoomTerrainType::PRESSURE_PLATE && terrain.linkId >= 0) {
+                    terrain.triggered = true;
+                    for (auto& other : room->terrain) {
+                        if (other.linkId != terrain.linkId) continue;
+                        if (other.IsTraversalAid()) {
+                            other.active = !other.active;
+                        }
+                    }
+                    AddScreenShake(0.05f, 0.6f);
+                    break;
+                }
+
+                if (terrain.type == RoomTerrainType::LILY_PAD) {
+                    terrain.triggered = true;
+                    terrain.active = false;
+                    AddScreenShake(0.04f, 0.5f);
+                    break;
+                }
             }
             
             for (auto& bomb : bombs) {
@@ -1210,16 +1567,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         }
                     }
 
-                    for (auto& rock : room->rocks) {
-                        if (rock.broken || !rock.IsBombable()) continue;
+                    for (auto& terrain : room->terrain) {
+                        if (terrain.broken || (!terrain.IsBombable() && !terrain.IsExplosive())) continue;
                         Vec2 rockCenter = {
-                            rock.pos.x + rock.w * 0.5f,
-                            rock.pos.y + rock.h * 0.5f
+                            terrain.pos.x + terrain.w * 0.5f,
+                            terrain.pos.y + terrain.h * 0.5f
                         };
                         float dx = rockCenter.x - bombCenter.x;
                         float dy = rockCenter.y - bombCenter.y;
                         if (dx * dx + dy * dy <= bombExplosionRadius * bombExplosionRadius) {
-                            BreakRoomRock(*room, rock, true);
+                            if (terrain.IsExplosive()) {
+                                DetonateTerrainFeature(*room, terrain, true);
+                            } else {
+                                BreakTerrainFeature(*room, terrain, true);
+                            }
                         }
                     }
             
@@ -1260,11 +1621,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if ((room->type == RoomType::NORMAL || room->IsEnemyCurseRoom()) && !room->cleared) {
                     bool anyAlive = false;
                     std::vector<Enemy> spawnedEnemies;
+                    room->timeInRoom += dt;
+                    if (!room->pacingReinforcementSent && room->timeInRoom > 25.0f && anyAlive) {
+                        room->pacingReinforcementSent = true;
+                        Enemy reinforcement = room->enemySpawnList.empty()
+                            ? EnemyDatabase::Spawn("Zombie", { 160.0f, 20.0f })
+                            : EnemyDatabase::Spawn(room->enemySpawnList[0], { 160.0f, 20.0f });
+                        ScaleEnemyForFloor(reinforcement);
+                        enemies.push_back(reinforcement);
+                    }
                   for (auto& enemy : enemies) {
                         EnemyAI::Update(enemy, player.pos, dt, enemies, spawnedEnemies, enemyShots);
                         Vec2 preClampPos = enemy.pos;
                         enemy.pos = room->ClampToRoom(enemy.pos, enemy.w, enemy.h);
-                        ResolveAgainstRoomRocks(*room, enemy.pos, enemy.w, enemy.h);
+                        TerrainTraversalProfile enemyTraversal;
+                        ResolveAgainstRoomTerrain(*room, enemy.pos, enemy.w, enemy.h, enemyTraversal);
                         if (enemy.bouncesOffWalls && enemy.isCharging) {
                             if (enemy.pos.x != preClampPos.x) enemy.chargeDir.x = -enemy.chargeDir.x;
                             if (enemy.pos.y != preClampPos.y) enemy.chargeDir.y = -enemy.chargeDir.y;
@@ -1283,6 +1654,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                 int thornDamage = player.hasThornMantle ? 2 : 1;
                                 player.spikedArmorTickTimer = thornCooldown;
                                 enemy.hp -= thornDamage;
+                                if (enemy.hp <= 0) enemy.alive = false;
+                            }
+                            // Dash Strike: dashing through an enemy deals a chip of
+                            // damage + knockback, throttled so one dash can hit
+                            // several enemies but not melt one instantly.
+                            if (player.isDashing && player.dashStrikeTickTimer <= 0.0f) {
+                                player.dashStrikeTickTimer = 0.08f;
+                                int dashDamage = std::max(2, player.damage / 3);
+                                enemy.hp -= dashDamage;
+                                float kx = enemy.pos.x - player.pos.x;
+                                float ky = enemy.pos.y - player.pos.y;
+                                float klen = std::sqrt(kx * kx + ky * ky);
+                                if (klen > 0.01f) {
+                                    enemy.pos.x += (kx / klen) * 10.0f;
+                                    enemy.pos.y += (ky / klen) * 10.0f;
+                                }
                                 if (enemy.hp <= 0) enemy.alive = false;
                             }
                         }
@@ -1325,7 +1712,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         EnemyAI::Update(add, player.pos, dt, enemies, scratchSpawned, enemyShots);
                         Vec2 preClampPos = add.pos;
                         add.pos = room->ClampToRoom(add.pos, add.w, add.h);
-                        ResolveAgainstRoomRocks(*room, add.pos, add.w, add.h);
+                        TerrainTraversalProfile addTraversal;
+                        ResolveAgainstRoomTerrain(*room, add.pos, add.w, add.h, addTraversal);
                         if (add.bouncesOffWalls && add.isCharging) {
                             if (add.pos.x != preClampPos.x) add.chargeDir.x = -add.chargeDir.x;
                             if (add.pos.y != preClampPos.y) add.chargeDir.y = -add.chargeDir.y;
@@ -1381,7 +1769,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                     if (boss.alive) {
                         boss.pos = room->ClampToRoom(boss.pos, boss.w, boss.h);
-                        ResolveAgainstRoomRocks(*room, boss.pos, boss.w, boss.h);
+                        TerrainTraversalProfile bossTraversal;
+                        ResolveAgainstRoomTerrain(*room, boss.pos, boss.w, boss.h, bossTraversal);
                     }
 
                     for (auto& hazard : boss.hazards) {
@@ -1500,29 +1889,66 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 Renderer::DrawRect(ex, ry, (int)wt, rh, wallColor);
             }
 
-            for (const auto& rock : wr.rocks) {
-                if (rock.broken) continue;
-                uint32_t rockColor = 0xFF777777;
-                if (rock.type == RoomRockType::BOMBABLE_COIN) rockColor = 0xFF8B6B3E;
-                if (rock.type == RoomRockType::BOMBABLE_HEART) rockColor = 0xFF9E4B5F;
-                Renderer::DrawRect((int)(rock.pos.x + shakeOffset.x), (int)(rock.pos.y + shakeOffset.y),
-                                   (int)rock.w, (int)rock.h, rockColor);
-                if (rock.type != RoomRockType::INDESTRUCTIBLE) {
-                    Renderer::DrawRect((int)(rock.pos.x + shakeOffset.x) + 3,
-                                       (int)(rock.pos.y + shakeOffset.y) + 3,
-                                       (int)rock.w - 6, (int)rock.h - 6, 0xFF2A1D14);
-                }
-            }
+            for (const auto& terrain : wr.terrain) {
+                if (terrain.broken && terrain.IsBombable()) continue;
 
-            for (const auto& trap : wr.traps) {
-                if (trap.triggered) continue;
-                uint32_t trapColor = (trap.type == RoomTrapType::POISON) ? 0xFF5FD15F : 0xFF7A63FF;
-                Renderer::DrawRect((int)(trap.pos.x + shakeOffset.x), (int)(trap.pos.y + shakeOffset.y),
-                                   (int)trap.w, (int)trap.h, trapColor);
-                Renderer::DrawRect((int)(trap.pos.x + shakeOffset.x) + 3,
-                                   (int)(trap.pos.y + shakeOffset.y) + 3,
-                                   (int)trap.w - 6, (int)trap.h - 6,
-                                   (trap.type == RoomTrapType::POISON) ? 0xFF174B17 : 0xFF26155A);
+                if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
+                    terrain.type == RoomTerrainType::ROCK_BOMBABLE_HEART ||
+                    terrain.type == RoomTerrainType::ROCK_BOMBABLE ||
+                    terrain.type == RoomTerrainType::ROCK_INDESTRUCTIBLE ||
+                    terrain.type == RoomTerrainType::ROCK_EXPLOSIVE ||
+                    terrain.type == RoomTerrainType::CRATE_DESTRUCTIBLE ||
+                    terrain.type == RoomTerrainType::BLOCK_PUSHABLE) {
+                    uint32_t rockColor = 0xFF777777;
+                    if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_COIN) rockColor = 0xFF8B6B3E;
+                    if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_HEART) rockColor = 0xFF9E4B5F;
+                    if (terrain.type == RoomTerrainType::ROCK_BOMBABLE) rockColor = 0xFF71614D;
+                    if (terrain.type == RoomTerrainType::ROCK_EXPLOSIVE) rockColor = 0xFFE1663A;
+                    if (terrain.type == RoomTerrainType::CRATE_DESTRUCTIBLE) rockColor = 0xFF8A5A32;
+                    if (terrain.type == RoomTerrainType::BLOCK_PUSHABLE) rockColor = 0xFFB59E62;
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x), (int)(terrain.pos.y + shakeOffset.y),
+                                       (int)terrain.w, (int)terrain.h, rockColor);
+                    if (terrain.type != RoomTerrainType::ROCK_INDESTRUCTIBLE) {
+                        Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x) + 3,
+                                           (int)(terrain.pos.y + shakeOffset.y) + 3,
+                                          (int)terrain.w - 6, (int)terrain.h - 6, 0xFF2A1D14);
+                    }
+                } else if (terrain.type == RoomTerrainType::BRIDGE_TEMPORARY ||
+                           terrain.type == RoomTerrainType::BRIDGE_FRAGILE ||
+                           terrain.type == RoomTerrainType::TELEPORT_PAD ||
+                           terrain.type == RoomTerrainType::PRESSURE_PLATE ||
+                           terrain.type == RoomTerrainType::LILY_PAD) {
+                    uint32_t padColor = 0xFF66D9FF;
+                    if (terrain.type == RoomTerrainType::BRIDGE_TEMPORARY) padColor = terrain.active ? 0xFF9BD35B : 0xFF6B6945;
+                    if (terrain.type == RoomTerrainType::BRIDGE_FRAGILE) padColor = terrain.active ? 0xFFB8D35B : 0xFF776E4B;
+                    if (terrain.type == RoomTerrainType::TELEPORT_PAD) padColor = 0xFF7B66FF;
+                    if (terrain.type == RoomTerrainType::PRESSURE_PLATE) padColor = 0xFFFFC24D;
+                    if (terrain.type == RoomTerrainType::LILY_PAD) padColor = 0xFF3FA86B;
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x), (int)(terrain.pos.y + shakeOffset.y),
+                                       (int)terrain.w, (int)terrain.h, padColor);
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x) + 3,
+                                       (int)(terrain.pos.y + shakeOffset.y) + 3,
+                                       (int)terrain.w - 6, (int)terrain.h - 6, 0xFF102028);
+                } else if (terrain.type == RoomTerrainType::PIT) {
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x), (int)(terrain.pos.y + shakeOffset.y),
+                                       (int)terrain.w, (int)terrain.h, 0xFF0B0B10);
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x) + 4,
+                                       (int)(terrain.pos.y + shakeOffset.y) + 4,
+                                       (int)terrain.w - 8, (int)terrain.h - 8, 0xFF000000);
+                } else if (!terrain.triggered) {
+                    uint32_t trapColor = 0xFF7A63FF;
+                    if (terrain.type == RoomTerrainType::TRAP_POISON) trapColor = 0xFF5FD15F;
+                    if (terrain.type == RoomTerrainType::TRAP_SUMMON) trapColor = 0xFFFFB347;
+                    if (terrain.type == RoomTerrainType::TRAP_SPIKE) trapColor = 0xFFFF6B6B;
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x), (int)(terrain.pos.y + shakeOffset.y),
+                                       (int)terrain.w, (int)terrain.h, trapColor);
+                    Renderer::DrawRect((int)(terrain.pos.x + shakeOffset.x) + 3,
+                                       (int)(terrain.pos.y + shakeOffset.y) + 3,
+                                       (int)terrain.w - 6, (int)terrain.h - 6,
+                                       (terrain.type == RoomTerrainType::TRAP_POISON) ? 0xFF174B17 :
+                                       (terrain.type == RoomTerrainType::TRAP_SUMMON) ? 0xFF5A2F00 :
+                                       (terrain.type == RoomTerrainType::TRAP_SPIKE) ? 0xFF5A1A1A : 0xFF26155A);
+                }
             }
         }
 

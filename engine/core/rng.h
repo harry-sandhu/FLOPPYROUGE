@@ -3,7 +3,7 @@
 
 namespace RNG {
     inline uint32_t& State() {
-        static uint32_t state = 0x6C8E9CF5u;
+        thread_local static uint32_t state = 0x6C8E9CF5u;
         return state;
     }
 
