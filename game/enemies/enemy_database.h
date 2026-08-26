@@ -1,7 +1,7 @@
 #pragma once
 #include "enemy.h"
 
-constexpr int MAX_ENEMY_TEMPLATES = 96;
+constexpr int MAX_ENEMY_TEMPLATES = 160;
 
 struct EnemyTemplate {
     char name[32] = {};
@@ -30,7 +30,9 @@ namespace EnemyDatabase {
     bool Load(const char* path);
     int Count();
     bool Exists(const char* name);
+    int IndexOf(const char* name);
     Enemy Spawn(const char* name, Vec2 pos);
     Enemy Spawn(int index, Vec2 pos);
     int Tier(int index);
+    int MaxTier();
 }

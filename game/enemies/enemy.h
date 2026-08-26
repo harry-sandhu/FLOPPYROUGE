@@ -13,7 +13,15 @@ enum class AIType {
     MIMIC,
     STRAFER,
     DASHER,
-    LURKER
+    LURKER,
+    TELEPORTER,
+    GUARDIAN,
+    BURROWER,
+    ARTILLERY,
+    LINKER,
+    SWARM_LEADER,
+    PATROLLER,
+    COWARD
 };
 
 enum class AttackPattern {
@@ -66,6 +74,9 @@ struct Enemy {
     float freezeTimer = 0.0f;
     int markStacks = 0;
     float spiralOffset = 0.0f;
+    Vec2 aiAnchor = { 0.0f, 0.0f };
+    bool aiAnchorSet = false;
+    float aiStateTimer = 0.0f;
 
     bool shielded = false;
 

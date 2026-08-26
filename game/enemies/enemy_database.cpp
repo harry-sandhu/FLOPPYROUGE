@@ -5,6 +5,7 @@
 namespace {
     EnemyTemplate g_templates[MAX_ENEMY_TEMPLATES];
     int g_templateCount = 0;
+    int g_maxTier = 1;
 
     AIType ParseAIType(const char* s) {
         if (std::strcmp(s, "SHOOTER") == 0) return AIType::SHOOTER;
@@ -16,6 +17,14 @@ namespace {
         if (std::strcmp(s, "STRAFER") == 0) return AIType::STRAFER;
         if (std::strcmp(s, "DASHER") == 0) return AIType::DASHER;
         if (std::strcmp(s, "LURKER") == 0) return AIType::LURKER;
+        if (std::strcmp(s, "TELEPORTER") == 0) return AIType::TELEPORTER;
+        if (std::strcmp(s, "GUARDIAN") == 0) return AIType::GUARDIAN;
+        if (std::strcmp(s, "BURROWER") == 0) return AIType::BURROWER;
+        if (std::strcmp(s, "ARTILLERY") == 0) return AIType::ARTILLERY;
+        if (std::strcmp(s, "LINKER") == 0) return AIType::LINKER;
+        if (std::strcmp(s, "SWARM_LEADER") == 0) return AIType::SWARM_LEADER;
+        if (std::strcmp(s, "PATROLLER") == 0) return AIType::PATROLLER;
+        if (std::strcmp(s, "COWARD") == 0) return AIType::COWARD;
         return AIType::CHASER;
     }
 
@@ -63,6 +72,9 @@ namespace {
         e.spawnLimit = t.spawnLimit;
         e.spawnTimer = 0.0f;
         e.spawnedChildren = 0;
+        e.aiAnchor = { 0.0f, 0.0f };
+        e.aiAnchorSet = false;
+        e.aiStateTimer = 0.0f;
     }
 }
 
@@ -73,6 +85,7 @@ bool Load(const char* path) {
     if (blocks.empty()) return false;
 
     g_templateCount = 0;
+    g_maxTier = 1;
 
     for (auto& block : blocks) {
         if (g_templateCount >= MAX_ENEMY_TEMPLATES) break;
@@ -100,6 +113,7 @@ bool Load(const char* path) {
         t.spawnCount = std::max(1, block.GetInt("spawn_count", 1));
         t.spawnLimit = std::max(1, block.GetInt("spawn_limit", 6));
         t.tier = std::max(1, block.GetInt("tier", 1));
+        g_maxTier = std::max(g_maxTier, t.tier);
     }
 
     return true;
@@ -112,6 +126,10 @@ int Tier(int index) {
     return t ? t->tier : 1;
 }
 
+int MaxTier() {
+    return g_maxTier;
+}
+
 
 
 int Count() {
@@ -120,6 +138,13 @@ int Count() {
 
 bool Exists(const char* name) {
     return Find(name) != nullptr;
+}
+
+int IndexOf(const char* name) {
+    for (int i = 0; i < g_templateCount; ++i) {
+        if (std::strcmp(g_templates[i].name, name) == 0) return i;
+    }
+    return -1;
 }
 
 Enemy Spawn(const char* name, Vec2 pos) {
