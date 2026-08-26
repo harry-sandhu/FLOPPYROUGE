@@ -1,7 +1,7 @@
 #pragma once
 #include "boss.h"
 
-constexpr int MAX_BOSS_TEMPLATES = 32;
+constexpr int MAX_BOSS_TEMPLATES = 36;
 constexpr int MAX_ATTACK_CYCLE_LENGTH = 16;
 
 struct BossTemplate {
@@ -28,4 +28,5 @@ namespace BossDatabase {
     bool Load(const char* path);
     const BossTemplate* Get(int index);
     int Count();
+    int IndexOf(const char* name);
 }

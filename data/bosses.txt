@@ -199,7 +199,7 @@ charge_contact_damage=4
 max_adds=6
 phase2_hp_ratio=0.30
 attack_cycle_phase1=MIRROR_SHOT FLOOR_HAZARD LASER_SWEEP
-attack_cycle_phase2=TELEPORT_BURST SUMMON_WAVE LASER_SWEEP DENSE_RING SPIRAL_BURST
+attack_cycle_phase2=TELEPORT_BURST VORTEX_PULL SUMMON_WAVE LASER_SWEEP DENSE_RING SPIRAL_BURST
 
 [GlassKing]
 hp=340
@@ -396,7 +396,7 @@ max_adds=5
 attack_cycle_phase1=DENSE_RING TELEPORT_BURST
 attack_cycle_phase2=DENSE_RING TELEPORT_BURST CHARGE
 
-[Sovereign]
+[DragonSovereign]
 hp=1400
 drift_speed=29
 attack_cd_phase1=1.15
@@ -408,3 +408,55 @@ charge_contact_damage=2
 max_adds=5
 attack_cycle_phase1=RADIAL_BURST CARDINAL_BURST GAPPED_RING
 attack_cycle_phase2=RADIAL_BURST CARDINAL_BURST GAPPED_RING TELEPORT_BURST MIRROR_SHOT
+
+[Linker]
+hp=560
+drift_speed=14
+attack_cd_phase1=1.55
+attack_cd_phase2=0.85
+charge_speed=235
+phase2_hp_ratio=0.48
+contact_damage=1
+charge_contact_damage=2
+max_adds=4
+attack_cycle_phase1=MIRROR_SHOT TELEPORT_BURST GAPPED_RING
+attack_cycle_phase2=MIRROR_SHOT VORTEX_PULL TELEPORT_BURST DENSE_RING
+
+[SwarmLeader]
+hp=590
+drift_speed=15
+attack_cd_phase1=1.60
+attack_cd_phase2=0.88
+charge_speed=225
+phase2_hp_ratio=0.45
+contact_damage=2
+charge_contact_damage=2
+max_adds=8
+attack_cycle_phase1=SUMMON_WAVE SPREAD_SHOT
+attack_cycle_phase2=SUMMON_WAVE DENSE_RING SPIRAL_BURST
+
+[Patroller]
+hp=520
+drift_speed=18
+attack_cd_phase1=1.45
+attack_cd_phase2=0.80
+charge_speed=255
+phase2_hp_ratio=0.52
+contact_damage=1
+charge_contact_damage=2
+max_adds=3
+attack_cycle_phase1=CARDINAL_BURST CHARGE
+attack_cycle_phase2=CARDINAL_BURST SPIRAL_BURST CHARGE
+
+[Coward]
+hp=470
+drift_speed=20
+attack_cd_phase1=1.70
+attack_cd_phase2=0.95
+charge_speed=240
+phase2_hp_ratio=0.58
+contact_damage=1
+charge_contact_damage=2
+max_adds=3
+attack_cycle_phase1=GAPPED_RING TELEPORT_BURST
+attack_cycle_phase2=GAPPED_RING FLOOR_HAZARD TELEPORT_BURST RADIAL_BURST

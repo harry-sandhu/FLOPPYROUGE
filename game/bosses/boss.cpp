@@ -4,6 +4,7 @@
 #include "../enemies/enemy_database.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace {
     constexpr float PI = 3.14159265f;
@@ -199,6 +200,15 @@ namespace {
         FireRadialBurst(boss, out);
     }
 
+    // VORTEX_PULL: the boss's signature arena-control move. Player gets
+    // yanked toward the boss over ~0.6s, then a radial burst fires the
+    // instant the pull ends — punishes standing still, rewards dashing
+    // out of the pull before the burst lands.
+    void StartVortexPull(Boss& boss) {
+        boss.isVortexPulling = true;
+        boss.vortexPullTimeRemaining = 0.6f;
+    }
+
     // FLOOR_HAZARD: drops a persistent damage zone at the player's
     // current position (telegraphed - get off the spot you're
     // standing on). Capped so a boss can't blanket the room.
@@ -252,180 +262,39 @@ namespace {
             case BossAttackType::DENSE_RING:      FireDenseRing(boss, bossProjectiles); break;
             case BossAttackType::GAPPED_RING:     FireGappedRing(boss, playerPos, bossProjectiles); break;
             case BossAttackType::TELEPORT_BURST:  FireTeleportBurst(boss, playerPos, bossProjectiles); break;
+            case BossAttackType::VORTEX_PULL:     StartVortexPull(boss); break;
             default: break;
         }
     }
 
     // Data-driven update function that uses attack cycles from BossTemplate
-    void UpdateBossWithDataDrivenCycle(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
-                                       const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds,
-                                       const BossTemplate* templateData) {
-        if (!templateData) return;
-        
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            // Select which cycle to use based on phase
-            const BossAttackType* cycle = (boss.phase == 1) ? templateData->attackCyclePhase1 : templateData->attackCyclePhase2;
-            int cycleLength = (boss.phase == 1) ? templateData->attackCyclePhase1Length : templateData->attackCyclePhase2Length;
-            
-            if (cycleLength > 0) {
-                BossAttackType attack = cycle[boss.attackIndex % cycleLength];
-                boss.attackIndex++;
-                ExecuteAttack(boss, attack, playerPos, bossProjectiles, roomAdds, spawnedAdds);
-            }
-            
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
+    void UpdateBossWithCycle(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
+                             const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds,
+                             const BossTemplate* templateData) {
+        static const BossAttackType GENERIC_CYCLE[] = {
+            BossAttackType::SPREAD_SHOT,
+            BossAttackType::RADIAL_BURST,
+            BossAttackType::CHARGE
+        };
 
-    void UpdateVariant0(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            BossAttackType attack = (BossAttackType)(boss.attackIndex % 3);
-            boss.attackIndex++;
-            switch (attack) {
-                case BossAttackType::SPREAD_SHOT:  FireSpreadShot(boss, playerPos, bossProjectiles); break;
-                case BossAttackType::RADIAL_BURST: FireRadialBurst(boss, bossProjectiles); break;
-                case BossAttackType::CHARGE:       StartCharge(boss, playerPos); break;
-                default: break;
+        const BossAttackType* cycle = GENERIC_CYCLE;
+        int cycleLength = (int)(sizeof(GENERIC_CYCLE) / sizeof(GENERIC_CYCLE[0]));
+        if (templateData) {
+            const BossAttackType* templateCycle =
+                (boss.phase == 1) ? templateData->attackCyclePhase1 : templateData->attackCyclePhase2;
+            int templateLength =
+                (boss.phase == 1) ? templateData->attackCyclePhase1Length : templateData->attackCyclePhase2Length;
+            if (templateLength > 0) {
+                cycle = templateCycle;
+                cycleLength = templateLength;
             }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
-    }
 
-    void UpdateVariant1(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
         boss.attackTimer -= dt;
         if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 3;
+            BossAttackType attack = cycle[boss.attackIndex % cycleLength];
             boss.attackIndex++;
-            switch (step) {
-                case 0: FireCardinalBurst(boss, bossProjectiles); break;
-                case 1: FireTripleSpread(boss, playerPos, bossProjectiles); break;
-                case 2: StartCharge(boss, playerPos); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant2(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 3;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: FireSpiralBurst(boss, bossProjectiles); break;
-                case 1: FireRadialBurst(boss, bossProjectiles); break;
-                case 2: FireTripleSpread(boss, playerPos, bossProjectiles); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant3(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 4;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: FireSpiralBurst(boss, bossProjectiles); break;
-                case 1: FireCardinalBurst(boss, bossProjectiles); break;
-                case 2: FireSpiralBurst(boss, bossProjectiles); break;
-                case 3: StartCharge(boss, playerPos); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant4(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 5;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: FireTripleSpread(boss, playerPos, bossProjectiles); break;
-                case 1: FireDenseRing(boss, bossProjectiles); break;
-                case 2: StartCharge(boss, playerPos); break;
-                case 3: FireSpiralBurst(boss, bossProjectiles); break;
-                case 4: FireCardinalBurst(boss, bossProjectiles); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    // Duke-of-Flies style: mostly passive/drifting, leans on adds instead of
-    // dense bullet patterns. Phase 2 adds a spread shot into the rotation.
-    void UpdateVariant5(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
-                        const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int stepCount = (boss.phase == 1) ? 2 : 3;
-            int step = boss.attackIndex % stepCount;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: SummonAdds(boss, roomAdds, spawnedAdds); break;
-                case 1: FireRadialBurst(boss, bossProjectiles); break;
-                case 2: FireSpreadShot(boss, playerPos, bossProjectiles); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant6(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 3;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: DropFloorHazard(boss, playerPos); break;
-                case 1: StartCharge(boss, playerPos); break;
-                case 2: FireRadialBurst(boss, bossProjectiles); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant7(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
-                        const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 3;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: FireLaserSweep(boss, playerPos, bossProjectiles); break;
-                case 1: SummonAdds(boss, roomAdds, spawnedAdds); break;
-                case 2: FireLaserSweep(boss, playerPos, bossProjectiles); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant8(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 2;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: FireGappedRing(boss, playerPos, bossProjectiles); break;
-                case 1: FireSpreadShot(boss, playerPos, bossProjectiles); break;
-            }
-            boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
-        }
-    }
-
-    void UpdateVariant9(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
-                        const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds) {
-        boss.attackTimer -= dt;
-        if (boss.attackTimer <= 0.0f) {
-            int step = boss.attackIndex % 6;
-            boss.attackIndex++;
-            switch (step) {
-                case 0: FireGappedRing(boss, playerPos, bossProjectiles); break;
-                case 1: DropFloorHazard(boss, playerPos); break;
-                case 2: FireLaserSweep(boss, playerPos, bossProjectiles); break;
-                case 3: StartCharge(boss, playerPos); break;
-                case 4: SummonAdds(boss, roomAdds, spawnedAdds); break;
-                case 5: FireSpiralBurst(boss, bossProjectiles); break;
-            }
+            ExecuteAttack(boss, attack, playerPos, bossProjectiles, roomAdds, spawnedAdds);
             boss.attackTimer = (boss.phase == 1) ? boss.attackCooldownPhase1 : boss.attackCooldownPhase2;
         }
     }
@@ -434,94 +303,6 @@ namespace {
         Boss boss;
         boss.variant = variant;
         boss.pos = { 146.0f, 20.0f };
-
-        switch (variant) {
-            case 1:
-                boss.hp = boss.maxHp = 250;
-                boss.driftSpeed = 17.0f;
-                boss.attackCooldownPhase1 = 2.1f;
-                boss.attackCooldownPhase2 = 1.25f;
-                boss.chargeSpeed = 230.0f;
-                break;
-            case 2:
-                boss.hp = boss.maxHp = 340;
-                boss.driftSpeed = 12.0f;
-                boss.attackCooldownPhase1 = 1.9f;
-                boss.attackCooldownPhase2 = 1.05f;
-                boss.chargeSpeed = 250.0f;
-                break;
-            case 3:
-                boss.hp = boss.maxHp = 380;
-                boss.driftSpeed = 14.0f;
-                boss.attackCooldownPhase1 = 1.8f;
-                boss.attackCooldownPhase2 = 1.0f;
-                boss.chargeSpeed = 240.0f;
-                boss.contactDamage = 2;
-                boss.chargeContactDamage = 2;
-                break;
-            case 4:
-                boss.hp = boss.maxHp = 460;
-                boss.driftSpeed = 16.0f;
-                boss.attackCooldownPhase1 = 1.5f;
-                boss.attackCooldownPhase2 = 0.85f;
-                boss.chargeSpeed = 260.0f;
-                boss.contactDamage = 2;
-                boss.chargeContactDamage = 2;
-                break;
-            case 5:
-                boss.hp = boss.maxHp = 300;
-                boss.driftSpeed = 10.0f;
-                boss.attackCooldownPhase1 = 2.6f;
-                boss.attackCooldownPhase2 = 1.6f;
-                boss.chargeSpeed = 180.0f;
-                boss.contactDamage = 2;
-                boss.chargeContactDamage = 2;
-                boss.maxAdds = 5;
-                break;
-
-            case 6: // arena-control: floor hazards + charge
-                boss.hp = boss.maxHp = 400;
-                boss.driftSpeed = 13.0f;
-                boss.attackCooldownPhase1 = 2.0f;
-                boss.attackCooldownPhase2 = 1.2f;
-                boss.chargeSpeed = 235.0f;
-                boss.contactDamage = 2;
-                boss.chargeContactDamage = 2;
-                break;
-            case 7: // attrition: laser sweep + summon wave
-                boss.hp = boss.maxHp = 430;
-                boss.driftSpeed = 11.0f;
-                boss.attackCooldownPhase1 = 2.2f;
-                boss.attackCooldownPhase2 = 1.3f;
-                boss.chargeSpeed = 200.0f;
-                boss.maxAdds = 5;
-                break;
-            case 8: // precision: mirror shot + spread shot
-                boss.hp = boss.maxHp = 350;
-                boss.driftSpeed = 15.0f;
-                boss.attackCooldownPhase1 = 1.9f;
-                boss.attackCooldownPhase2 = 1.1f;
-                boss.chargeSpeed = 220.0f;
-                break;
-            case 9: // all-rounder late boss
-                boss.hp = boss.maxHp = 500;
-                boss.driftSpeed = 14.0f;
-                boss.attackCooldownPhase1 = 1.6f;
-                boss.attackCooldownPhase2 = 0.9f;
-                boss.chargeSpeed = 245.0f;
-                boss.contactDamage = 3;
-                boss.chargeContactDamage = 4;
-                boss.maxAdds = 4;
-                break;
-            case 0:
-            default:
-                boss.hp = boss.maxHp = 290;
-                boss.driftSpeed = 15.0f;
-                boss.attackCooldownPhase1 = 2.5f;
-                boss.attackCooldownPhase2 = 1.55f;
-                boss.chargeSpeed = 215.0f;
-                break;
-        }
 
         if (const BossTemplate* templateData = BossDatabase::Get(variant % std::max(1, BossDatabase::Count()))) {
             boss.hp = boss.maxHp = templateData->hp;
@@ -532,6 +313,13 @@ namespace {
             boss.contactDamage = templateData->contactDamage;
             boss.chargeContactDamage = templateData->chargeContactDamage;
             boss.maxAdds = templateData->maxAdds;
+            boss.isDragonFinale = std::strcmp(templateData->name, "DragonSovereign") == 0;
+            if (boss.isDragonFinale) {
+                boss.w = 46.0f;
+                boss.h = 24.0f;
+                boss.driftSpeed *= 1.05f;
+                boss.maxAdds = std::max(boss.maxAdds, 6);
+            }
         }
 
         boss.attackTimer = boss.attackCooldownPhase1;
@@ -601,7 +389,19 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
         boss.phase = 2;
     }
 
-    if (boss.IsFrozen()) return; // frozen: no movement, no attacks, hazards/status still tick above
+        if (boss.IsFrozen()) return; // frozen: no movement, no attacks, hazards/status still tick above
+
+    if (boss.isVortexPulling) {
+        boss.vortexPullTimeRemaining -= dt;
+
+        if (boss.vortexPullTimeRemaining <= 0.0f) {
+            boss.vortexPullTimeRemaining = 0.0f;
+            boss.isVortexPulling = false;
+            FireRadialBurst(boss, bossProjectiles);
+        }
+
+        return;
+    }
 
     if (boss.isCharging) {
         float slowScale = (boss.stickyTimer > 0.0f) ? boss.stickySpeedMultiplier : 1.0f;
@@ -613,45 +413,40 @@ void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossP
     }
 
     Vec2 dir = Normalize({ playerPos.x - boss.pos.x, playerPos.y - boss.pos.y });
+    if (boss.isDragonFinale) {
+        Vec2 anchor = { 160.0f, 54.0f };
+        float sweep = std::sin((float)boss.attackIndex * 0.35f + boss.hp * 0.01f);
+        Vec2 hover = {
+            anchor.x + sweep * 78.0f,
+            anchor.y + std::cos((float)boss.attackIndex * 0.22f) * 16.0f
+        };
+        Vec2 hoverDir = Normalize({ hover.x - boss.pos.x, hover.y - boss.pos.y });
+        dir = Normalize({ dir.x * 0.45f + hoverDir.x * 0.55f, dir.y * 0.45f + hoverDir.y * 0.55f });
+    }
+    if (templateData) {
+        if (std::strcmp(templateData->name, "Coward") == 0) {
+            Vec2 away = Normalize({ boss.pos.x - playerPos.x, boss.pos.y - playerPos.y });
+            dir = Normalize({ dir.x * 0.20f + away.x * 0.80f, dir.y * 0.20f + away.y * 0.80f });
+        } else if (std::strcmp(templateData->name, "Patroller") == 0) {
+            Vec2 patrol = (boss.attackIndex % 2 == 0)
+                ? Vec2{ (boss.pos.y < 90.0f) ? 1.0f : -1.0f, 0.0f }
+                : Vec2{ 0.0f, (boss.pos.x < 160.0f) ? 1.0f : -1.0f };
+            dir = Normalize({ dir.x * 0.35f + patrol.x * 0.65f, dir.y * 0.35f + patrol.y * 0.65f });
+        }
+    }
     float slowScale = (boss.stickyTimer > 0.0f) ? boss.stickySpeedMultiplier : 1.0f;
     boss.pos.x += dir.x * boss.driftSpeed * slowScale * dt;
     boss.pos.y += dir.y * boss.driftSpeed * slowScale * dt;
+    if (boss.isDragonFinale) {
+        if (boss.pos.y > 82.0f) boss.pos.y = 82.0f;
+    }
 
-    // Try to use data-driven attack cycles if available
-    if (templateData && templateData->attackCyclePhase1Length > 0 && boss.attackDelayRemaining <= 0.0f) {
-        UpdateBossWithDataDrivenCycle(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds, templateData);
-    } else if (boss.attackDelayRemaining <= 0.0f) {
-        // Fall back to hardcoded variant updates if no data-driven cycles
-        switch (boss.variant) {
-            case 1: UpdateVariant1(boss, playerPos, dt, bossProjectiles); break;
-            case 2: UpdateVariant2(boss, playerPos, dt, bossProjectiles); break;
-            case 3: UpdateVariant3(boss, playerPos, dt, bossProjectiles); break;
-            case 4: UpdateVariant4(boss, playerPos, dt, bossProjectiles); break;
-            case 5: UpdateVariant5(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-            case 6: UpdateVariant6(boss, playerPos, dt, bossProjectiles); break;
-            case 7: UpdateVariant7(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-            case 8: UpdateVariant8(boss, playerPos, dt, bossProjectiles); break;
-            case 9: UpdateVariant9(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds); break;
-            case 0:
-            default:
-                UpdateVariant0(boss, playerPos, dt, bossProjectiles);
-                break;
-        }
+    if (boss.attackDelayRemaining <= 0.0f) {
+        UpdateBossWithCycle(boss, playerPos, dt, bossProjectiles, roomAdds, spawnedAdds, templateData);
     }
 }
 
 } // namespace BossAI
-
-Boss SpawnBoss1() { return MakeBoss(0); }
-Boss SpawnBoss2() { return MakeBoss(1); }
-Boss SpawnBoss3() { return MakeBoss(2); }
-Boss SpawnBoss4() { return MakeBoss(3); }
-Boss SpawnBoss5() { return MakeBoss(4); }
-Boss SpawnBoss6() { return MakeBoss(5); }
-Boss SpawnBoss7() { return MakeBoss(6); }
-Boss SpawnBoss8() { return MakeBoss(7); }
-Boss SpawnBoss9() { return MakeBoss(8); }
-Boss SpawnBoss10() { return MakeBoss(9); }
 
 Boss SpawnBossVariant(int variant) {
     return MakeBoss(variant % std::max(1, BossDatabase::Count()));
