@@ -87,6 +87,7 @@ namespace {
         if (std::strcmp(s, "burst_shots") == 0) return ItemFlag::BURST_SHOTS;
         if (std::strcmp(s, "rocket_rounds") == 0) return ItemFlag::ROCKET_ROUNDS;
         if (std::strcmp(s, "laser_lens") == 0) return ItemFlag::LASER_LENS;
+        if (std::strcmp(s, "spectral_shots") == 0) return ItemFlag::SPECTRAL_SHOTS;
         if (std::strcmp(s, "crimson_ray") == 0) return ItemFlag::CRIMSON_RAY;
         if (std::strcmp(s, "blade_arc") == 0) return ItemFlag::BLADE_ARC;
         if (std::strcmp(s, "bulwark_core") == 0) return ItemFlag::BULWARK_CORE;
@@ -94,6 +95,8 @@ namespace {
         if (std::strcmp(s, "regen_charm") == 0) return ItemFlag::REGEN_CHARM;
         if (std::strcmp(s, "mirror_ward") == 0) return ItemFlag::MIRROR_WARD;
         if (std::strcmp(s, "phoenix_feather") == 0) return ItemFlag::PHOENIX_FEATHER;
+        if (std::strcmp(s, "pit_walker") == 0) return ItemFlag::PIT_WALKER;
+        if (std::strcmp(s, "hazard_shroud") == 0) return ItemFlag::HAZARD_SHROUD;
         return ItemFlag::UNKNOWN;
     }
 

@@ -2073,6 +2073,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     case AIType::SPAWNER:  color = 0xFF66CCCC; break;
                     case AIType::EXPLODER: color = 0xFF33DD66; break;
                     case AIType::MIMIC:    color = 0xFF8B5A2B; break;
+                    case AIType::TELEPORTER:   color = 0xFF7ED9FF; break;
+                    case AIType::GUARDIAN:     color = 0xFFA7FF7A; break;
+                    case AIType::BURROWER:     color = 0xFFB78A5A; break;
+                    case AIType::ARTILLERY:    color = 0xFF77A7FF; break;
+                    case AIType::LINKER:       color = 0xFFFF77E8; break;
+                    case AIType::SWARM_LEADER: color = 0xFFFFB85A; break;
+                    case AIType::PATROLLER:    color = 0xFFB6FF77; break;
+                    case AIType::COWARD:       color = 0xFFBBBBBB; break;
                     case AIType::CHASER:
                     default:                color = 0xFFFF3333; break;
                 }

@@ -11,6 +11,7 @@ enum class ProjectileKind {
 
 struct ProjectileMods {
     ProjectileKind kind = ProjectileKind::BULLET;
+    bool spectral = false;
     bool homing = false;
     bool poison = false;
     bool sticky = false;
@@ -43,6 +44,7 @@ struct Projectile {
     float lifeRemaining = 0.0f;
     ProjectileKind kind = ProjectileKind::BULLET;
 
+    bool spectral = false;
     bool homing = false;
     bool poison = false;
     bool sticky = false;

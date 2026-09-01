@@ -17,6 +17,7 @@ add_executable(FloppyRogue WIN32
     game/items/item_database.cpp
     game/items/item_system.cpp
     game/dungeon/dungeon.cpp
+    game/dungeon/terrain_gen.cpp
     game/enemies/enemy.cpp
     game/enemies/enemy_database.cpp
     game/bosses/boss.cpp

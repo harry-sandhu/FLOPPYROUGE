@@ -13,6 +13,7 @@ namespace {
         ROCKET,
         BURST,
         LASER,
+        SPECTRAL,
         CRIMSON_RAY,
         SLASH
     };
@@ -36,6 +37,7 @@ namespace {
         if (player.hasRocketShots) add(ShotStyle::ROCKET);
         if (player.hasBurstShots) add(ShotStyle::BURST);
         if (player.hasLaserShots) add(ShotStyle::LASER);
+        if (player.hasSpectralShots) add(ShotStyle::SPECTRAL);
         if (player.hasCrimsonRay) add(ShotStyle::CRIMSON_RAY);
         if (player.hasBladeArc) add(ShotStyle::SLASH);
 
@@ -48,6 +50,7 @@ namespace {
             case ShotStyle::ROCKET: return ProjectileKind::ROCKET;
             case ShotStyle::BURST: return ProjectileKind::BULLET;
             case ShotStyle::LASER: return ProjectileKind::LASER;
+            case ShotStyle::SPECTRAL: return ProjectileKind::BULLET;
             case ShotStyle::CRIMSON_RAY: return ProjectileKind::CRIMSON_RAY;
             case ShotStyle::SLASH: return ProjectileKind::SLASH;
             case ShotStyle::BULLET:
@@ -104,6 +107,7 @@ namespace {
         player.dashCooldownRemaining = player.dashCooldown;
         player.invincibleTimer = std::max(player.invincibleTimer, player.dashDuration);
         player.actionFlashTimer = std::max(player.actionFlashTimer, 0.10f);
+        player.dashStrikeTickTimer = 0.0f; // ready to hit immediately on dash start
     }
 
     void SpawnBeamLine(std::vector<Projectile>& playerProjectiles, const Player& player, Vec2 center, Vec2 dir,
@@ -163,6 +167,20 @@ namespace {
     void SpawnShotStyle(ShotStyle style, std::vector<Projectile>& playerProjectiles, const Player& player,
                         Vec2 playerCenter, Vec2 shootDir, int baseDamage, float range,
                         const ProjectileMods& baseMods, int projectileCount, float shotSizeScale) {
+        if (style == ShotStyle::SPECTRAL) {
+            ProjectileMods mods = baseMods;
+            mods.kind = ProjectileKind::BULLET;
+            mods.spectral = true;
+            for (int i = 0; i < projectileCount; ++i) {
+                Vec2 vel = { shootDir.x * player.shotSpeed, shootDir.y * player.shotSpeed };
+                ProjectileSystem::Spawn(playerProjectiles, playerCenter, vel, baseDamage, range, 0.0f, mods);
+                if (!playerProjectiles.empty()) {
+                    playerProjectiles.back().sizeScale = shotSizeScale;
+                }
+            }
+            return;
+        }
+
         if (style == ShotStyle::ROCKET) {
             for (int i = 0; i < projectileCount; ++i) {
                 ProjectileMods rocketMods = baseMods;
@@ -284,8 +302,8 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
         player.pos.x + player.size / 2.0f,
         player.pos.y + player.size / 2.0f
     };
-    ShotStyle shotStyles[5];
-    int shotStyleCount = CollectShotStyles(player, shotStyles, 5);
+    ShotStyle shotStyles[8];
+    int shotStyleCount = CollectShotStyles(player, shotStyles, 8);
 
     ProjectileMods mods;
     mods.homing = player.hasHomingShots;
@@ -363,6 +381,9 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
             ShotStyle style = shotStyles[i];
             ProjectileMods styleMods = mods;
             styleMods.kind = ShotKind(style);
+            if (style == ShotStyle::SPECTRAL) {
+                styleMods.spectral = true;
+            }
             if (style == ShotStyle::LASER || style == ShotStyle::CRIMSON_RAY || style == ShotStyle::SLASH) {
                 styleMods.ignoreBounds = true;
                 styleMods.piercing = true;
@@ -382,6 +403,9 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
             ShotStyle style = shotStyles[i];
             ProjectileMods twinMods = mods;
             twinMods.kind = ShotKind(style);
+            if (style == ShotStyle::SPECTRAL) {
+                twinMods.spectral = true;
+            }
             if (style == ShotStyle::LASER || style == ShotStyle::CRIMSON_RAY || style == ShotStyle::SLASH) {
                 twinMods.ignoreBounds = true;
                 twinMods.piercing = true;
@@ -564,6 +588,11 @@ void UpdateTimers(Player& player, float dt) {
     if (player.spikedArmorTickTimer > 0.0f) {
         player.spikedArmorTickTimer -= dt;
         if (player.spikedArmorTickTimer < 0.0f) player.spikedArmorTickTimer = 0.0f;
+    }
+
+    if (player.dashStrikeTickTimer > 0.0f) {
+        player.dashStrikeTickTimer -= dt;
+        if (player.dashStrikeTickTimer < 0.0f) player.dashStrikeTickTimer = 0.0f;
     }
 }
 

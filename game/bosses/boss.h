@@ -17,7 +17,8 @@ enum class BossAttackType {
     TRIPLE_SPREAD,     // 9
     DENSE_RING,        // 10
     GAPPED_RING,       // 11
-    TELEPORT_BURST     // 12
+    TELEPORT_BURST,    // 12
+    VORTEX_PULL        // 13
 };
 
 
@@ -49,6 +50,9 @@ struct Boss {
     float attackCooldownPhase1 = 2.5f;
     float attackCooldownPhase2 = 1.5f;
     int attackIndex = 0;
+    bool isVortexPulling = false;
+    float vortexPullTimeRemaining = 0.0f;
+    bool isDragonFinale = false;
 
     bool isCharging = false;
     Vec2 chargeDir = { 0.0f, 0.0f };
@@ -91,15 +95,4 @@ namespace BossAI {
     void Update(Boss& boss, Vec2 playerPos, float dt, std::vector<Projectile>& bossProjectiles,
                 const std::vector<Enemy>& roomAdds, std::vector<Enemy>& spawnedAdds);
 }
-
-Boss SpawnBoss1();
-Boss SpawnBoss2();
-Boss SpawnBoss3();
-Boss SpawnBoss4();
-Boss SpawnBoss5();
-Boss SpawnBoss6();
-Boss SpawnBoss7();
-Boss SpawnBoss8();
-Boss SpawnBoss9();
-Boss SpawnBoss10();
 Boss SpawnBossVariant(int variant);

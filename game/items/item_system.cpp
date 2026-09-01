@@ -143,6 +143,8 @@ namespace {
                 break;
             case ItemFlag::GUARDIAN_ANGEL: player.hasGuardianAngel = true; break;
             case ItemFlag::PHOENIX_FEATHER: player.hasPhoenixFeather = true; break;
+            case ItemFlag::PIT_WALKER: player.hasPitWalker = true; break;
+            case ItemFlag::HAZARD_SHROUD: player.hasHazardShroud = true; break;
             case ItemFlag::SPIKED_ARMOR: player.hasSpikedArmor = true; break;
             case ItemFlag::THORN_MANTLE:
                 player.hasSpikedArmor = true;
@@ -170,6 +172,7 @@ namespace {
             case ItemFlag::BURST_SHOTS: player.hasBurstShots = true; break;
             case ItemFlag::ROCKET_ROUNDS: player.hasRocketShots = true; break;
             case ItemFlag::LASER_LENS: player.hasLaserShots = true; break;
+            case ItemFlag::SPECTRAL_SHOTS: player.hasSpectralShots = true; break;
             case ItemFlag::CRIMSON_RAY:
                 player.hasCrimsonRay = true;
                 player.hasChargedShots = true;

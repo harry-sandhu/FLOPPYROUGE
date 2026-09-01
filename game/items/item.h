@@ -78,6 +78,7 @@ enum class ItemFlag {
     BURST_SHOTS,
     ROCKET_ROUNDS,
     LASER_LENS,
+    SPECTRAL_SHOTS,
     CRIMSON_RAY,
     BLADE_ARC,
     BULWARK_CORE,
@@ -85,6 +86,8 @@ enum class ItemFlag {
     REGEN_CHARM,
     MIRROR_WARD,
     PHOENIX_FEATHER,
+    PIT_WALKER,
+    HAZARD_SHROUD,
     UNKNOWN
 };
 

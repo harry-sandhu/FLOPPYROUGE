@@ -1,10 +1,11 @@
 # FloppyRogue — Progress Tracker
 
-Last updated: post-dungeon-hazards — boss roster expanded to 16 variants
-with floor 1 no-phase openers, later-floor phase bosses, a new teleport
-burst attack, tier/pool-aware item rewards, a harder tier 3 enemy tuning
-pass, and a dungeon-hazard pass with rocks, traps, mimic ambushes, and
-`E`-key bombs. Still comfortably under the contest limit.
+Last updated: phase-8 dragon finale landed — the boss architecture is
+on the data-driven path, rooms route rocks and traps through one shared
+terrain feature layer, dungeon generation assigns room archetypes and
+floor themes, and the final floor now routes through a dragon-flavored
+boss finale. The detailed roadmap lives in
+[implementation_plan.md](implementation_plan.md).
 
 ## Contest constraints (don't lose sight of these)
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
@@ -101,6 +102,40 @@ pass, and a dungeon-hazard pass with rocks, traps, mimic ambushes, and
       (`game/bosses/boss.cpp`, `game/bosses/boss_database.cpp`)
 - [x] Boss tuning pass: stronger HP/cooldown values plus per-boss phase-2
       thresholds (`data/bosses.txt`, `game/bosses/boss.cpp`)
+- [x] Boss cleanup pass: retired the legacy variant-only update path and
+      kept the shared cycle executor as the primary path
+      (`game/bosses/boss.cpp`, `game/bosses/boss.h`)
+- [x] Shared terrain feature layer: rocks and traps now mirror into one
+      room terrain list that collision, teleport safety, explosions, and
+      rendering read from (`game/rooms/room.h`, `game/dungeon/dungeon.cpp`,
+      `src/main.cpp`)
+- [x] Terrain foundation pass: shared terrain now drives the live room
+      obstacle model while preserving the existing rock/trap content
+      (`game/rooms/room.h`, `game/dungeon/dungeon.cpp`, `src/main.cpp`)
+- [x] Traversal policy layer: collision now routes through a shared
+      terrain traversal profile instead of hard-coding obstacle checks
+      (`game/rooms/room.h`, `src/main.cpp`)
+- [x] Room archetypes: normal rooms now roll into open arena, pillar
+      field, broken arena, gauntlet, hazard room, or ritual room
+      identities (`game/dungeon/dungeon.cpp`, `game/rooms/room.h`)
+- [x] Curated encounter families: room enemy lists now bias around rush,
+      artillery, swarm, guardian, ambush, mixed, and elite patterns
+      (`game/dungeon/dungeon.cpp`)
+- [x] Floor themes: dungeon generation now assigns RUINS/FORGE/CRYPT/
+      FUNGAL/DRACONIC themes per floor and uses them in room setup
+      (`game/dungeon/dungeon.cpp`, `game/rooms/room.h`)
+- [x] Boss identity upgrade: boss selection now supports themed pools and
+      the finale boss has a distinct dragon-specific body/movement hook
+      (`game/bosses/boss.cpp`, `game/bosses/boss_database.cpp`,
+      `data/bosses.txt`, `game/dungeon/dungeon.cpp`)
+- [x] Mechanical items: pit-walking and hazard-shield items now affect
+      traversal, trap resolution, and the item pool
+      (`game/items/item.h`, `game/items/item_database.cpp`,
+      `game/items/item_system.cpp`, `game/player/player.h`, `data/items.txt`)
+- [x] Dragon finale: final-floor boss routing now favors the dragon
+      finale boss and the draconic floor theme drives the climax room
+      setup (`game/dungeon/dungeon.cpp`, `game/bosses/boss.cpp`,
+      `data/bosses.txt`, `data/themes.txt`)
 - [x] Boss roster expansion: floor 1 no-phase opener bosses, later-floor
       phase bosses, and a teleport-burst attack for ambush-style fights
       (`data/bosses.txt`, `game/bosses/boss.cpp`)
@@ -114,25 +149,19 @@ pass, and a dungeon-hazard pass with rocks, traps, mimic ambushes, and
       (`game/ui/hud.cpp`)
 
 ## In progress / next up
-- [x] Re-measured exe size after the dungeon/item/enemy/boss additions
-- [x] Smoke-tested the release executable under Wine; no startup crash
-      observed before the timeout
-- [x] Final size report recorded with exact bytes, KB, budget usage, and
-      remaining headroom
-- [ ] Re-measure exe size and re-run the Wine smoke test after all the
-      content expansion and data-driven boss system additions
-- [ ] Procedural sprite generation (`engine/procgen`) to replace flat-color
-      rectangles with real pixel-art-style shapes
-- [ ] Audio system (`engine/audio`) for shoot/hit/death/boss SFX and music
-- [ ] Camera system (`engine/camera`) for world -> screen offset tracking
-- [ ] Animation system (`engine/animation`) for frame-timer sprite indexing
-- [ ] Juice/polish pass: hit-stop, particles, screen shake refinement
-- [ ] Difficulty tuning / playtesting pass with new tier 3 enemies and expanded
-      item pools, including the new bigger floor 2/3 grids and higher room counts
-      and the boss/enemy rebalance from this pass
-- [ ] UPX packaging step for final submission
-- [x] Final size check against the 1,474,560 byte cap + submission
-- [ ] Full interactive run verification with all content additions
+- [x] Gameplay/design audit complete
+- [x] Concrete implementation roadmap written to
+      `implementation_plan.md`
+- [x] Phase 0: cleanup and baseline boss/room architecture
+- [x] Phase 1: terrain foundation
+- [x] Phase 2: traversal and capability rules
+- [x] Phase 3: room archetypes
+- [x] Phase 4: curated encounters
+- [x] Phase 5: dungeon themes
+- [x] Phase 6: boss identity upgrade
+- [x] Phase 7: mechanical items
+- [x] Phase 8: dragon finale
+- [ ] Re-run build size check and Wine smoke test after the next code pass
 
 ## Known shortcuts taken
 - Rooms are generated as a graph and shown in the mini-map, but the playfield

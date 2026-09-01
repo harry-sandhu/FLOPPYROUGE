@@ -36,7 +36,22 @@ enum class ChestType {
 enum class RoomTerrainType {
     ROCK_BOMBABLE_COIN,
     ROCK_BOMBABLE_HEART,
+    ROCK_BOMBABLE,
     ROCK_INDESTRUCTIBLE,
+    ROCK_EXPLOSIVE,
+    CRATE_DESTRUCTIBLE,
+    BLOCK_PUSHABLE,
+    BRIDGE_TEMPORARY,
+    BRIDGE_FRAGILE,
+    TELEPORT_PAD,
+    PRESSURE_PLATE,
+    LILY_PAD,
+    TERRAIN_WEB,
+    TERRAIN_SLIME,
+    TERRAIN_MUD,
+    TERRAIN_FIRE,
+    TERRAIN_ACID,
+    TERRAIN_POISON,
     PIT,
     TRAP_POISON,
     TRAP_TELEPORT,
@@ -50,7 +65,21 @@ enum class RoomArchetype {
     BROKEN_ARENA,
     GAUNTLET,
     HAZARD_ROOM,
-    RITUAL_ROOM
+    RITUAL_ROOM,
+    WHISPERING_STACKS,
+    RUNIC_LATTICE,
+    FORKING_PATH,
+    SPIRE_ASCENT,
+    FLOODED_CHAMBER,
+    COLLAPSED_VAULT,
+    SENTRY_HALL,
+    GARDEN_MAZE,
+    SHATTERED_BRIDGE,
+    ECHO_ROOM,
+    THRONE_APPROACH,
+    TWIN_ISLANDS,
+    NARROW_VEINS,
+    AMPHITHEATER
 };
 
 enum class RoomEncounterFamily {
@@ -85,18 +114,29 @@ struct RoomTerrainFeature {
     int rewardAmount = 1;
     int featureId = -1;
     int linkId = -1;
+    int hitPoints = 1;
+    int usesRemaining = 0;
+    float timer = 0.0f;
     bool broken = false;
     bool triggered = false;
+    bool active = true;
 
     Rect GetRect() const { return { pos.x, pos.y, w, h }; }
     bool BlocksMovement() const {
         return type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
                type == RoomTerrainType::ROCK_BOMBABLE_HEART ||
-               type == RoomTerrainType::ROCK_INDESTRUCTIBLE;
+               type == RoomTerrainType::ROCK_BOMBABLE ||
+               type == RoomTerrainType::ROCK_INDESTRUCTIBLE ||
+               type == RoomTerrainType::ROCK_EXPLOSIVE ||
+               type == RoomTerrainType::CRATE_DESTRUCTIBLE ||
+               type == RoomTerrainType::BLOCK_PUSHABLE;
     }
     bool IsBombable() const {
         return type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
-               type == RoomTerrainType::ROCK_BOMBABLE_HEART;
+               type == RoomTerrainType::ROCK_BOMBABLE_HEART ||
+               type == RoomTerrainType::ROCK_BOMBABLE ||
+               type == RoomTerrainType::CRATE_DESTRUCTIBLE ||
+               type == RoomTerrainType::ROCK_EXPLOSIVE;
     }
     bool IsTrap() const {
         return type == RoomTerrainType::TRAP_POISON ||
@@ -105,7 +145,42 @@ struct RoomTerrainFeature {
                type == RoomTerrainType::TRAP_SPIKE;
     }
     bool IsHazard() const {
-        return type == RoomTerrainType::PIT || IsTrap();
+        return type == RoomTerrainType::PIT ||
+               IsTrap() ||
+               type == RoomTerrainType::TERRAIN_WEB ||
+               type == RoomTerrainType::TERRAIN_SLIME ||
+               type == RoomTerrainType::TERRAIN_MUD ||
+               type == RoomTerrainType::TERRAIN_FIRE ||
+               type == RoomTerrainType::TERRAIN_ACID ||
+               type == RoomTerrainType::TERRAIN_POISON;
+    }
+
+    bool IsPushable() const {
+        return type == RoomTerrainType::BLOCK_PUSHABLE;
+    }
+
+    bool IsExplosive() const {
+        return type == RoomTerrainType::ROCK_EXPLOSIVE;
+    }
+
+    bool IsTraversalAid() const {
+        return type == RoomTerrainType::BRIDGE_TEMPORARY ||
+               type == RoomTerrainType::BRIDGE_FRAGILE ||
+               type == RoomTerrainType::TELEPORT_PAD ||
+               type == RoomTerrainType::PRESSURE_PLATE ||
+               type == RoomTerrainType::LILY_PAD;
+    }
+
+    bool IsSlowTerrain() const {
+        return type == RoomTerrainType::TERRAIN_WEB ||
+               type == RoomTerrainType::TERRAIN_SLIME ||
+               type == RoomTerrainType::TERRAIN_MUD;
+    }
+
+    bool IsDamageTerrain() const {
+        return type == RoomTerrainType::TERRAIN_FIRE ||
+               type == RoomTerrainType::TERRAIN_ACID ||
+               type == RoomTerrainType::TERRAIN_POISON;
     }
 
     bool IsLinked() const {
@@ -150,6 +225,8 @@ struct Room {
     RoomArchetype archetype = RoomArchetype::OPEN_ARENA;
     RoomEncounterFamily encounterFamily = RoomEncounterFamily::MIXED;
     DungeonTheme theme = DungeonTheme::RUINS;
+    int threatBudget = 0;
+    int threatSpent = 0;
 
     std::vector<int> enemySpawnList;
     std::vector<int> itemSpawnList;
@@ -167,7 +244,13 @@ struct Room {
         if (feature.IsTrap()) {
             return true;
         }
-        if (feature.IsBombable() || feature.type == RoomTerrainType::ROCK_INDESTRUCTIBLE) {
+        if (feature.IsTraversalAid()) {
+            return feature.active;
+        }
+        if (feature.IsDamageTerrain() || feature.IsSlowTerrain()) {
+            return true;
+        }
+        if (feature.IsBombable() || feature.type == RoomTerrainType::ROCK_INDESTRUCTIBLE || feature.IsPushable()) {
             return false;
         }
         return true;

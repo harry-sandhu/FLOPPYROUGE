@@ -22,6 +22,7 @@ namespace {
         if (std::strcmp(name, "DENSE_RING") == 0) return BossAttackType::DENSE_RING;
         if (std::strcmp(name, "GAPPED_RING") == 0) return BossAttackType::GAPPED_RING;
         if (std::strcmp(name, "TELEPORT_BURST") == 0) return BossAttackType::TELEPORT_BURST;
+        if (std::strcmp(name, "VORTEX_PULL") == 0) return BossAttackType::VORTEX_PULL;
         return BossAttackType::SPREAD_SHOT; // default
     }
 
@@ -87,6 +88,13 @@ bool Load(const char* path) {
 const BossTemplate* Get(int index) {
     if (index < 0 || index >= g_templateCount) return nullptr;
     return &g_templates[index];
+}
+
+int IndexOf(const char* name) {
+    for (int i = 0; i < g_templateCount; ++i) {
+        if (std::strcmp(g_templates[i].name, name) == 0) return i;
+    }
+    return -1;
 }
 
 int Count() {

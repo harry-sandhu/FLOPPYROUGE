@@ -1522,6 +1522,37 @@ desc=Your shots become room-sweeping lasers
 tier=4
 pools=TREASURE,BOSS,CHEST
 
+[SpectralShots]
+type=unlock
+flag=spectral_shots
+desc=Your shots drift through rocks and crates
+tier=3
+pools=TREASURE,SHOP,CHEST
+
+[WraithLens]
+type=stat_mod
+stat=range
+mode=add
+value=20
+stat2=shotSpeed
+mode2=add
+value2=18
+desc=Ghostly focus helps spectral rounds travel farther
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[PhantomCore]
+type=stat_mod
+stat=damageMultiplier
+mode=add
+value=0.12
+stat2=piercingChance
+mode2=add
+value2=0.12
+desc=Eerie power that sharpens ghostly shots
+tier=3
+pools=TREASURE,BOSS,CHEST
+
 [CrimsonRay]
 type=unlock
 flag=crimson_ray
@@ -1542,3 +1573,17 @@ flag=burst_shots
 desc=Unlocks a rapid burst volley like a monster lung
 tier=3
 pools=TREASURE,SHOP,CHEST
+
+[PitBoots]
+type=unlock
+flag=pit_walker
+desc=Lets you stride across pits and broken floors
+tier=2
+pools=TREASURE,SHOP,CHEST
+
+[AshWard]
+type=unlock
+flag=hazard_shroud
+desc=Trap floors and harmful tiles stop mattering
+tier=3
+pools=TREASURE,BOSS,CHEST

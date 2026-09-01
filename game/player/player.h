@@ -84,6 +84,7 @@ struct Player {
     bool hasBurstShots = false;
     bool hasRocketShots = false;
     bool hasLaserShots = false;
+    bool hasSpectralShots = false;
     bool hasCrimsonRay = false;
     bool hasBladeArc = false;
 
@@ -96,10 +97,13 @@ struct Player {
     bool guardianAngelUsed = false;
     bool hasPhoenixFeather = false;
     bool phoenixFeatherUsed = false;
+    bool hasPitWalker = false;
+    bool hasHazardShroud = false;
     bool hasSpikedArmor = false;
     bool hasThornMantle = false;
     bool hasRegenCharm = false;
     float spikedArmorTickTimer = 0.0f;
+    float dashStrikeTickTimer = 0.0f;
     bool hasSecondWind = false;
     bool secondWindUsed = false;
     bool hasIronWill = false;

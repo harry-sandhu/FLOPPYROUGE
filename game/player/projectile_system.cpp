@@ -31,12 +31,14 @@ namespace {
     }
 
     uint32_t ProjectileColor(const Projectile& p, uint32_t baseColor) {
-        switch (p.kind) {
+    switch (p.kind) {
+            case ProjectileKind::BULLET:
+                if (p.spectral) return 0xFFD9B9FF;
+                return baseColor;
             case ProjectileKind::ROCKET: return 0xFFFFA14A;
             case ProjectileKind::LASER: return 0xFF7DEBFF;
             case ProjectileKind::CRIMSON_RAY: return 0xFFFF5F78;
             case ProjectileKind::SLASH: return 0xFFFFF2B0;
-            case ProjectileKind::BULLET:
             default:
                 return baseColor;
         }
@@ -315,6 +317,7 @@ void Spawn(std::vector<Projectile>& projectiles, Vec2 pos, Vec2 vel, int damage,
 
     p.homing = mods.homing;
     p.kind = mods.kind;
+    p.spectral = mods.spectral;
     p.poison = mods.poison;
     p.sticky = mods.sticky;
     p.piercing = mods.piercing;
@@ -389,6 +392,13 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
             if (p.burn) ApplyBurn(enemy, dmg);
             if (p.freeze) ApplyFreeze(enemy);
 
+            // --- Synergies: reward stacking specific proc pairs on the same shot ---
+            if (p.freeze && p.crit && enemy.IsFrozen()) {
+                // Shatter: a crit landing on an already-frozen enemy cracks them for bonus damage.
+                int shatterBonus = std::max(2, dmg / 2);
+                enemy.hp -= shatterBonus;
+            }
+
             if (p.marking) {
                 enemy.markStacks++;
                 if (enemy.markStacks >= 5) {
@@ -400,16 +410,37 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
             if (p.explosive) {
                 float splashRadius = 18.0f;
                 if (p.kind == ProjectileKind::ROCKET) splashRadius = 28.0f;
+
+                // Toxic Blast: poison makes the explosion 30% larger.
+                if (p.poison) splashRadius *= 1.3f;
+
                 const float splashRadiusSq = splashRadius * splashRadius;
-                const Vec2 center = { enemy.pos.x + enemy.w * 0.5f, enemy.pos.y + enemy.h * 0.5f };
+                const Vec2 center = {
+                    enemy.pos.x + enemy.w * 0.5f,
+                    enemy.pos.y + enemy.h * 0.5f
+                };
+
                 for (Enemy& other : roomEnemies) {
                     if (!other.alive) continue;
-                    Vec2 otherCenter = { other.pos.x + other.w * 0.5f, other.pos.y + other.h * 0.5f };
+
+                    Vec2 otherCenter = {
+                        other.pos.x + other.w * 0.5f,
+                        other.pos.y + other.h * 0.5f
+                    };
+
                     float dx = otherCenter.x - center.x;
                     float dy = otherCenter.y - center.y;
+
                     if (dx * dx + dy * dy <= splashRadiusSq) {
                         other.hp -= std::max(1, dmg / 2);
-                        if (other.hp <= 0) other.alive = false;
+
+                        if (other.hp <= 0) {
+                            other.alive = false;
+                        } else if (p.poison) {
+                            // Toxic Blast: surviving enemies hit by the splash
+                            // also receive poison.
+                            ApplyPoison(other, std::max(1, dmg / 3));
+                        }
                     }
                 }
             }
@@ -443,7 +474,19 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
                         }
                     }
                     if (!best) break;
+
                     best->hp -= std::max(1, (int)std::lround(jumpDamage));
+
+                    // Chain + Mark: every chained target receives a mark stack.
+                    if (p.marking) {
+                        best->markStacks++;
+
+                        if (best->markStacks >= 5) {
+                            best->markStacks = 0;
+                            best->hp -= std::max(4, (int)jumpDamage);
+                        }
+                    }
+
                     if (best->hp <= 0) best->alive = false;
                     fromCenter = { best->pos.x + best->w * 0.5f, best->pos.y + best->h * 0.5f };
                 }
@@ -596,7 +639,30 @@ void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, fl
             if (p.burn) ApplyBurn(boss, dmg);
             if (p.freeze) ApplyFreeze(boss);
 
+            // --- Synergies: keep boss hits consistent with enemy hits ---
+
+            // Shatter: critical hits deal bonus damage to an already frozen boss.
+            if (p.freeze && p.crit && boss.freezeTimer > 0.0f) {
+                int shatterBonus = std::max(2, dmg / 2);
+                boss.hp -= shatterBonus;
+            }
+
+            if (p.poison && p.explosive) {
+                // Toxic Blast has no room-wide splash target here, so the
+                // boss takes the same "poison makes the explosion better"
+                // payoff as a direct bonus hit.
+                boss.hp -= std::max(1, (int)std::lround(dmg * 0.3f));
+            }
+
             if (p.marking) {
+                boss.markStacks++;
+                if (boss.markStacks >= 5) {
+                    boss.markStacks = 0;
+                    boss.hp -= std::max(4, dmg);
+                }
+            }
+
+            if (p.chain && p.marking) {
                 boss.markStacks++;
                 if (boss.markStacks >= 5) {
                     boss.markStacks = 0;

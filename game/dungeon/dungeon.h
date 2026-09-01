@@ -46,6 +46,7 @@ public:
     void PlacePlayerAtCurrentRoomCenter(Player& player) const;
     bool TryTransition(Player& player);
     void MarkCurrentRoomCleared(bool rollCurseReward = false);
+    bool ValidateRoomTerrain(const Room& room) const;
 
 private:
     DungeonSettings settings;
