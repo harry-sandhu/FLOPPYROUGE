@@ -1,0 +1,61 @@
+ASSET NUMBER REFERENCE FOR SPRITE-SHEET PROMPT
+
+TOTAL: 35 SPRITES
+GRID: 9 COLUMNS × 4 ROWS
+CELL 36: EMPTY
+
+01 — Player Sprite
+02 — Player Idle / Walk Animation
+03 — Player Shooting Animation
+04 — Player Dash Animation / Effect
+05 — Player Hurt / Death Visual
+
+06 — Bullet
+07 — Rocket
+08 — Laser
+09 — Crimson Ray
+10 — Slash
+
+11 — Orbiter / Satellite
+12 — Second Sun
+
+13 — Temporary Bridge
+14 — Fragile Bridge
+15 — Teleport Pad
+16 — Pressure Plate
+17 — Lily Pad
+18 — Mud
+19 — Acid
+20 — Poison Terrain
+
+21 — Poison Trap
+22 — Teleport Trap
+23 — Summon Trap
+24 — Spike Trap — CLOSED
+25 — Spike Trap — ACTIVATED
+
+26 — Explosion
+27 — Hit / Impact
+28 — Break / Destroy
+29 — Teleport
+30 — Summon
+31 — Fire
+32 — Poison
+33 — Freeze
+34 — Critical Hit
+
+35 — Trophy
+
+36 — EMPTY / TRANSPARENT
+
+CATEGORY COUNTS
+Player: 5
+Projectiles: 5
+Orbitals: 2
+Terrain: 8
+Traps: 5
+Reusable VFX: 9
+Special pickup: 1
+
+TOTAL: 35
+"""

@@ -23,6 +23,7 @@
 #include "../game/bosses/boss.h"
 #include "../game/bosses/boss_database.h"
 #include "../game/dungeon/dungeon.h"
+#include "../game/progression/meta_progression.h"
 #include "../game/ui/hud.h"
 #include "../engine/collision.h"
 
@@ -250,7 +251,10 @@ namespace {
     }
 
     int PickItemForPools(const char* pools, int minTier, int maxTier) {
-        return ItemDatabase::Pick(pools, minTier, maxTier);
+        int cappedMin = std::clamp(minTier, 1, 5);
+        int unlockedMax = MetaProgression::MaxUnlockedItemTier();
+        if (cappedMin > unlockedMax) cappedMin = 1;
+        return ItemDatabase::Pick(pools, cappedMin, std::clamp(maxTier, cappedMin, unlockedMax));
     }
 }
 
@@ -263,6 +267,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     EnemyDatabase::Load("data/enemies.txt");
     ItemDatabase::Load("data/items.txt");
     BossDatabase::Load("data/bosses.txt");
+    MetaProgression::Load();
 
     Timer timer;
     Dungeon dungeon;
@@ -1787,11 +1792,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                     
 
-                    if (!boss.alive) {
+                    if (!boss.alive && !room->cleared) {
+                        const int defeatedBossIndex = boss.variant;
                         enemies.clear();
                         enemyShots.clear();
                         playerShots.clear();
                         AddScreenShake(0.22f, 2.6f);
+                        MetaProgression::RecordBossClear(dungeon.CurrentFloor(), defeatedBossIndex);
+                        dungeon.LoadSettings("data/rooms.txt");
                         if (!room->lootGranted) {
                             SpawnBossRewards(*room);
                         }

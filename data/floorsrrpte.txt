@@ -1,0 +1,222 @@
+
+
+content = """FLOPPYROGUE — MASTER ROOM TILESET ASSET REFERENCE
+SHARED NUMBERING FOR ALL 5 ROOM THEMES
+
+THEMES:
+01 — RUINS
+02 — FORGE
+03 — CRYPT
+04 — FUNGAL
+05 — DRACONIC
+
+IMPORTANT:
+This is ONE shared asset-reference layout.
+The same asset number means the same gameplay/environment purpose
+on every theme sheet. Only the visual theme changes.
+
+Example:
+01 = basic floor tile on RUINS, FORGE, CRYPT, FUNGAL and DRACONIC.
+The art changes, but the slot/purpose stays the same.
+
+TOTAL MASTER SLOTS: 72
+
+==================================================
+FLOOR TILES
+==================================================
+
+01 — Basic Floor Tile
+02 — Basic Floor Tile Variant
+03 — Cracked Floor Tile
+04 — Heavy Cracked Floor Tile
+05 — Hazard/Theme-Cracked Floor Tile
+06 — Decorative Border Floor Tile
+07 — Decorative Hazard Border Floor Tile
+08 — Rune / Magic Floor Tile
+09 — Skull / Death Floor Tile
+10 — Special Emblem Floor Tile
+11 — Circular Rune Floor Tile
+12 — Ornate Floor Tile
+
+==================================================
+HAZARD / PIT FLOOR TILES
+==================================================
+
+13 — Basic Hazard Floor
+14 — Deep Hazard Floor
+15 — Lava / Theme Hazard
+16 — Dark Hazard / Corrupted Hazard
+17 — Small Pit
+18 — Large Pit
+19 — Spiked Pit
+20 — Grated Pit
+21 — Hazard Border
+22 — Hazard Corner
+
+==================================================
+WALL PIECES
+==================================================
+
+23 — Straight Wall
+24 — Straight Wall Variant
+25 — Short Wall
+26 — Long Wall
+27 — Wall Corner
+28 — Inner Wall Corner
+29 — Outer Wall Corner
+30 — Wall End
+31 — Wall Cap
+32 — Wall Junction
+33 — T-Junction Wall
+34 — Cross/Junction Wall
+
+==================================================
+WALL / ARCH STRUCTURES
+==================================================
+
+35 — Small Archway
+36 — Large Archway
+37 — Normal Doorway
+38 — Reinforced Doorway
+39 — Gate
+40 — Heavy Gate
+41 — Portcullis
+42 — Closed Gate
+43 — Open Gate
+44 — Theme Entrance Structure
+
+==================================================
+PILLARS / SUPPORTS
+==================================================
+
+45 — Small Pillar
+46 — Large Pillar
+47 — Decorative Pillar
+48 — Broken Pillar
+49 — Damaged Pillar
+50 — Ornate Pillar
+51 — Pillar Fragment
+52 — Pillar Base
+
+==================================================
+DECORATIVE STRUCTURES
+==================================================
+
+53 — Wall Banner
+54 — Large Banner
+55 — Hanging Emblem
+56 — Wall Ornament
+57 — Wall Skull / Theme Decoration
+58 — Statue
+59 — Large Statue
+60 — Dragon / Theme Statue
+61 — Decorative Altar
+62 — Shrine / Monument
+
+==================================================
+GAMEPLAY / ENVIRONMENT PROPS
+==================================================
+
+63 — Barrel
+64 — Crate
+65 — Treasure Pile
+66 — Brazier
+67 — Torch / Wall Flame
+68 — Cage
+69 — Fence / Spike Barrier
+70 — Debris / Rock Pile
+71 — Destructible Environmental Prop
+72 — Special Theme Prop
+
+==================================================
+THEME RULE
+==================================================
+
+Every theme uses the SAME 72-slot numbering.
+
+RUINS:
+Ancient stone, worn masonry, ruins, old dungeon decoration.
+
+FORGE:
+Dark stone, iron, metal, heat, molten cracks, industrial dungeon details.
+
+CRYPT:
+Graves, skulls, ancient stone, necrotic/cursed decoration.
+
+FUNGAL:
+Mushrooms, organic stone, spores, damp surfaces, fungal growth.
+
+DRACONIC:
+Dragon masonry, volcanic stone, gold, horns, dragon statues,
+molten cracks, draconic decoration.
+
+==================================================
+PROCEDURAL ROOM RULE
+==================================================
+
+These are MODULAR PIECES.
+
+They are intended to be assembled by the game's procedural
+room generator.
+
+Do NOT treat the sheet as complete room screenshots.
+
+Floor tiles should tile cleanly.
+
+Wall pieces should connect cleanly.
+
+Corners and junctions must align.
+
+Doors and gates must fit standard room openings.
+
+Pillars and decorations must be standalone reusable objects.
+
+Hazards and pits must have clean boundaries.
+
+==================================================
+SHARED ART DIRECTION
+==================================================
+
+All five themes must remain visually compatible.
+
+Use:
+
+- crisp retro pixel art
+- chunky readable silhouettes
+- strong dark outlines
+- hard pixel edges
+- limited palettes
+- strong theme-specific colors
+- dark fantasy dungeon atmosphere
+- consistent pixel density
+- consistent lighting
+- consistent perspective
+- no anti-aliasing
+- no blurry edges
+- no photorealism
+- no 3D rendering
+- no anime
+- no painterly concept art
+
+==================================================
+IMPORTANT
+==================================================
+
+The NUMBER is the important identifier.
+
+When generating another theme sheet, preserve this exact numbering.
+
+Do not move assets between slots.
+
+Do not add random extra room pieces.
+
+Do not remove required slots.
+
+The five theme sheets should be directly interchangeable
+because their corresponding numbered assets represent the same
+environmental function.
+
+MASTER TOTAL = 72 ASSET SLOTS
+THEMES = 5
+EACH THEME = SAME 72-SLOT LAYOUT
+"""

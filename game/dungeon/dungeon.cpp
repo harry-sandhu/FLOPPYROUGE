@@ -9,6 +9,7 @@
 #include "../enemies/enemy_database.h"
 #include "../bosses/boss_database.h"
 #include "../items/item_database.h"
+#include "../progression/meta_progression.h"
 #include "terrain_gen.h"
 
 namespace {
@@ -24,6 +25,10 @@ namespace {
 
     ChestType RollChestTypeForFloor(int floor) {
         int roll = RNG::Range(0, 99);
+        if (MetaProgression::IsGambleChestUnlocked()) {
+            if (floor >= 8 && roll < 18) return ChestType::GAMBLE;
+            if (floor >= 5 && roll < 8) return ChestType::GAMBLE;
+        }
         if (floor <= 1) {
             if (roll < 70) return ChestType::WOODEN;
             if (roll < 90) return ChestType::IRON;
@@ -46,8 +51,8 @@ namespace {
     struct DungeonThemeProfile {
         DungeonTheme theme = DungeonTheme::RUINS;
         char name[16] = {};
-        char enemyPools[96] = {};
-        char bossPools[96] = {};
+        char enemyPools[512] = {};
+        char bossPools[512] = {};
         float specialEnemyBonus = 0.0f;
         float trapChanceBonus = 0.0f;
         int rockBonus = 0;
@@ -193,7 +198,9 @@ namespace {
 
     int PickItemForRoom(const char* pools, int minTier, int maxTier) {
         int cappedMin = std::clamp(minTier, 1, 5);
-        int cappedMax = std::clamp(maxTier, cappedMin, 5);
+        int unlockedMax = MetaProgression::MaxUnlockedItemTier();
+        if (cappedMin > unlockedMax) cappedMin = 1;
+        int cappedMax = std::clamp(maxTier, cappedMin, unlockedMax);
         int itemId = ItemDatabase::Pick(pools, cappedMin, cappedMax);
         if (itemId >= 0) return itemId;
         return ItemDatabase::Pick(nullptr, cappedMin, cappedMax);
@@ -1056,7 +1063,7 @@ bool Dungeon::LoadSettings(const char* path) {
     }
 
     if (loaded) {
-        totalFloors = settings.totalFloors;
+        totalFloors = std::min(settings.totalFloors, MetaProgression::MaxFloorCap());
     }
 
     return loaded;
@@ -1169,6 +1176,7 @@ bool Dungeon::Generate(uint32_t seed) {
 
 bool Dungeon::Generate(uint32_t seed, int floorNumber) {
     RNG::Seed(seed);
+    totalFloors = std::min(settings.totalFloors, MetaProgression::MaxFloorCap());
     currentFloor = std::max(1, std::min(floorNumber, totalFloors));
 
     int gridSize = std::min(currentFloor * settings.gridSizePerFloor, settings.gridSizeMax);
@@ -1348,7 +1356,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         auto PickBossVariantForTheme = [&](const DungeonThemeProfile& profile) {
             std::vector<int> themedVariants;
             if (profile.bossPools[0] != '\0') {
-                char buffer[96];
+                char buffer[512];
                 std::strncpy(buffer, profile.bossPools, sizeof(buffer) - 1);
                 buffer[sizeof(buffer) - 1] = '\0';
                 char* token = std::strtok(buffer, ",");
@@ -1358,6 +1366,7 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
                     while (end > token && (end[-1] == ' ' || end[-1] == '\t')) --end;
                     *end = '\0';
                     int bossIndex = BossDatabase::IndexOf(token);
+                    if (bossIndex >= 0 && !MetaProgression::IsBossUnlocked(token)) bossIndex = -1;
                     if (bossIndex >= 0) themedVariants.push_back(bossIndex);
                     token = std::strtok(nullptr, ",");
                 }
@@ -1372,7 +1381,13 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
             return themedVariants[RNG::Range(0, (int)themedVariants.size() - 1)];
         };
 
-        rooms[bossRoomIndex].bossVariant = PickBossVariantForTheme(themeProfile);
+        DungeonThemeProfile effectiveThemeProfile = themeProfile;
+        const char* effectiveBossPools = MetaProgression::BossPoolForTheme(themeProfile.name, themeProfile.bossPools);
+        if (effectiveBossPools) {
+            std::strncpy(effectiveThemeProfile.bossPools, effectiveBossPools, sizeof(effectiveThemeProfile.bossPools) - 1);
+            effectiveThemeProfile.bossPools[sizeof(effectiveThemeProfile.bossPools) - 1] = '\0';
+        }
+        rooms[bossRoomIndex].bossVariant = PickBossVariantForTheme(effectiveThemeProfile);
 
         const int enemyCount = EnemyDatabase::Count();
         const int maxEnemyTier = std::max(1, EnemyDatabase::MaxTier());
@@ -1395,9 +1410,10 @@ bool Dungeon::Generate(uint32_t seed, int floorNumber) {
         }
 
         std::vector<int> themedEnemyIndices;
-        if (themeProfile.enemyPools[0] != '\0') {
-            char buffer[96];
-            std::strncpy(buffer, themeProfile.enemyPools, sizeof(buffer) - 1);
+        const char* effectiveEnemyPools = MetaProgression::EnemyPoolForTheme(themeProfile.name, themeProfile.enemyPools);
+        if (effectiveEnemyPools && effectiveEnemyPools[0] != '\0') {
+            char buffer[512];
+            std::strncpy(buffer, effectiveEnemyPools, sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = '\0';
             char* token = std::strtok(buffer, ",");
             while (token) {

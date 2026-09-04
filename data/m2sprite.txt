@@ -1,0 +1,106 @@
+FLOPPYROGUE — PICKUPS, CHESTS, DOORS & STONES
+SPRITE NUMBER REFERENCE
+
+TOTAL: 32 SPRITES
+GRID: 8 COLUMNS × 4 ROWS
+ONE IMAGE
+
+==================================================
+ROW 1
+==================================================
+
+01 — Nickel Coin
+02 — Silver Coin
+03 — Gold Coin
+04 — Key
+05 — Bomb
+06 — Half Heart
+07 — Full Heart
+08 — Wooden Chest — CLOSED
+
+==================================================
+ROW 2
+==================================================
+
+09 — Wooden Chest — OPEN
+10 — Stone Chest — CLOSED
+11 — Stone Chest — OPEN
+12 — Iron Chest — CLOSED
+13 — Iron Chest — OPEN
+14 — Gold Chest — CLOSED
+15 — Gold Chest — OPEN
+16 — Angel Chest — CLOSED
+
+==================================================
+ROW 3
+==================================================
+
+17 — Angel Chest — OPEN
+18 — Curse Chest — CLOSED
+19 — Curse Chest — OPEN
+20 — Normal Room Door — CLOSED
+21 — Normal Room Door — OPEN
+22 — Treasure Room Door — CLOSED
+23 — Treasure Room Door — OPEN
+24 — Curse Room Door — CLOSED
+
+==================================================
+ROW 4
+==================================================
+
+25 — Curse Room Door — OPEN
+26 — Boss Room Door — CLOSED
+27 — Boss Room Door — OPEN
+28 — Bombable Stone
+29 — Unbreakable Stone
+30 — Money Stone
+31 — Heart Stone
+32 — Movable Stone
+
+==================================================
+CATEGORY SUMMARY
+==================================================
+
+CURRENCY:
+01 Nickel Coin
+02 Silver Coin
+03 Gold Coin
+
+BASIC PICKUPS:
+04 Key
+05 Bomb
+06 Half Heart
+07 Full Heart
+
+CHESTS:
+08 Wooden Chest — Closed
+09 Wooden Chest — Open
+10 Stone Chest — Closed
+11 Stone Chest — Open
+12 Iron Chest — Closed
+13 Iron Chest — Open
+14 Gold Chest — Closed
+15 Gold Chest — Open
+16 Angel Chest — Closed
+17 Angel Chest — Open
+18 Curse Chest — Closed
+19 Curse Chest — Open
+
+DOORS:
+20 Normal Room Door — Closed
+21 Normal Room Door — Open
+22 Treasure Room Door — Closed
+23 Treasure Room Door — Open
+24 Curse Room Door — Closed
+25 Curse Room Door — Open
+26 Boss Room Door — Closed
+27 Boss Room Door — Open
+
+STONES:
+28 Bombable Stone
+29 Unbreakable Stone
+30 Money Stone
+31 Heart Stone
+32 Movable Stone
+
+TOTAL = 32

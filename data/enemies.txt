@@ -273,6 +273,19 @@ h=14
 shoot_cooldown=0.75
 tier=3
 
+[WardKeeper]
+ai=GUARDIAN
+hp=75
+speed=24
+w=15
+h=15
+attack_pattern=TRIPLE
+shoot_cooldown=1.10
+shoot_range=134
+preferred_distance=100
+shot_speed=104
+tier=3
+
 [VenomEye]
 ai=SHOOTER
 hp=76
@@ -1970,3 +1983,5 @@ spawn_enemy=Fly
 spawn_count=4
 spawn_limit=8
 tier=6
+
+

@@ -2,6 +2,7 @@
 #include "boss_database.h"
 #include "../player/projectile_system.h"
 #include "../enemies/enemy_database.h"
+#include "../progression/meta_progression.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -319,10 +320,15 @@ namespace {
                 boss.h = 24.0f;
                 boss.driftSpeed *= 1.05f;
                 boss.maxAdds = std::max(boss.maxAdds, 6);
+                if (MetaProgression::IsTrueDragonUnlocked()) {
+                    boss.phase = 2;
+                }
             }
         }
 
-        boss.attackTimer = boss.attackCooldownPhase1;
+        boss.attackTimer = (boss.phase == 2)
+            ? std::min(boss.attackCooldownPhase1, boss.attackCooldownPhase2)
+            : boss.attackCooldownPhase1;
         return boss;
     }
 }

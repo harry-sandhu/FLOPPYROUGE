@@ -2,6 +2,7 @@
 #include "../../engine/renderer.h"
 #include "../../engine/text.h"
 #include "../dungeon/dungeon.h"
+#include "../progression/meta_progression.h"
 #include <cstdio>
 #include <cstring>
 #include <climits>
@@ -233,6 +234,11 @@ void DrawItemPreview(const char* name, const char* desc) {
     Text::DrawString("ARROWS SHOOT", 92, 106, 0xFFEAEAEA, 1);
     Text::DrawString("SPACE  DASH", 92, 118, 0xFFEAEAEA, 1);
     Text::DrawString("PICK UP ITEMS IN ROOMS", 62, 136, 0xFFFFC84D, 1);
+
+    char meta[64];
+    std::snprintf(meta, sizeof(meta), "META FLOOR CAP %d  TIER %d", MetaProgression::MaxFloorCap(), MetaProgression::MaxUnlockedItemTier());
+    int metaW = Text::MeasureWidth(meta, 1);
+    Text::DrawString(meta, (320 - metaW) / 2, 148, 0xFF88DDAA, 1);
 }
 
 void DrawFloorTransition(int floor, int maxFloors, const char* treasureLine, bool canContinue) {

@@ -1,6 +1,6 @@
 # FloppyRogue — Meta-Progression & Unlock System Design Bible
 
-**Status:** Design/analysis only. Nothing in this document has been implemented. No file has been modified, no code has been written, no data file has been changed.
+**Status:** Core implementation now landed. The game has a persistent meta-progression save, a fresh-save floor cap, item-tier unlock gates, boss/enemy pool unlocks, `GAMBLE` chest unlocks, and the true-form `DragonSovereign` flag wired into the live generator. Some achievement ideas in Part 7 remain future tracking/UI work rather than full visible achievement popups.
 
 **Audit basis:** This document is built entirely from the actual current repository content — `data/items.txt`, `data/enemies.txt`, `data/bosses.txt`, `data/themes.txt`, `data/rooms.txt`, and the C++ that consumes them (`game/dungeon/dungeon.cpp`, `game/rooms/room.h`, `game/items/item_database.cpp`, `game/items/item_system.cpp`, `game/bosses/boss_database.*`, `game/enemies/enemy_database.h`). Old planning docs in the repo root (`v2.md`, `inital.md`, `prgess.md`, `lastplan.md`, `currentplan.md`, `reamaingwrok.md`, `implementation_plan.md`, `agent.md`, `enemy_roster_plan.md`, `command.md`, `PROGRESS.md`) were intentionally **not** used as sources of truth — several of them describe systems and numbers that no longer match the code (e.g. `dungeon.h`'s default `totalFloors = 5` while `data/rooms.txt` actually sets `total_floors=8`). Every number, name, and mechanic below was verified against the live files.
 

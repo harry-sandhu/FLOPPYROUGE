@@ -1,0 +1,102 @@
+🟦 ITEMS
+
+You have 6 images, each with 24 items:
+
+PNG	Sprite numbers
+items1.png	1–24
+items2.png	25–48
+items3.png	49–72
+items4.png	73–96
+items5.png	97–120
+items6.png	121–144
+
+So:
+
+Item #37 = items2.png, sprite 13
+
+Because:
+
+37 - 24 = 13
+
+And every sheet is:
+
+01 02 03 04 05 06
+07 08 09 10 11 12
+13 14 15 16 17 18
+19 20 21 22 23 24
+🟥 ENEMIES
+
+You have 7 images, each with 24 enemies:
+
+PNG	Enemy numbers
+enemies1.png	1–24
+enemies2.png	25–48
+enemies3.png	49–72
+enemies4.png	73–96
+enemies5.png	97–120
+enemies6.png	121–144
+enemies7.png	145–168
+
+Same 6×4 layout.
+
+So:
+
+Enemy #150 = enemies7.png, sprite 6.
+
+🟪 BOSSES
+
+You have 3 images, each with 12 bosses:
+
+PNG	Boss numbers
+bosses1.png	1–12
+bosses2.png	13–24
+bosses3.png	25–36
+
+Each boss sheet was:
+
+01 02 03 04
+05 06 07 08
+09 10 11 12
+
+So:
+
+Boss #17 = bosses2.png, sprite 5.
+
+🔥 THE IMPORTANT PART
+
+This means we can create a master asset ID system:
+
+ITEM 001 → items1.png / sprite 01
+ITEM 002 → items1.png / sprite 02
+...
+ITEM 024 → items1.png / sprite 24
+
+ITEM 025 → items2.png / sprite 01
+...
+ITEM 144 → items6.png / sprite 24
+
+Same for enemies:
+
+ENEMY 001 → enemies1.png / sprite 01
+...
+ENEMY 168 → enemies7.png / sprite 24
+
+And bosses:
+
+BOSS 001 → bosses1.png / sprite 01
+...
+BOSS 036 → bosses3.png / sprite 12
+
+So YES, we can absolutely use the original generation order as the permanent mapping.
+
+The only thing we need next is the actual ordered item/enemy/boss lists from the game data, and then we can make a master mapping like:
+
+Item 001 = DamageUp = items1 / 01
+Item 002 = FireRateUp = items1 / 02
+...
+Enemy 001 = Zombie = enemies1 / 01
+...
+Boss 001 = Runt = bosses1 / 01
+...
+
+Then there is zero guessing about which PNG sprite belongs to which entity.

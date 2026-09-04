@@ -1,6 +1,7 @@
 #include "item_database.h"
 #include "../../engine/data_parser.h"
 #include "../../engine/core/rng.h"
+#include "../progression/meta_progression.h"
 #include <algorithm>
 #include <cstring>
 #include <vector>
@@ -170,6 +171,7 @@ namespace {
         for (int i = 0; i < g_templateCount; ++i) {
             const ItemTemplate& item = g_templates[i];
             if (item.tier < minTier || item.tier > maxTier) continue;
+            if (!MetaProgression::IsItemUnlocked(item.name, item.tier, item.pools)) continue;
             if (!PoolsIntersect(item.pools, pools)) continue;
             matches[matchCount++] = i;
         }
@@ -178,12 +180,15 @@ namespace {
             for (int i = 0; i < g_templateCount; ++i) {
                 const ItemTemplate& item = g_templates[i];
                 if (item.tier < minTier || item.tier > maxTier) continue;
+                if (!MetaProgression::IsItemUnlocked(item.name, item.tier, item.pools)) continue;
                 matches[matchCount++] = i;
             }
         }
 
         if (matchCount == 0) {
             for (int i = 0; i < g_templateCount; ++i) {
+                const ItemTemplate& item = g_templates[i];
+                if (!MetaProgression::IsItemUnlocked(item.name, item.tier, item.pools)) continue;
                 matches[matchCount++] = i;
             }
         }
