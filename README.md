@@ -25,9 +25,15 @@ data-driven: new enemies/items/rooms are new data entries, not new code.
 
 ## Why no engine / no assets?
 
-The 1.44MB cap includes the executable and any runtime, so file-based
-assets and heavy dependencies (raylib, SDL, JSON libraries) are avoided by
-design. Current release build size: **123KB (~8% of the cap)**.
+The 1.44MB cap applies to the full submission package — the executable
+plus every external asset it loads at runtime (data files, sprite PNGs,
+audio) — so file-based assets and heavy dependencies (raylib, SDL, JSON
+libraries) are avoided by design. Current numbers from a verified build:
+the executable alone is **462,336 bytes**, and the complete submission
+package (exe + the 9 `.txt` data files, 20 PNG sprites, and 2 MP3s
+actually loaded at runtime) is **1,326,993 bytes** — about **90% of the
+1,474,560-byte cap**, leaving roughly **147,567 bytes (~10%) of
+headroom**.
 
 ## Building
 

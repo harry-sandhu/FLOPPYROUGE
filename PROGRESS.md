@@ -11,10 +11,13 @@ boss finale. The detailed roadmap lives in
 - Hard cap: 1,474,560 bytes, extracted/delivered executable
 - Deadline: Sept 4, 2026, 23:59
 - Judging order: (1) finished game, (2) under size cap, (3) fun
-- Last measured release build size: **281,600 bytes**,
-  **275.0 KB**, **19.1%** of the 1,474,560-byte cap,
-  with **1,192,960 bytes** remaining
-  *(pending re-measure after the dungeon/curse/bomb changes below)*
+- Last verified build (fresh rebuild): executable alone is
+  **462,336 bytes**. The figure that matters against the cap is the
+  complete submission package — exe + all external `data/` assets
+  actually loaded at runtime (9 `.txt` files, 20 PNG sprites, 2 MP3s) —
+  which is **1,326,993 bytes**, approximately **90.0%** of the
+  1,474,560-byte cap, leaving approximately **147,567 bytes (~10.0%)**
+  of headroom
 
 ## Done
 - [x] Win32 window creation + message pump (`engine/window`)
