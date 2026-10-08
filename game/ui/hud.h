@@ -15,4 +15,5 @@ namespace HUD {
     void DrawBossHealthBar(const Boss& boss, const char* bossName);
     void DrawFloorMap(const Dungeon& dungeon, const Player& player);
     void DrawItemPreview(const char* name, const char* desc);
+    void DrawPauseScreen(const Player& player);
 }

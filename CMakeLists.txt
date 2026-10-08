@@ -8,6 +8,7 @@ add_executable(FloppyRogue WIN32
     src/main.cpp
     engine/window.cpp
     engine/renderer.cpp
+    engine/audio.cpp
     engine/input.cpp
     engine/collision.cpp
     engine/text.cpp
@@ -40,4 +41,4 @@ target_link_options(FloppyRogue PRIVATE
     -static
 )
 
-target_link_libraries(FloppyRogue PRIVATE gdi32 user32 kernel32)
+target_link_libraries(FloppyRogue PRIVATE gdi32 user32 kernel32 gdiplus winmm)

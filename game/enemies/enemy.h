@@ -47,6 +47,7 @@ struct Enemy {
     AIType aiType = AIType::CHASER;
     AttackPattern attackPattern = AttackPattern::SINGLE;
     bool alive = true;
+    float hitFlashTimer = 0.0f;
     char templateName[32] = {};
 
     float shootTimer = 0.0f;

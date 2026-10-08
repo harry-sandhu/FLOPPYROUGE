@@ -1,6 +1,7 @@
 #include "player.h"
 #include "projectile_system.h"
 #include "../../engine/input.h"
+#include "../../engine/audio.h"
 #include "../../engine/core/rng.h"
 #include <algorithm>
 #include <cmath>
@@ -253,6 +254,7 @@ void HandleMovement(Player& player, float dt) {
             dashDir = { 0.0f, -1.0f };
         }
         BeginDash(player, Normalize(dashDir));
+        Audio::Play(Audio::Cue::DASH);
     }
 
     if (player.isDashing) {
@@ -377,6 +379,11 @@ void HandleShooting(Player& player, float dt, std::vector<Projectile>& playerPro
     }
 
     if (shotStyleCount > 0) {
+        bool specialShot = false;
+        for (int i = 0; i < shotStyleCount; ++i) {
+            specialShot = specialShot || shotStyles[i] != ShotStyle::BULLET;
+        }
+        Audio::Play(specialShot ? Audio::Cue::SPECIAL_SHOT : Audio::Cue::SHOT);
         for (int i = 0; i < shotStyleCount; ++i) {
             ShotStyle style = shotStyles[i];
             ProjectileMods styleMods = mods;
@@ -500,6 +507,8 @@ bool TakeDamage(Player& player, int amount, float invincibleDuration) {
     }
 
     if (player.hp < 0) player.hp = 0;
+
+    Audio::Play(Audio::Cue::PLAYER_HURT);
 
     float duration = invincibleDuration;
     if (player.hasIronWill) duration *= 1.5f;

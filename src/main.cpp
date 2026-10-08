@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <mmsystem.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -10,6 +11,7 @@
 #include <thread>
 #include "../engine/window.h"
 #include "../engine/renderer.h"
+#include "../engine/audio.h"
 #include "../engine/input.h"
 #include "../engine/core/timer.h"
 #include "../engine/core/rng.h"
@@ -28,6 +30,198 @@
 #include "../engine/collision.h"
 
 namespace {
+    enum SpriteSheetId {
+        SHEET_ITEMS_1 = 0,
+        SHEET_ITEMS_2,
+        SHEET_ITEMS_3,
+        SHEET_ITEMS_4,
+        SHEET_ITEMS_5,
+        SHEET_ITEMS_6,
+        SHEET_ENEMIES_1,
+        SHEET_ENEMIES_2,
+        SHEET_ENEMIES_3,
+        SHEET_ENEMIES_4,
+        SHEET_ENEMIES_5,
+        SHEET_ENEMIES_6,
+        SHEET_ENEMIES_7,
+        SHEET_BOSSES_1,
+        SHEET_BOSSES_2,
+        SHEET_BOSSES_3,
+        SHEET_PLAYER = Renderer::kGameplaySheetId,
+        SHEET_MISC,
+        SHEET_RUINS,
+        SHEET_FORGE,
+        SHEET_CRYPT,
+        SHEET_FUNGAL,
+        SHEET_DRACONIC,
+        SHEET_LOBBY = Renderer::kLobbySheetId
+    };
+
+    Renderer::Sprite MakeGridSprite(int sheetId, int index0, int cols, int rows) {
+        return Renderer::MakeGridSprite(sheetId, index0, cols, rows);
+    }
+
+    Renderer::Sprite GameplaySprite(int slot1) {
+        return MakeGridSprite(SHEET_PLAYER, slot1 - 1, 9, 4);
+    }
+
+    Renderer::Sprite PlayerSprite(const Player& player, bool moving) {
+        int slot = 1;
+        if (player.isDashing) slot = 4;
+        else if (player.IsInvincible()) slot = 5;
+        else if (player.lastShootDir.x != 0.0f || player.lastShootDir.y != 0.0f) slot = 3;
+        else if (moving) slot = 2;
+        return GameplaySprite(slot);
+    }
+
+    Renderer::Sprite MiscSprite(int slot0) {
+        return MakeGridSprite(SHEET_MISC, slot0, 8, 4);
+    }
+
+    int ThemeSheetId(DungeonTheme theme) {
+        switch (theme) {
+            case DungeonTheme::FORGE:    return SHEET_FORGE;
+            case DungeonTheme::CRYPT:    return SHEET_CRYPT;
+            case DungeonTheme::FUNGAL:   return SHEET_FUNGAL;
+            case DungeonTheme::DRACONIC: return SHEET_DRACONIC;
+            case DungeonTheme::RUINS:
+            default:                     return SHEET_RUINS;
+        }
+    }
+
+    Renderer::Sprite ThemeFloorSprite(DungeonTheme theme, int slot1) {
+        int index = slot1 - 1;
+        int col = index % 12;
+        int row = index / 12;
+        return Renderer::MakeScaledSprite(ThemeSheetId(theme), col * 128, row * 128,
+                                           128, 128, 1536, 1024);
+    }
+
+    Renderer::Sprite ThemeAtlasSprite(DungeonTheme theme, int x, int y, int w, int h) {
+        return Renderer::MakeScaledSprite(ThemeSheetId(theme), x, y, w, h, 1536, 1024);
+    }
+
+    Renderer::Sprite ThemeWallSprite(DungeonTheme theme, bool vertical, int variant) {
+        // The irregular atlas begins below the 24 floor tiles. These source
+        // rectangles are shared by all five theme sheets.
+        if (vertical) {
+            int x = 14 + (variant % 3) * 200;
+            return ThemeAtlasSprite(theme, x, 266, 180, 125);
+        }
+        int x = 14 + (variant % 3) * 200;
+        return ThemeAtlasSprite(theme, x, 266, 180, 125);
+    }
+
+    Renderer::Sprite ThemeArchSprite(DungeonTheme theme) {
+        return ThemeAtlasSprite(theme, 950, 405, 180, 170);
+    }
+
+    Renderer::Sprite DoorSprite(RoomType roomType, bool open) {
+        int slot = open ? 20 : 19; // normal door
+        if (roomType == RoomType::TREASURE) slot = open ? 22 : 21;
+        if (roomType == RoomType::CURSE) slot = open ? 24 : 23;
+        if (roomType == RoomType::BOSS) slot = open ? 26 : 25;
+        return MiscSprite(slot);
+    }
+
+    Renderer::Sprite TerrainSprite(RoomTerrainType type, bool active, bool triggered) {
+        int slot = 18;
+        switch (type) {
+            case RoomTerrainType::BRIDGE_TEMPORARY: slot = 13; break;
+            case RoomTerrainType::BRIDGE_FRAGILE:   slot = 14; break;
+            case RoomTerrainType::TELEPORT_PAD:     slot = 15; break;
+            case RoomTerrainType::PRESSURE_PLATE:   slot = 16; break;
+            case RoomTerrainType::LILY_PAD:         slot = 17; break;
+            case RoomTerrainType::TERRAIN_MUD:     slot = 18; break;
+            case RoomTerrainType::TERRAIN_SLIME:   slot = 18; break;
+            case RoomTerrainType::TERRAIN_ACID:    slot = 19; break;
+            case RoomTerrainType::TERRAIN_POISON:  slot = 20; break;
+            case RoomTerrainType::TRAP_POISON:     slot = 21; break;
+            case RoomTerrainType::TRAP_TELEPORT:   slot = 22; break;
+            case RoomTerrainType::TRAP_SUMMON:     slot = 23; break;
+            case RoomTerrainType::TRAP_SPIKE:      slot = triggered ? 25 : 24; break;
+            case RoomTerrainType::PIT:             slot = 19; break;
+            default:                               slot = 18; break;
+        }
+        return GameplaySprite(slot);
+    }
+
+    Renderer::Sprite PickupSprite(const RoomPickup& pickup) {
+        switch (pickup.type) {
+            case RoomPickupType::COIN:
+                return MiscSprite(pickup.amount >= 10 ? 2 : pickup.amount >= 5 ? 1 : 0);
+            case RoomPickupType::KEY:   return MiscSprite(3);
+            case RoomPickupType::BOMB:  return MiscSprite(4);
+            case RoomPickupType::HEART: return MiscSprite(pickup.amount > 1 ? 6 : 5);
+            case RoomPickupType::TROPHY: return GameplaySprite(35);
+            case RoomPickupType::CHEST:
+                switch (pickup.chestType) {
+                    case ChestType::WOODEN: return MiscSprite(7);
+                    case ChestType::STONE:  return MiscSprite(9);
+                    case ChestType::IRON:   return MiscSprite(11);
+                    case ChestType::GOLDEN: return MiscSprite(13);
+                    case ChestType::ANGEL:  return MiscSprite(15);
+                    case ChestType::DEVIL:
+                    case ChestType::GAMBLE: return MiscSprite(17);
+                }
+                break;
+            default: break;
+        }
+        return Renderer::MakeSprite(-1, 0, 0, 0, 0);
+    }
+
+    Renderer::Sprite ItemSprite(int itemIndex) {
+        if (itemIndex < 0 || itemIndex >= 144) {
+            // The last 24 database entries have no dedicated art yet.
+            return Renderer::MakeGridSprite(SHEET_MISC, 0, 8, 4);
+        }
+        int sheet = SHEET_ITEMS_1 + itemIndex / 24;
+        int slot = itemIndex % 24;
+        return MakeGridSprite(sheet, slot, 6, 4);
+    }
+
+    Renderer::Sprite EnemySprite(int enemyIndex) {
+        int sheet = SHEET_ENEMIES_1 + std::clamp(enemyIndex / 24, 0, 6);
+        int slot = enemyIndex % 24;
+        return MakeGridSprite(sheet, slot, 6, 4);
+    }
+
+    Renderer::Sprite BossSprite(int bossIndex) {
+        int sheet = SHEET_BOSSES_1 + std::clamp(bossIndex / 12, 0, 2);
+        int slot = bossIndex % 12;
+        int col = slot % 4;
+        int row = slot / 4;
+        // Boss sheets are 4x3 portrait cards, with the name in the bottom band.
+        return Renderer::MakeScaledSprite(sheet, col * 362, row * 362, 362, 315, 1448, 1086);
+    }
+
+    void LoadSpriteSheets() {
+        Renderer::LoadSheet(SHEET_ITEMS_1, L"data/assets/item1.png");
+        Renderer::LoadSheet(SHEET_ITEMS_2, L"data/assets/item2.png");
+        Renderer::LoadSheet(SHEET_ITEMS_3, L"data/assets/item3.png");
+        Renderer::LoadSheet(SHEET_ITEMS_4, L"data/assets/item4.png");
+        Renderer::LoadSheet(SHEET_ITEMS_5, L"data/assets/item5.png");
+        Renderer::LoadSheet(SHEET_ITEMS_6, L"data/assets/item6.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_1, L"data/assets/enemies1.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_2, L"data/assets/enemies2.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_3, L"data/assets/enemies3.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_4, L"data/assets/enemies4.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_5, L"data/assets/enemies5.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_6, L"data/assets/enemies6.png");
+        Renderer::LoadSheet(SHEET_ENEMIES_7, L"data/assets/enemies7.png");
+        Renderer::LoadSheet(SHEET_BOSSES_1, L"data/assets/bosses1.png");
+        Renderer::LoadSheet(SHEET_BOSSES_2, L"data/assets/bosses2.png");
+        Renderer::LoadSheet(SHEET_BOSSES_3, L"data/assets/bosses3.png");
+        Renderer::LoadSheet(SHEET_PLAYER, L"data/assets/m1.png");
+        Renderer::LoadSheet(SHEET_MISC, L"data/assets/m2.png");
+        Renderer::LoadSheet(SHEET_RUINS, L"data/assets/Ruines.png");
+        Renderer::LoadSheet(SHEET_FORGE, L"data/assets/Forge.png");
+        Renderer::LoadSheet(SHEET_CRYPT, L"data/assets/crypt.png");
+        Renderer::LoadSheet(SHEET_FUNGAL, L"data/assets/fungus.png");
+        Renderer::LoadSheet(SHEET_DRACONIC, L"data/assets/dragonuc.png");
+        Renderer::LoadSheet(SHEET_LOBBY, L"data/assets/main.png");
+    }
+
     void ResolveEntitySolidCollision(Vec2& pos, float entityW, float entityH, const Rect& obstacleRect) {
         Rect entityRect = { pos.x, pos.y, entityW, entityH };
         float pLeft = entityRect.x, pRight = entityRect.x + entityRect.w;
@@ -48,6 +242,13 @@ namespace {
             float obstacleCenterY = oTop + obstacleRect.h * 0.5f;
             pos.y += (entityCenterY < obstacleCenterY) ? -overlapY : overlapY;
         }
+    }
+
+    void DrawCenteredSprite(const Renderer::Sprite& sprite, float centerX, float centerY, float w, float h, Vec2 shakeOffset, bool flipX = false) {
+        Renderer::DrawSprite(sprite,
+                             (int)(centerX - w * 0.5f + shakeOffset.x),
+                             (int)(centerY - h * 0.5f + shakeOffset.y),
+                             (int)w, (int)h, flipX);
     }
 
     void ResolvePlayerSolidCollision(Player& player, const Rect& obstacleRect) {
@@ -258,11 +459,67 @@ namespace {
     }
 }
 
-enum class GameState { TITLE, FLOOR_TRANSITION, PLAYING, GAME_OVER };
+namespace Music {
+    namespace {
+        constexpr const char* kAlias = "floppy_rogue_music";
+        constexpr const char* kTracks[] = { "data/assets/1.mp3", "data/assets/2.mp3" };
+        int currentTrack = 0;
+        int completedLoops = 0;
+        int loopsBeforeSwitch = 5;
+        bool active = false;
+
+        void Send(const char* command) {
+            mciSendStringA(command, nullptr, 0, nullptr);
+        }
+
+        void PlayCurrent() {
+            char command[256];
+            std::snprintf(command, sizeof(command), "play %s", kAlias);
+            Send(command);
+        }
+    }
+
+    void Start() {
+        Send("close floppy_rogue_music");
+        char command[256];
+        std::snprintf(command, sizeof(command), "open \"%s\" type mpegvideo alias %s",
+                      kTracks[currentTrack], kAlias);
+        Send(command);
+        completedLoops = 0;
+        loopsBeforeSwitch = RNG::Range(5, 10);
+        PlayCurrent();
+        active = true;
+    }
+
+    void Update() {
+        if (!active) return;
+        char mode[32] = {};
+        if (mciSendStringA("status floppy_rogue_music mode", mode, sizeof(mode), nullptr) != 0) return;
+        if (std::strcmp(mode, "stopped") != 0) return;
+
+        completedLoops++;
+        if (completedLoops >= loopsBeforeSwitch) {
+            currentTrack = 1 - currentTrack;
+            Start();
+        } else {
+            PlayCurrent();
+        }
+    }
+
+    void Shutdown() {
+        if (active) Send("close floppy_rogue_music");
+        active = false;
+    }
+}
+
+enum class GameState { TITLE, FLOOR_TRANSITION, PLAYING, PAUSED, GAME_OVER };
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     if (!Window::Create(1280, 720, "FloppyRogue")) return 1;
     if (!Renderer::Init(Window::GetHandle())) return 1;
+    Audio::Init();
+    LoadSpriteSheets();
+    Music::Start();
 
     EnemyDatabase::Load("data/enemies.txt");
     ItemDatabase::Load("data/items.txt");
@@ -292,6 +549,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     const float invincibleDuration = 0.75f;
     const float projectileSize = 3.0f;
+    constexpr float playerVisualScale = 2.0f;
+    constexpr float enemyVisualScale = 1.75f;
+    constexpr float pickupVisualScale = 2.5f;
+    constexpr float rockVisualScale = 1.75f;
+    constexpr float bossVisualScale = 1.45f;
     const float bombFuseDuration = 3.0f;
     const float bombExplosionRadius = 34.0f;
     const int bombDamage = 40;
@@ -312,6 +574,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     };
 
     float floorTransitionTimer = 0.0f;
+    float roomClearedTimer = 0.0f;
     int floorTransitionFloor = 1;
     char floorTransitionTreasureLine[160] = {};
     bool pendingFloorAdvance = false;
@@ -592,6 +855,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     };
 
     auto LoadRoomEncounter = [&]() {
+        roomClearedTimer = 0.0f;
         const Room& room = dungeon.CurrentRoom();
         float roomSpecialBonus = SpecialEnemyBonusForTheme(room.theme);
         const Vec2 spawnPoints[] = {
@@ -946,6 +1210,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     if (pickup.itemId >= 0) {
                         GrantItemById(pickup.itemId);
                     }
+                    Audio::Play(Audio::Cue::PICKUP);
                     pickup.collected = true;
                     break;
 
@@ -954,6 +1219,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         continue;
                     }
                     GrantHeart();
+                    Audio::Play(Audio::Cue::PICKUP);
                     pickup.collected = true;
                     break;
 
@@ -962,6 +1228,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         continue;
                     }
                     GrantBomb();
+                    Audio::Play(Audio::Cue::PICKUP);
                     pickup.collected = true;
                     break;
 
@@ -976,6 +1243,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     } else {
                         GrantKey();
                     }
+                    Audio::Play(Audio::Cue::PICKUP);
                     pickup.collected = true;
                     break;
 
@@ -984,6 +1252,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         continue;
                     }
                     GrantCoins(pickup.amount > 0 ? pickup.amount : 1);
+                    Audio::Play(Audio::Cue::PICKUP);
                     pickup.collected = true;
                     break;
 
@@ -992,6 +1261,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         pickup.collected = true;
                         player.actionFlashTimer = std::max(player.actionFlashTimer, 0.08f);
                         AddScreenShake(0.08f, 1.0f);
+                        Audio::Play(Audio::Cue::CHEST);
                     } else {
                         continue;
                     }
@@ -1001,6 +1271,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     if (room.type == RoomType::BOSS && room.cleared) {
                         pickup.collected = true;
                         StartPendingFloorAdvance(dungeon.CurrentFloor() + 1);
+                        Audio::Play(Audio::Cue::TELEPORT);
                         return true;
                     }
                     break;
@@ -1383,6 +1654,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     while (Window::PollEvents()) {
         float dt = timer.Tick();
         Input::Update();
+        Music::Update();
 
         Room* activeRoom = nullptr;
         bool enterGameplayAfterPresent = false;
@@ -1402,11 +1674,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                  floorTransitionTimer >= 1.75f)) {
                 enterGameplayAfterPresent = true;
             }
+        } else if (state == GameState::PLAYING && Input::IsPressed('P')) {
+            state = GameState::PAUSED;
         } else if (state == GameState::PLAYING) {
             activeRoom = &dungeon.CurrentRoom();
             Room* room = activeRoom;
 
             worldTime += dt;
+            for (auto& enemy : enemies) {
+                if (enemy.hitFlashTimer > 0.0f) enemy.hitFlashTimer = std::max(0.0f, enemy.hitFlashTimer - dt);
+            }
+            if (boss.hitFlashTimer > 0.0f) boss.hitFlashTimer = std::max(0.0f, boss.hitFlashTimer - dt);
+            if (roomClearedTimer > 0.0f) {
+                roomClearedTimer -= dt;
+                if (roomClearedTimer < 0.0f) roomClearedTimer = 0.0f;
+            }
             PlayerLogic::UpdateTimers(player, dt);
             ProjectileSystem::Advance(playerShots, dt, &enemies, (room->type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
             ProjectileSystem::Advance(enemyShots, dt, nullptr, nullptr, &player.pos);
@@ -1444,6 +1726,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 bomb.fuseTimer = bombFuseDuration;
 
                 bombs.push_back(bomb);
+                Audio::Play(Audio::Cue::BOMB_PLACE);
             }
 
             auto ApplyProjectileTerrainCollisions = [&](std::vector<Projectile>& shots) {
@@ -1543,6 +1826,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 if (bomb.fuseTimer <= 0.0f) {
                     bomb.exploded = true;
                     bomb.flashTimer = 0.18f;
+                    Audio::Play(Audio::Cue::BOMB_EXPLODE);
             
                     AddScreenShake(0.20f, 2.4f);
             
@@ -1697,7 +1981,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     }
 
                     if (!anyAlive) {
+                        roomClearedTimer = 2.0f;
                         dungeon.MarkCurrentRoomCleared(true);
+                        Audio::Play(Audio::Cue::ROOM_CLEAR);
                         enemies.clear();
                         enemyShots.clear();
                         playerShots.clear();
@@ -1804,6 +2090,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                             SpawnBossRewards(*room);
                         }
                         dungeon.MarkCurrentRoomCleared(true);
+                        roomClearedTimer = 2.0f;
+                        Audio::Play(Audio::Cue::ROOM_CLEAR);
                     }
                 }
 
@@ -1811,12 +2099,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     state = GameState::GAME_OVER;
                 }
             }
+        } else if (state == GameState::PAUSED) {
+            if (Input::IsPressed('P')) state = GameState::PLAYING;
         } else if (state == GameState::GAME_OVER) {
             if (Input::IsPressed('R')) {
                 StartRun();
             }
         }
 
+        if (state == GameState::PAUSED) activeRoom = &dungeon.CurrentRoom();
         const Room* roomPtr = activeRoom;
         Vec2 shakeOffset = { 0.0f, 0.0f };
         if (screenShakeTimer > 0.0f) {
@@ -1862,11 +2153,41 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             int gapT = midY - (int)dhw, gapB = midY + (int)dhw;
             uint32_t doorColor = wr.gateOpen ? doorOpenColor : doorLockedColor;
 
+            // The top 24 slots of each theme atlas are a shared 12x2 floor grid.
+            // Tile the room interior without changing the room's collision edges.
+            for (int y = ry + (int)wt; y < ry + rh - (int)wt; y += 16) {
+                for (int x = rx + (int)wt; x < rx + rw - (int)wt; x += 16) {
+                    int pattern = (x / 16 * 7 + y / 16 * 11 + (int)wr.theme * 13) % 37;
+                    int slot = 1;
+                    if (pattern == 0) slot = 2;
+                    else if (pattern == 1) slot = 3;
+                    else if (pattern == 2) slot = 4;
+                    else if (pattern == 3) slot = 5;
+                    else if (pattern == 4) slot = 6;
+                    else if (pattern == 5) slot = 13;
+                    else if (pattern == 6) slot = 15;
+                    else if (pattern == 7) slot = 17;
+                    Renderer::DrawSprite(ThemeFloorSprite(wr.theme, slot), x, y, 16, 16);
+                }
+            }
+
+            auto DrawDoor = [&](int centerX, int centerY) {
+                Renderer::DrawSprite(ThemeArchSprite(wr.theme), centerX - 21, centerY - 21, 42, 42);
+                Renderer::DrawSprite(DoorSprite(wr.type, wr.gateOpen), centerX - 14, centerY - 14, 28, 28);
+            };
+
+            auto DrawThemeWall = [&](int x, int y, int w, int h, bool vertical, int variant) {
+                if (w > 0 && h > 0) {
+                    Renderer::DrawSprite(ThemeWallSprite(wr.theme, vertical, variant), x, y, w, h);
+                }
+            };
+
             // North wall
             if (wr.north >= 0) {
                 Renderer::DrawRect(rx, ry, gapL - rx, (int)wt, wallColor);
                 Renderer::DrawRect(gapR, ry, rx + rw - gapR, (int)wt, wallColor);
                 Renderer::DrawRect(gapL, ry, gapR - gapL, (int)wt, doorColor);
+                DrawDoor(midX, ry + (int)wt / 2);
             } else {
                 Renderer::DrawRect(rx, ry, rw, (int)wt, wallColor);
             }
@@ -1876,6 +2197,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 Renderer::DrawRect(rx, sy, gapL - rx, (int)wt, wallColor);
                 Renderer::DrawRect(gapR, sy, rx + rw - gapR, (int)wt, wallColor);
                 Renderer::DrawRect(gapL, sy, gapR - gapL, (int)wt, doorColor);
+                DrawDoor(midX, sy + (int)wt / 2);
             } else {
                 Renderer::DrawRect(rx, sy, rw, (int)wt, wallColor);
             }
@@ -1884,6 +2206,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 Renderer::DrawRect(rx, ry, (int)wt, gapT - ry, wallColor);
                 Renderer::DrawRect(rx, gapB, (int)wt, ry + rh - gapB, wallColor);
                 Renderer::DrawRect(rx, gapT, (int)wt, gapB - gapT, doorColor);
+                DrawDoor(rx + (int)wt / 2, midY);
             } else {
                 Renderer::DrawRect(rx, ry, (int)wt, rh, wallColor);
             }
@@ -1893,12 +2216,71 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 Renderer::DrawRect(ex, ry, (int)wt, gapT - ry, wallColor);
                 Renderer::DrawRect(ex, gapB, (int)wt, ry + rh - gapB, wallColor);
                 Renderer::DrawRect(ex, gapT, (int)wt, gapB - gapT, doorColor);
+                DrawDoor(ex + (int)wt / 2, midY);
             } else {
                 Renderer::DrawRect(ex, ry, (int)wt, rh, wallColor);
             }
 
+            // Paint the themed architecture over the legacy collision-colored
+            // wall mask, retaining the exact same wall and door boundaries.
+            if (wr.north >= 0) {
+                DrawThemeWall(rx, ry, gapL - rx, (int)wt, false, 0);
+                DrawThemeWall(gapR, ry, rx + rw - gapR, (int)wt, false, 1);
+            } else DrawThemeWall(rx, ry, rw, (int)wt, false, 0);
+            if (wr.south >= 0) {
+                DrawThemeWall(rx, sy, gapL - rx, (int)wt, false, 1);
+                DrawThemeWall(gapR, sy, rx + rw - gapR, (int)wt, false, 2);
+            } else DrawThemeWall(rx, sy, rw, (int)wt, false, 2);
+            if (wr.west >= 0) {
+                DrawThemeWall(rx, ry, (int)wt, gapT - ry, true, 0);
+                DrawThemeWall(rx, gapB, (int)wt, ry + rh - gapB, true, 1);
+            } else DrawThemeWall(rx, ry, (int)wt, rh, true, 0);
+            if (wr.east >= 0) {
+                DrawThemeWall(ex, ry, (int)wt, gapT - ry, true, 2);
+                DrawThemeWall(ex, gapB, (int)wt, ry + rh - gapB, true, 0);
+            } else DrawThemeWall(ex, ry, (int)wt, rh, true, 1);
+
             for (const auto& terrain : wr.terrain) {
                 if (terrain.broken && terrain.IsBombable()) continue;
+
+                if (terrain.type == RoomTerrainType::PIT) {
+                    int pitSlot = ((terrain.featureId >= 0 ? terrain.featureId : 0) % 3 == 0) ? 10 : 11;
+                    DrawCenteredSprite(ThemeFloorSprite(wr.theme, pitSlot),
+                                       terrain.pos.x + terrain.w * 0.5f,
+                                       terrain.pos.y + terrain.h * 0.5f,
+                                       terrain.w * rockVisualScale,
+                                       terrain.h * rockVisualScale, shakeOffset);
+                    continue;
+                }
+
+                if (!terrain.BlocksMovement() && terrain.type != RoomTerrainType::PIT) {
+                    DrawCenteredSprite(TerrainSprite(terrain.type, terrain.active, terrain.triggered),
+                                       terrain.pos.x + terrain.w * 0.5f,
+                                       terrain.pos.y + terrain.h * 0.5f,
+                                       terrain.w * rockVisualScale,
+                                       terrain.h * rockVisualScale, shakeOffset);
+                    continue;
+                }
+
+                if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
+                    terrain.type == RoomTerrainType::ROCK_BOMBABLE_HEART ||
+                    terrain.type == RoomTerrainType::ROCK_BOMBABLE ||
+                    terrain.type == RoomTerrainType::ROCK_INDESTRUCTIBLE ||
+                    terrain.type == RoomTerrainType::ROCK_EXPLOSIVE ||
+                    terrain.type == RoomTerrainType::CRATE_DESTRUCTIBLE ||
+                    terrain.type == RoomTerrainType::BLOCK_PUSHABLE) {
+                    int propSlot = 31; // movable stone is the closest shared prop fallback for crates
+                    if (terrain.type == RoomTerrainType::ROCK_BOMBABLE) propSlot = 27;
+                    if (terrain.type == RoomTerrainType::ROCK_INDESTRUCTIBLE) propSlot = 28;
+                    if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_COIN) propSlot = 29;
+                    if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_HEART) propSlot = 30;
+                    DrawCenteredSprite(MiscSprite(propSlot),
+                                       terrain.pos.x + terrain.w * 0.5f,
+                                       terrain.pos.y + terrain.h * 0.5f,
+                                       terrain.w * rockVisualScale,
+                                       terrain.h * rockVisualScale, shakeOffset);
+                    continue;
+                }
 
                 if (terrain.type == RoomTerrainType::ROCK_BOMBABLE_COIN ||
                     terrain.type == RoomTerrainType::ROCK_BOMBABLE_HEART ||
@@ -1961,12 +2343,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
 
         uint32_t playerColor = player.IsInvincible() ? 0xFFFF8888 : 0xFF00FF88;
-        if (player.actionFlashTimer > 0.0f) {
-            Renderer::DrawRect((int)(player.pos.x + shakeOffset.x) - 1, (int)(player.pos.y + shakeOffset.y) - 1,
-                               player.size + 2, player.size + 2, 0xFFFFFFAA);
-        }
-        Renderer::DrawRect((int)(player.pos.x + shakeOffset.x), (int)(player.pos.y + shakeOffset.y),
-                           player.size, player.size, playerColor);
+        bool playerMoving = Input::IsDown(VK_UP) || Input::IsDown(VK_DOWN) ||
+                            Input::IsDown(VK_LEFT) || Input::IsDown(VK_RIGHT) ||
+                            Input::IsDown('W') || Input::IsDown('A') ||
+                            Input::IsDown('S') || Input::IsDown('D');
+        bool playerFlipX = player.lastShootDir.x < -0.01f ||
+                           (player.lastShootDir.x == 0.0f && player.facingDir.x < -0.01f);
+        DrawCenteredSprite(PlayerSprite(player, playerMoving),
+                           player.pos.x + player.size * 0.5f,
+                           player.pos.y + player.size * 0.5f,
+                           player.size * playerVisualScale,
+                           player.size * playerVisualScale, shakeOffset, playerFlipX);
 
         if (player.hasSecondSun) {
             Vec2 playerCenter = { player.pos.x + player.size / 2.0f, player.pos.y + player.size / 2.0f };
@@ -1976,8 +2363,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             };
             int sunX = (int)std::lround(sunPos.x + shakeOffset.x);
             int sunY = (int)std::lround(sunPos.y + shakeOffset.y);
-            Renderer::DrawRect(sunX - 3, sunY - 3, 6, 6, 0xFFFFFF99);
-            Renderer::DrawRect(sunX - 1, sunY - 1, 2, 2, 0xFFFFFFFF);
+            DrawCenteredSprite(GameplaySprite(12), (float)sunX, (float)sunY, 9.0f, 9.0f, {});
         }
 
         if (roomPtr) {
@@ -1997,18 +2383,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     case RoomPickupType::TROPHY: color = 0xFFFFFF99; size = 12; break;
                 }
 
-                Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x), (int)(pickup.pos.y + shakeOffset.y),
-                                   size, size, color);
+                Renderer::Sprite pickupSprite = (pickup.type == RoomPickupType::ITEM && pickup.itemId >= 0)
+                    ? ItemSprite(pickup.itemId) : PickupSprite(pickup);
+                if (pickupSprite.sheet >= 0) {
+                    float visualSize = (pickup.type == RoomPickupType::CHEST)
+                        ? 22.0f : size * pickupVisualScale;
+                    DrawCenteredSprite(pickupSprite,
+                                       pickup.pos.x + size * 0.5f,
+                                       pickup.pos.y + size * 0.5f,
+                                       visualSize, visualSize, shakeOffset);
+                } else {
+                    Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x), (int)(pickup.pos.y + shakeOffset.y),
+                                       size, size, color);
+                }
                 if (pickup.type == RoomPickupType::ITEM && pickup.isMimic) {
                     float pulse = 0.5f + 0.5f * std::sin(worldTime * 12.0f + pickup.pos.x * 0.27f + pickup.pos.y * 0.11f);
                     int x = (int)(pickup.pos.x + shakeOffset.x);
                     int y = (int)(pickup.pos.y + shakeOffset.y);
                     uint32_t outline = (pulse > 0.5f) ? 0xFF3B0A0A : 0xFF6A1515;
-                    Renderer::DrawRect(x - 1, y - 1, size + 2, size + 2, outline);
-                    Renderer::DrawRect(x + 1, y + 1, size - 2, size - 2, 0xFF1D0505);
-                    Renderer::DrawRect(x + 2, y + 2, 2, 2, 0xFF000000);
-                    Renderer::DrawRect(x + size - 4, y + 2, 2, 2, 0xFF000000);
-                    Renderer::DrawRect(x + 2, y + size - 3, size - 4, 1, 0xFF000000);
+                    Renderer::DrawRect(x - 1, y - 1, size + 2, 1, outline);
+                    Renderer::DrawRect(x - 1, y + size, size + 2, 1, outline);
+                    Renderer::DrawRect(x - 1, y, 1, size, outline);
+                    Renderer::DrawRect(x + size, y, 1, size, outline);
                 }
                 if (pickup.type == RoomPickupType::EXIT) {
                     Renderer::DrawRect((int)(pickup.pos.x + shakeOffset.x) + 2, (int)(pickup.pos.y + shakeOffset.y) + 2,
@@ -2033,15 +2429,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         (int)(bombExplosionRadius * 2.0f *
                               (bomb.flashTimer / 0.18f));
 
-                    Renderer::DrawRect(
-                        (int)(bomb.pos.x + shakeOffset.x) -
-                            flashSize / 2 + 3,
-                        (int)(bomb.pos.y + shakeOffset.y) -
-                            flashSize / 2 + 3,
-                        flashSize,
-                        flashSize,
-                        0xFFFFCC66
-                    );
+                    DrawCenteredSprite(GameplaySprite(26),
+                                       bomb.pos.x + 3.0f,
+                                       bomb.pos.y + 3.0f,
+                                       (float)flashSize, (float)flashSize, shakeOffset);
                 }
 
                 continue;
@@ -2057,13 +2448,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                         ? 0xFFFFAA33
                         : 0xFF666666);
 
-            Renderer::DrawRect(
-                (int)(bomb.pos.x + shakeOffset.x),
-                (int)(bomb.pos.y + shakeOffset.y),
-                6,
-                6,
-                glow
-            );
+            DrawCenteredSprite(MiscSprite(4), bomb.pos.x + 3.0f, bomb.pos.y + 3.0f,
+                               12.0f, 12.0f, shakeOffset);
         }
 
        if (roomPtr &&
@@ -2107,6 +2493,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x) - 1, (int)(enemy.pos.y + shakeOffset.y) - 1,
                                        (int)enemy.w + 2, (int)enemy.h + 2, 0xFFAADDFF);
                 }
+                if (enemy.hitFlashTimer > 0.0f) {
+                    DrawCenteredSprite(GameplaySprite(27),
+                                       enemy.pos.x + enemy.w * 0.5f,
+                                       enemy.pos.y + enemy.h * 0.5f,
+                                       enemy.w * 1.8f, enemy.h * 1.8f, shakeOffset);
+                }
                 if (enemy.aiType == AIType::MIMIC) {
                     Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
                                        (int)enemy.w, (int)enemy.h, color);
@@ -2116,8 +2508,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                        (int)(enemy.pos.y + shakeOffset.y) + 5,
                                        (int)enemy.w - 6, 2, 0xFF2B1608);
                 } else {
-                    Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
-                                       (int)enemy.w, (int)enemy.h, color);
+                    int enemyIndex = EnemyDatabase::IndexOf(enemy.templateName);
+                    if (enemyIndex >= 0) {
+                        DrawCenteredSprite(EnemySprite(enemyIndex),
+                                           enemy.pos.x + enemy.w * 0.5f,
+                                           enemy.pos.y + enemy.h * 0.5f,
+                                           enemy.w * enemyVisualScale,
+                                           enemy.h * enemyVisualScale, shakeOffset,
+                                           (enemy.pos.x + enemy.w * 0.5f) >
+                                           (player.pos.x + player.size * 0.5f));
+                    } else {
+                        Renderer::DrawRect((int)(enemy.pos.x + shakeOffset.x), (int)(enemy.pos.y + shakeOffset.y),
+                                           (int)enemy.w, (int)enemy.h, color);
+                    }
                 }
             }
         }
@@ -2129,8 +2532,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             if (boss.variant == 2) baseColor = 0xFF33FFCC;
             if (boss.variant >= 10) baseColor = 0xFFFF77AA;
             uint32_t bossColor = boss.isCharging ? 0xFFFF3399 : baseColor;
-            Renderer::DrawRect((int)(boss.pos.x + shakeOffset.x), (int)(boss.pos.y + shakeOffset.y),
-                               (int)boss.w, (int)boss.h, bossColor);
+            if (boss.hitFlashTimer > 0.0f) {
+                DrawCenteredSprite(GameplaySprite(27),
+                                   boss.pos.x + boss.w * 0.5f,
+                                   boss.pos.y + boss.h * 0.5f,
+                                   boss.w * 1.8f, boss.h * 1.8f, shakeOffset);
+            }
+            if (boss.variant >= 0) {
+                DrawCenteredSprite(BossSprite(boss.variant),
+                                   boss.pos.x + boss.w * 0.5f,
+                                   boss.pos.y + boss.h * 0.5f,
+                                   std::max(38.0f, boss.w * bossVisualScale),
+                                   std::max(38.0f, boss.h * bossVisualScale), shakeOffset,
+                                   boss.pos.x + boss.w * 0.5f > player.pos.x + player.size * 0.5f);
+            } else {
+                Renderer::DrawRect((int)(boss.pos.x + shakeOffset.x), (int)(boss.pos.y + shakeOffset.y),
+                                   (int)boss.w, (int)boss.h, bossColor);
+            }
             HUD::DrawBossHealthBar(boss, bossTemplate ? bossTemplate->name : nullptr);
         }
 
@@ -2143,17 +2561,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             HUD::DrawRunStatus(dungeon, player, *roomPtr, (roomPtr->type == RoomType::BOSS && boss.alive) ? &boss : nullptr);
         }
         if (state == GameState::GAME_OVER) HUD::DrawGameOverBanner();
-        if (roomPtr &&
+        if (roomPtr && roomClearedTimer > 0.0f &&
             (roomPtr->type == RoomType::NORMAL ||
              roomPtr->IsEnemyCurseRoom()) &&
             roomPtr->cleared) {
             HUD::DrawRoomClearedBanner();
         }
         HUD::DrawFloorMap(dungeon, player);
+        if (state == GameState::PAUSED) HUD::DrawPauseScreen(player);
 
         Renderer::Present();
     }
 
+    Music::Shutdown();
+    Audio::Shutdown();
     Renderer::Shutdown();
     Window::Destroy();
     return 0;

@@ -43,6 +43,7 @@ struct Boss {
     int phase = 1;
     int variant = 0;
     bool alive = true;
+    float hitFlashTimer = 0.0f;
 
     float driftSpeed = 15.0f;
 

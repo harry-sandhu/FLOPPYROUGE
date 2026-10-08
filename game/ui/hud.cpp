@@ -2,6 +2,7 @@
 #include "../../engine/renderer.h"
 #include "../../engine/text.h"
 #include "../dungeon/dungeon.h"
+#include "../items/item_database.h"
 #include "../progression/meta_progression.h"
 #include <cstdio>
 #include <cstring>
@@ -11,6 +12,46 @@
 namespace HUD {
 
 namespace {
+    void CenterText(const char* text, int y, uint32_t color, int scale = 1) {
+        if (!text) return;
+        int width = Text::MeasureWidth(text, scale);
+        Text::DrawString(text, (320 - width) / 2, y, color, scale);
+    }
+
+    void DrawPickupIcon(int slot0, int x, int y, int size) {
+        Renderer::DrawSprite(Renderer::MakeGridSprite(Renderer::kPickupSheetId, slot0, 8, 4),
+                             x, y, size, size);
+    }
+
+    void DrawGameplayIcon(int slot1, int x, int y, int size) {
+        int index = slot1 - 1;
+        Renderer::DrawSprite(Renderer::MakeGridSprite(Renderer::kGameplaySheetId, index, 9, 4),
+                             x, y, size, size);
+    }
+
+    int ThemeSheetId(DungeonTheme theme) {
+        switch (theme) {
+            case DungeonTheme::FORGE: return Renderer::kThemeForgeSheetId;
+            case DungeonTheme::CRYPT: return Renderer::kThemeCryptSheetId;
+            case DungeonTheme::FUNGAL: return Renderer::kThemeFungalSheetId;
+            case DungeonTheme::DRACONIC: return Renderer::kThemeDraconicSheetId;
+            case DungeonTheme::RUINS:
+            default: return Renderer::kThemeRuinsSheetId;
+        }
+    }
+
+    int RoomIconSlot(const Room& room) {
+        switch (room.type) {
+            case RoomType::START: return 15;
+            case RoomType::BOSS: return 13;
+            case RoomType::TREASURE: return 17;
+            case RoomType::CURSE: return 20;
+            case RoomType::SHOP: return 7;
+            case RoomType::NORMAL:
+            default: return room.cleared ? 2 : 1;
+        }
+    }
+
     void DrawHeart(int x, int y, int filledState) {
         const uint32_t dark = 0xFF331122;
         const uint32_t bright = 0xFFFF4D77;
@@ -101,25 +142,20 @@ void DrawHealthBar(const Player& player) {
         int state = 0;
         if (hpLeft >= 2) state = 2;
         else if (hpLeft == 1) state = 1;
-        DrawHeart(x, 4, state);
+        DrawPickupIcon(state == 1 ? 5 : state == 2 ? 6 : 5, x - 1, 2, 9);
     }
 }
 
 void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& room, const Boss* boss) {
     char line[64];
+    char shotLine[64];
+    ShotModeText(player, shotLine, sizeof(shotLine));
 
-    std::snprintf(line, sizeof(line), "DMG %d x%.2f FIRE %.1f x%.2f SPD %d RNG %.0f DEF %.0f%%",
-                  player.damage, player.damageMultiplier,
-                  player.fireRate, player.fireRateMultiplier,
-                  (int)player.moveSpeed, player.range,
-                  player.damageReduction * 100.0f);
-    Text::DrawString(line, 5, 24, 0xFFEAEAEA, 1);
+    std::snprintf(line, sizeof(line), "FLOOR %d/%d  %s", dungeon.CurrentFloor(), dungeon.MaxFloors(), RoomTypeName(room.type));
+    CenterText(line, 16, 0xFFFFD16A, 1);
 
-    std::snprintf(line, sizeof(line), "LCK %d FLOOR %d/%d", player.luck, dungeon.CurrentFloor(), dungeon.MaxFloors());
-    Text::DrawString(line, 5, 33, 0xFFEAEAEA, 1);
-
-    std::snprintf(line, sizeof(line), "ROOM %s", RoomTypeName(room.type));
-    Text::DrawString(line, 5, 42, 0xFFEAEAEA, 1);
+    DrawGameplayIcon(6, 76, 28, 8);
+    Text::DrawString(shotLine, 87, 29, 0xFFEAEAEA, 1);
 
     if (player.hasDash) {
         if (player.isDashing) {
@@ -132,18 +168,21 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
     } else {
         std::snprintf(line, sizeof(line), "DASH LOCKED");
     }
-    Text::DrawString(line, 5, 51, 0xFFEAEAEA, 1);
+    DrawGameplayIcon(4, 5, 67, 7);
+    Text::DrawString(line, 15, 68, 0xFFEAEAEA, 1);
 
-    std::snprintf(line, sizeof(line), "ITEMS %d", (int)player.ownedItemIds.size());
-    Text::DrawString(line, 5, 60, 0xFFEAEAEA, 1);
+    std::snprintf(line, sizeof(line), "DMG %d SPD %d", player.damage, (int)player.moveSpeed);
+    Text::DrawString(line, 76, 50, 0xFFEAEAEA, 1);
 
-    char shotLine[64];
-    ShotModeText(player, shotLine, sizeof(shotLine));
-    std::snprintf(line, sizeof(line), "SHOT %s", shotLine);
-    Text::DrawString(line, 5, 69, 0xFFEAEAEA, 1);
-
-    std::snprintf(line, sizeof(line), "COINS %d K %d B %d", player.CoinValue(), player.keyCount, player.bombCount);
-    Text::DrawString(line, 5, 78, 0xFFEAEAEA, 1);
+    DrawPickupIcon(player.CoinValue() >= 10 ? 2 : 0, 5, 27, 9);
+    DrawPickupIcon(3, 5, 44, 9);
+    DrawPickupIcon(4, 5, 61, 9);
+    std::snprintf(line, sizeof(line), "%d", player.CoinValue());
+    Text::DrawString(line, 16, 29, 0xFFFFD16A, 1);
+    std::snprintf(line, sizeof(line), "%d", player.keyCount);
+    Text::DrawString(line, 16, 46, 0xFF9FE8FF, 1);
+    std::snprintf(line, sizeof(line), "%d", player.bombCount);
+    Text::DrawString(line, 16, 63, 0xFFFF9B66, 1);
 
     bool hasAnyFx = player.hasHomingShots || player.poisonChance > 0.0f || player.stickyChance > 0.0f ||
         player.piercingChance > 0.0f || player.explosiveChance > 0.0f || player.burnChance > 0.0f ||
@@ -183,12 +222,12 @@ void DrawRunStatus(const Dungeon& dungeon, const Player& player, const Room& roo
                       (player.hasParasiteCore || player.hasLastShot || player.hasDevastator ||
                        player.hasInfiniteLoop || player.hasChaosEngine || player.hasSatellites ||
                        player.hasChargedShots || player.hasBurstShots) ? " +" : "");
-        Text::DrawString(fx, 5, 87, 0xFFBBBBFF, 1);
+        // Active modifiers are represented by the item/inventory screen.
     }
 
     if (player.pickupMessageTimer > 0.0f && player.pickupName[0] != '\0') {
         std::snprintf(line, sizeof(line), "PICKUP %s", player.pickupName);
-        Text::DrawString(line, 5, 96, 0xFFFFFF88, 1);
+        CenterText(line, 72, 0xFFFFFF88, 1);
     }
 
     if (boss && boss->alive) {
@@ -217,34 +256,30 @@ void DrawItemPreview(const char* name, const char* desc) {
 }
 
     void DrawTitleScreen() {
-        Renderer::DrawRect(0, 0, 320, 180, 0xFF0F0D12);
-        Renderer::DrawRect(0, 0, 320, 18, 0xFF221933);
-        Renderer::DrawRect(0, 162, 320, 18, 0xFF221933);
+    int lobbyW = 0;
+    int lobbyH = 0;
+    Renderer::GetSheetSize(Renderer::kLobbySheetId, lobbyW, lobbyH);
+    Renderer::DrawSprite(Renderer::MakeSprite(Renderer::kLobbySheetId, 0, 0, lobbyW, lobbyH),
+                         0, 0, 320, 180);
+    Renderer::DrawRect(0, 128, 320, 52, 0xE6090A10);
+    Renderer::DrawRect(0, 128, 320, 1, 0xFFFFB347);
 
-    const char* title = "FloppyRogue";
-    int titleW = Text::MeasureWidth(title, 3);
-    Text::DrawString(title, (320 - titleW) / 2, 34, 0xFFFFD16A, 3);
-
-    const char* subtitle = "Top-down roguelite";
+    const char* subtitle = "A PIXEL DUNGEON RUN";
     int subtitleW = Text::MeasureWidth(subtitle, 1);
-    Text::DrawString(subtitle, (320 - subtitleW) / 2, 56, 0xFFFFFFFF, 1);
+    Text::DrawString(subtitle, (320 - subtitleW) / 2, 134, 0xFFFFD16A, 1);
 
-    Text::DrawString("ENTER  START RUN", 92, 82, 0xFFEAEAEA, 1);
-    Text::DrawString("WASD   MOVE", 92, 94, 0xFFEAEAEA, 1);
-    Text::DrawString("ARROWS SHOOT", 92, 106, 0xFFEAEAEA, 1);
-    Text::DrawString("SPACE  DASH", 92, 118, 0xFFEAEAEA, 1);
-    Text::DrawString("PICK UP ITEMS IN ROOMS", 62, 136, 0xFFFFC84D, 1);
+    CenterText("ENTER  START RUN", 146, 0xFFFFFFFF, 1);
+    CenterText("WASD MOVE   ARROWS AIM", 157, 0xFFEAEAEA, 1);
+    CenterText("SPACE DASH", 168, 0xFFB9C7E8, 1);
 
-    char meta[64];
-    std::snprintf(meta, sizeof(meta), "META FLOOR CAP %d  TIER %d", MetaProgression::MaxFloorCap(), MetaProgression::MaxUnlockedItemTier());
-    int metaW = Text::MeasureWidth(meta, 1);
-    Text::DrawString(meta, (320 - metaW) / 2, 148, 0xFF88DDAA, 1);
 }
 
 void DrawFloorTransition(int floor, int maxFloors, const char* treasureLine, bool canContinue) {
     Renderer::DrawRect(0, 0, 320, 180, 0xFF0C1016);
-    Renderer::DrawRect(0, 0, 320, 16, 0xFF1C2A44);
-    Renderer::DrawRect(0, 164, 320, 16, 0xFF1C2A44);
+    Renderer::DrawRect(0, 0, 320, 18, 0xFF1C2A44);
+    Renderer::DrawRect(0, 162, 320, 18, 0xFF1C2A44);
+    Renderer::DrawRect(18, 18, 284, 1, 0xFF42638F);
+    Renderer::DrawRect(18, 161, 284, 1, 0xFF42638F);
 
     const char* title = "FLOOR";
     int titleW = Text::MeasureWidth(title, 2);
@@ -255,16 +290,18 @@ void DrawFloorTransition(int floor, int maxFloors, const char* treasureLine, boo
     int floorLineW = Text::MeasureWidth(floorLine, 3);
     Text::DrawString(floorLine, (320 - floorLineW) / 2, 52, 0xFFFFD16A, 3);
 
-    Text::DrawString("NEW AREAS ARE HIDDEN UNTIL YOU CLEAR THEM", 42, 92, 0xFFEAEAEA, 1);
+    CenterText(canContinue ? "THE NEXT DESCENT AWAITS" : "PREPARING THE NEXT DESCENT",
+               92, 0xFFEAEAEA, 1);
+
+    Renderer::DrawRect(74, 126, 172, 4, 0xFF182237);
+    Renderer::DrawRect(74, 126, canContinue ? 172 : 92, 4, 0xFFFFB347);
 
     if (treasureLine && treasureLine[0] != '\0') {
-        int treasureW = Text::MeasureWidth(treasureLine, 1);
-        Text::DrawString(treasureLine, (320 - treasureW) / 2, 112, 0xFFFFC84D, 1);
+        CenterText(treasureLine, 112, 0xFFFFC84D, 1);
     }
 
     const char* prompt = canContinue ? "ENTER / SPACE TO START" : "LOADING...";
-    int promptW = Text::MeasureWidth(prompt, 1);
-    Text::DrawString(prompt, (320 - promptW) / 2, 140, 0xFFFFFFFF, 1);
+    CenterText(prompt, 140, 0xFFFFFFFF, 1);
 }
 
 void DrawGameOverBanner() {
@@ -277,6 +314,31 @@ void DrawRoomClearedBanner() {
     const char* msg = "ROOM CLEARED";
     int w = Text::MeasureWidth(msg, 1);
     Text::DrawString(msg, (320 - w) / 2, 85, 0xFF44FF88, 1);
+}
+
+void DrawPauseScreen(const Player& player) {
+    Renderer::DrawRect(30, 20, 260, 140, 0xFF0B0D14);
+    Renderer::DrawRect(30, 20, 260, 2, 0xFFFFB347);
+    Renderer::DrawRect(30, 158, 260, 2, 0xFF42638F);
+    CenterText("PAUSED", 30, 0xFFFFD16A, 2);
+    CenterText("P  RESUME", 54, 0xFFFFFFFF, 1);
+    CenterText("INVENTORY", 72, 0xFF9FC5FF, 1);
+
+    if (player.ownedItemIds.empty()) {
+        CenterText("NO ITEMS YET", 90, 0xFF888899, 1);
+    } else {
+        int row = 0;
+        for (int itemId : player.ownedItemIds) {
+            const ItemTemplate* item = ItemDatabase::Get(itemId);
+            if (!item || row >= 5) continue;
+            char line[64];
+            std::snprintf(line, sizeof(line), "%d  %s", row + 1, item->name);
+            CenterText(line, 88 + row * 10, 0xFFEAEAEA, 1);
+            row++;
+        }
+        if ((int)player.ownedItemIds.size() > 5) CenterText("... MORE ITEMS ...", 140, 0xFF888899, 1);
+    }
+    CenterText("SETTINGS: P RESUME", 150, 0xFF7788AA, 1);
 }
 
 void DrawBossHealthBar(const Boss& boss, const char* bossName) {
@@ -361,20 +423,21 @@ void DrawFloorMap(const Dungeon& dungeon, const Player& player) {
         if (gy > maxGridY) maxGridY = gy;
     }
 
-    const int cellSize = 5;
+    const int cellSize = 6;
     const int gap = 2;
     const int cols = maxGridX - minGridX + 1;
     const int rows = maxGridY - minGridY + 1;
     const int mapW = cols * cellSize + (cols - 1) * gap;
     const int mapH = rows * cellSize + (rows - 1) * gap;
     const int mapX = 320 - mapW - 6;
-    const int mapY = 6;
+    const int mapY = 14;
 
     Renderer::DrawRect(mapX - 3, mapY - 3, mapW + 6, mapH + 6, 0xFF111111);
     Renderer::DrawRect(mapX - 2, mapY - 2, mapW + 4, 1, 0xFF444444);
     Renderer::DrawRect(mapX - 2, mapY + mapH + 1, mapW + 4, 1, 0xFF444444);
     Renderer::DrawRect(mapX - 2, mapY - 2, 1, mapH + 4, 0xFF444444);
     Renderer::DrawRect(mapX + mapW + 1, mapY - 2, 1, mapH + 4, 0xFF444444);
+    Text::DrawString("MAP", mapX, 5, 0xFFFFD16A, 1);
 
     auto CellOrigin = [&](const Room& room) {
         int gx = (int)room.gridPos.x - minGridX;
@@ -405,6 +468,13 @@ void DrawFloorMap(const Dungeon& dungeon, const Player& player) {
         int y = (int)origin.y;
         uint32_t color = RoomColor(room, i == dungeon.CurrentRoomIndex());
         Renderer::DrawRect(x, y, cellSize, cellSize, color);
+        int iconSlot = RoomIconSlot(room);
+        int themeCol = iconSlot % 12;
+        int themeRow = iconSlot / 12;
+        Renderer::DrawSprite(Renderer::MakeScaledSprite(ThemeSheetId(room.theme),
+                                                         themeCol * 128, themeRow * 128,
+                                                         128, 128, 1536, 1024),
+                             x, y, cellSize, cellSize);
         if (i == dungeon.CurrentRoomIndex()) {
             DrawOutline(x - 1, y - 1, cellSize + 2, cellSize + 2, 0xFFFFFFFF);
         }

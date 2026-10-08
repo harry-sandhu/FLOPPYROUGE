@@ -3,6 +3,7 @@
 #include <cmath>
 #include "../../engine/collision.h"
 #include "../../engine/renderer.h"
+#include "../../engine/audio.h"
 #include "../enemies/enemy_database.h"
 #include "../rooms/room.h"
 
@@ -385,6 +386,8 @@ void UpdateAndCollideVsEnemy(std::vector<Projectile>& projectiles, std::vector<E
 
             int dmg = EffectiveDamage(p);
             enemy.hp -= dmg;
+            enemy.hitFlashTimer = 0.12f;
+            Audio::Play(Audio::Cue::HIT);
             if (player) PlayerLogic::RegisterHit(*player);
 
             if (p.poison) ApplyPoison(enemy, dmg);
@@ -632,6 +635,8 @@ void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, fl
         if (boss.alive && p.alive && Collision::CheckAABB(p.GetRect(projectileSize), boss.GetRect())) {
             int dmg = EffectiveDamage(p);
             boss.hp -= dmg;
+            boss.hitFlashTimer = 0.12f;
+            Audio::Play(Audio::Cue::HIT);
             if (player) PlayerLogic::RegisterHit(*player);
 
             if (p.poison) ApplyPoison(boss, dmg);
@@ -709,8 +714,29 @@ void UpdateAndCollideVsBoss(std::vector<Projectile>& projectiles, Boss& boss, fl
 void Draw(const std::vector<Projectile>& projectiles, int size, uint32_t color, Vec2 offset) {
     for (auto& p : projectiles) {
         int drawSize = (int)std::lround(size * p.sizeScale);
+        if (p.kind == ProjectileKind::BULLET) drawSize = std::max(drawSize, 5);
+        if (p.kind == ProjectileKind::ROCKET) drawSize = std::max(drawSize, 8);
+        if (p.kind == ProjectileKind::LASER) drawSize = std::max(drawSize, 7);
+        if (p.kind == ProjectileKind::CRIMSON_RAY) drawSize = std::max(drawSize, 8);
+        if (p.kind == ProjectileKind::SLASH) drawSize = std::max(drawSize, 10);
         if (drawSize < 1) drawSize = 1;
-        Renderer::DrawRect((int)(p.pos.x + offset.x), (int)(p.pos.y + offset.y), drawSize, drawSize, ProjectileColor(p, color));
+        int slot = 6;
+        switch (p.kind) {
+            case ProjectileKind::ROCKET:      slot = 7; break;
+            case ProjectileKind::LASER:       slot = 8; break;
+            case ProjectileKind::CRIMSON_RAY: slot = 9; break;
+            case ProjectileKind::SLASH:       slot = 10; break;
+            case ProjectileKind::BULLET:      slot = 6; break;
+        }
+        Renderer::Sprite sprite = Renderer::MakeGridSprite(Renderer::kGameplaySheetId,
+                                                           slot - 1, 9, 4);
+        int glowX = (int)(p.pos.x + offset.x + drawSize * 0.5f);
+        int glowY = (int)(p.pos.y + offset.y + drawSize * 0.5f);
+        uint32_t glowColor = ProjectileColor(p, color);
+        Renderer::DrawRect(glowX - 2, glowY, 5, 1, glowColor);
+        Renderer::DrawRect(glowX, glowY - 2, 1, 5, glowColor);
+        Renderer::DrawSprite(sprite, (int)(p.pos.x + offset.x), (int)(p.pos.y + offset.y),
+                             drawSize, drawSize);
     }
 }
 
@@ -780,13 +806,8 @@ void DrawOrbiters(const Player& player, Vec2 offset) {
         };
         int baseX = (int)std::lround(orbPos.x + offset.x);
         int baseY = (int)std::lround(orbPos.y + offset.y);
-        Renderer::DrawRect(baseX - 2, baseY - 2, 4, 4, 0xFF66CCFF);
-
-        // A tiny leading sparkle makes the shard's rotation visible instead of
-        // looking like a plain square.
-        int tipX = (int)std::lround(orbPos.x + std::cos(o.angle) * 4.0f + offset.x);
-        int tipY = (int)std::lround(orbPos.y + std::sin(o.angle) * 4.0f + offset.y);
-        Renderer::DrawRect(tipX - 1, tipY - 1, 2, 2, 0xFFFFFFFF);
+        Renderer::Sprite sprite = Renderer::MakeGridSprite(Renderer::kGameplaySheetId, 10, 9, 4);
+        Renderer::DrawSprite(sprite, baseX - 5, baseY - 5, 10, 10);
     }
 }
 
