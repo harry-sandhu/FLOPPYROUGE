@@ -19,8 +19,9 @@ data-driven: new enemies/items/rooms are new data entries, not new code.
 - Audio: `waveOut` with procedurally synthesized SFX/music (planned —
   not yet implemented)
 - Build: CMake + Ninja, MinGW (`x86_64-w64-mingw32-g++`)
-- No external asset files — sprites and audio are generated in code
-  (`engine/procgen`, planned) to keep the build small
+- Sprites are small external PNG sheets under `data/assets/` (loaded via
+  GDI+ at startup); audio is planned to be procedurally synthesized in
+  code (no sound files) to keep the build small
 
 ## Why no engine / no assets?
 
@@ -49,7 +50,7 @@ FloppyRogue/
 ├── game/ # player, enemies, bosses, items, rooms,
 │ # dungeon, ui — all data-driven, one class
 │ # per category, not per content item
-├── data/ # enemies.txt, items.txt, rooms.txt
+├── data/ # enemies.txt, items.txt, rooms.txt, assets/ (sprite PNGs)
 └── CMakeLists.txt
 
 
